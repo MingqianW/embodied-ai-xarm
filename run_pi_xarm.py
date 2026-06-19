@@ -100,13 +100,15 @@ def safe_execute_actions(
     robot,
     actions,
     max_steps=2,
-    max_joint_delta=0.04,
-    joint_speed=0.25,
-    joint_acc=1.0,
+    max_joint_delta=0.025,
+    joint_speed=0.12,
+    joint_acc=0.3,
     gripper_min=167.0,
     gripper_max=845.0,
     gripper_speed=1500,
-    dt=0.15,
+    dt=0.08,
+    interpolation_steps=3,
+    command_wait=False,
 ):
     """
     Execute first few actions from the model.
@@ -128,6 +130,7 @@ def safe_execute_actions(
     print("Executing action chunk shape:", actions.shape)
 
     n = min(max_steps, actions.shape[0])
+    interpolation_steps = max(1, int(interpolation_steps))
 
     for i in range(n):
         a = actions[i]
@@ -155,22 +158,28 @@ def safe_execute_actions(
         print("  safe_joints:", safe_joints)
         print("  target_gripper:", target_gripper)
 
-        # Move joints.
-        try:
-            ret = api.set_servo_angle(
-                angle=safe_joints.tolist(),
-                is_radian=True,
-                speed=joint_speed,
-                mvacc=joint_acc,
-                wait=True,
-            )
-        except TypeError:
-            ret = api.set_servo_angle(
-                angle=safe_joints.tolist(),
-                is_radian=True,
-                speed=joint_speed,
-                wait=True,
-            )
+        # Move joints through a few small non-blocking waypoints. Using
+        # wait=True for every model action tends to create stop-and-go motion.
+        ret = None
+        for substep in range(1, interpolation_steps + 1):
+            alpha = substep / interpolation_steps
+            waypoint = current_joints + alpha * (safe_joints - current_joints)
+            try:
+                ret = api.set_servo_angle(
+                    angle=waypoint.tolist(),
+                    is_radian=True,
+                    speed=joint_speed,
+                    mvacc=joint_acc,
+                    wait=command_wait,
+                )
+            except TypeError:
+                ret = api.set_servo_angle(
+                    angle=waypoint.tolist(),
+                    is_radian=True,
+                    speed=joint_speed,
+                    wait=command_wait,
+                )
+            time.sleep(dt / interpolation_steps)
 
         print("  set_servo_angle ret:", ret)
 
@@ -229,13 +238,15 @@ def run_receding_horizon(
     execute_steps=2,
     base_cam_idx=0,
     wrist_cam_idx=1,
-    max_joint_delta=0.04,
-    joint_speed=0.25,
-    joint_acc=1.0,
+    max_joint_delta=0.025,
+    joint_speed=0.12,
+    joint_acc=0.3,
     gripper_min=167.0,
     gripper_max=845.0,
     gripper_speed=1500,
-    dt=0.15,
+    dt=0.08,
+    interpolation_steps=3,
+    command_wait=False,
 ):
     """Closed-loop policy rollout: observe, infer a chunk, execute first steps, repeat."""
     print(
@@ -268,6 +279,8 @@ def run_receding_horizon(
             gripper_max=gripper_max,
             gripper_speed=gripper_speed,
             dt=dt,
+            interpolation_steps=interpolation_steps,
+            command_wait=command_wait,
         )
 
 def main():
@@ -306,8 +319,8 @@ def main():
             if execute == "y":
                 cycles_text = input("Number of observe/infer/execute cycles [25]: ").strip()
                 cycles = int(cycles_text) if cycles_text else 25
-                steps_text = input("Actions to execute per inference [2]: ").strip()
-                execute_steps = int(steps_text) if steps_text else 2
+                steps_text = input("Actions to execute per inference [1]: ").strip()
+                execute_steps = int(steps_text) if steps_text else 1
                 run_receding_horizon(
                     robot,
                     cameras,
@@ -315,13 +328,15 @@ def main():
                     prompt,
                     cycles=cycles,
                     execute_steps=execute_steps,
-                    max_joint_delta=0.04,
-                    joint_speed=0.25,
-                    joint_acc=1.0,
+                    max_joint_delta=0.025,
+                    joint_speed=0.12,
+                    joint_acc=0.3,
                     gripper_min=167.0,
                     gripper_max=845.0,
                     gripper_speed=1500,
-                    dt=0.15,
+                    dt=0.08,
+                    interpolation_steps=3,
+                    command_wait=False,
                 )
             else:
                 print("Not executing actions.")
