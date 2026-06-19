@@ -10,6 +10,7 @@ Use the same test scenes: 3 pure + 2 with distractors.
 | `pick up the smallest block` | 5 |  |  |  | 5 |  |  |  |
 | `pick up the largest block` | 5 |  |  |  | 5 |  |  |  |
 | `pick up the blackboard eraser` | 5 |  |  |  | 5 |  |  |  |
+| `place red pepper on paper` | 5 |  |  |  | 5 |  |  |  |
 | **Total** | 25 |  |  |  | 25 |  |  |  |
 
 
