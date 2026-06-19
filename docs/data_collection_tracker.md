@@ -19,10 +19,11 @@ Use this file to track the current multi-object pick-up dataset and compare the 
 | Task  | Target Episodes | Done | Scene Mix | Notes |
 |---|---:|---:|---|---|
 | `pick up the red pepper` | 50 | 50 | clean object-only scenes | pure trajectories |
-| `pick up the light blue block` | 50 | 0 | 30 clean, 20 with distractors | contains other objects/blocks |
-| `pick up the red block` | 50 | 0 | 30 clean, 20 with distractors | contains other objects/blocks |
-| `pick up the smallest block` | 50 | 0 | 30 clean, 20 with distractors | size-based prompt |
-| `pick up the largest block` | 50 | 0 | 30 clean, 20 with distractors | size-based prompt |
+| `pick up the light blue block` | 25 | 0 | 15 clean, 10 with distractors | contains other objects/blocks |
+| `pick up the red block` | 25 | 0 | 15 clean, 10 with distractors | contains other objects/blocks |
+| `pick up the smallest block` | 25 | 0 | 15 clean, 10 with distractors | size-based prompt |
+| `pick up the largest block` | 25 | 0 | 15 clean, 10 with distractors | size-based prompt |
 | `pick up the blackboard eraser` | 50 | 0 | 30 clean, 20 with distractors | non-block object |
+| `place red pepper on color paper` | 50 | 0 | 30 clean, 20 with distractors | size-based prompt |
 | **Total** | **300** | **50** |  |  |
 
