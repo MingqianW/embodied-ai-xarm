@@ -1,6 +1,11 @@
 import sys
 import os
 import time
+import csv
+import json
+import re
+from datetime import datetime
+from pathlib import Path
 import numpy as np
 
 
@@ -18,7 +23,138 @@ from real_world.xarm6 import XARM6
 from real_world.camera.multi_realsense import MultiRealsense
 
 
+RAW_DATA_ROOT = Path(os.environ.get("XARM_RAW_ROOT", "/home/xingyu/xarm_pi05_data/raw"))
+STATE_COLUMNS = (
+    "j1_rad",
+    "j2_rad",
+    "j3_rad",
+    "j4_rad",
+    "j5_rad",
+    "j6_rad",
+    "gripper_mm",
+)
 
+
+def normalize_task_name(task_name):
+    """Accept task names with spaces or underscores and store one stable folder name."""
+    normalized = task_name.strip().lower()
+    normalized = re.sub(r"[\s\-]+", "_", normalized)
+    normalized = re.sub(r"_+", "_", normalized)
+    normalized = normalized.strip("_")
+    if not normalized:
+        raise ValueError("task name cannot be empty")
+    if normalized in {".", ".."} or any(char in normalized for char in ("/", "\\", ":")):
+        raise ValueError(f"invalid task name: {task_name!r}")
+    return normalized
+
+
+def normalize_tag(tag):
+    normalized = tag.strip().lower()
+    normalized = re.sub(r"[\s\-]+", "_", normalized)
+    normalized = re.sub(r"[^a-z0-9_.]+", "_", normalized)
+    normalized = re.sub(r"_+", "_", normalized)
+    normalized = normalized.strip("._")
+    if not normalized:
+        raise ValueError("tag cannot be empty")
+    return normalized
+
+
+def prompt_nonempty(label, normalizer):
+    while True:
+        value = input(f"{label}> ").strip()
+        try:
+            return normalizer(value)
+        except ValueError as exc:
+            print(exc)
+
+
+def next_episode_dir(raw_root, task_slug, tag_slug):
+    task_dir = raw_root / task_slug
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    base_name = f"episode_{timestamp}_{tag_slug}"
+    candidate = task_dir / base_name
+    suffix = 1
+    while candidate.exists():
+        candidate = task_dir / f"{base_name}_{suffix:02d}"
+        suffix += 1
+    return candidate
+
+
+def save_rgb_png(path, image):
+    import cv2
+
+    arr = np.asarray(image)
+    if arr.ndim != 3 or arr.shape[-1] != 3:
+        raise ValueError(f"expected RGB image with shape HxWx3, got {arr.shape}")
+    if arr.dtype != np.uint8:
+        arr = np.clip(arr, 0, 255).astype(np.uint8)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    ok = cv2.imwrite(str(path), arr[:, :, ::-1])
+    if not ok:
+        raise RuntimeError(f"failed to write image: {path}")
+
+
+def save_raw_trajectory(records, *, prompt, raw_root=RAW_DATA_ROOT):
+    if len(records) < 2:
+        print("Not saving raw trajectory: need at least 2 observed frames.")
+        return None
+
+    print("\nSave this rollout as raw data.")
+    print("Task name can be typed with spaces or underscores, e.g. 'pick up red pepper' or 'pick_up_red_pepper'.")
+    task_slug = prompt_nonempty("task name", normalize_task_name)
+    tag_slug = prompt_nonempty("trajectory tag", normalize_tag)
+
+    episode_dir = next_episode_dir(raw_root, task_slug, tag_slug)
+    image_dir = episode_dir / "realsense_0"
+    wrist_image_dir = episode_dir / "realsense_1"
+    episode_dir.mkdir(parents=True, exist_ok=False)
+
+    rows = []
+    action_chunks = []
+    for frame_idx, record in enumerate(records):
+        image_rel = Path("realsense_0") / f"{frame_idx:06d}.png"
+        wrist_rel = Path("realsense_1") / f"{frame_idx:06d}.png"
+        save_rgb_png(image_dir / image_rel.name, record["image"])
+        save_rgb_png(wrist_image_dir / wrist_rel.name, record["wrist_image"])
+
+        state = np.asarray(record["state"], dtype=np.float32).reshape(-1)
+        if state.shape[0] < len(STATE_COLUMNS):
+            raise ValueError(f"record {frame_idx} state has shape {state.shape}, expected at least 7 values")
+        row = {
+            "ts": f"{float(record['timestamp']):.6f}",
+            **{name: f"{float(value):.9g}" for name, value in zip(STATE_COLUMNS, state[: len(STATE_COLUMNS)])},
+            "realsense_0_file": image_rel.as_posix(),
+            "realsense_1_file": wrist_rel.as_posix(),
+        }
+        rows.append(row)
+        action_chunks.append(np.asarray(record["actions"], dtype=np.float32))
+
+    with (episode_dir / "robot_log.csv").open("w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=["ts", *STATE_COLUMNS, "realsense_0_file", "realsense_1_file"])
+        writer.writeheader()
+        writer.writerows(rows)
+
+    np.save(episode_dir / "policy_action_chunks.npy", np.asarray(action_chunks, dtype=np.float32))
+    meta = {
+        "task": task_slug,
+        "prompt": prompt,
+        "tag": tag_slug,
+        "format": "xarm_policy_rollout_raw_v1",
+        "created_at": datetime.now().isoformat(timespec="seconds"),
+        "num_frames": len(records),
+        "state_columns": list(STATE_COLUMNS),
+        "image_keys": {
+            "realsense_0_file": "base scene camera",
+            "realsense_1_file": "wrist camera",
+        },
+        "notes": [
+            "robot_log.csv is compatible with fine_tune/convert_xarm_raw_to_lerobot.py",
+            "policy_action_chunks.npy stores the generated action chunk for each observed frame",
+        ],
+    }
+    (episode_dir / "meta.json").write_text(json.dumps(meta, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    print(f"Saved raw trajectory: {episode_dir}")
+    return episode_dir
 
 def get_latest_rgb(camera_dict, cam_idx=0):
     if cam_idx not in camera_dict:
@@ -289,6 +425,7 @@ def run_receding_horizon(
         "Starting receding-horizon rollout: "
         f"cycles={cycles}, execute_steps={execute_steps}, max_joint_delta={max_joint_delta} rad"
     )
+    trajectory_records = []
     for cycle in range(cycles):
         print(f"\n[ROLLOUT {cycle + 1}/{cycles}] observe -> infer")
         example, state = build_policy_example(
@@ -298,7 +435,17 @@ def run_receding_horizon(
             base_cam_idx=base_cam_idx,
             wrist_cam_idx=wrist_cam_idx,
         )
+        observed_at = time.time()
         actions = np.asarray(policy.infer(example)["actions"], dtype=np.float32)
+        trajectory_records.append(
+            {
+                "timestamp": observed_at,
+                "image": np.asarray(example["observation/image"]).copy(),
+                "wrist_image": np.asarray(example["observation/wrist_image"]).copy(),
+                "state": np.asarray(state, dtype=np.float32).copy(),
+                "actions": actions.copy(),
+            }
+        )
         print("Action chunk shape:", actions.shape)
         print("First action:", actions[0])
         print("First joint delta from current state:", actions[0, :6] - state[:6])
@@ -317,6 +464,26 @@ def run_receding_horizon(
             gripper_speed=gripper_speed,
             dt=dt,
         )
+
+    if trajectory_records:
+        print("\n[ROLLOUT final] observe final state")
+        example, state = build_policy_example(
+            robot,
+            cameras,
+            prompt,
+            base_cam_idx=base_cam_idx,
+            wrist_cam_idx=wrist_cam_idx,
+        )
+        trajectory_records.append(
+            {
+                "timestamp": time.time(),
+                "image": np.asarray(example["observation/image"]).copy(),
+                "wrist_image": np.asarray(example["observation/wrist_image"]).copy(),
+                "state": np.asarray(state, dtype=np.float32).copy(),
+                "actions": np.zeros_like(trajectory_records[-1]["actions"]),
+            }
+        )
+    return trajectory_records
         
 def restore_initial_pose(robot, init_pose=None, speed=80, mvacc=1000, wait=True):
     """
@@ -421,7 +588,7 @@ def main():
                 cycles = int(cycles_text) if cycles_text else 25
                 steps_text = input("Actions to execute per inference [2]: ").strip()
                 execute_steps = int(steps_text) if steps_text else 2
-                run_receding_horizon(
+                trajectory_records = run_receding_horizon(
                     robot,
                     cameras,
                     policy,
@@ -436,6 +603,7 @@ def main():
                     gripper_speed=1500,
                     dt=0.01,
                 )
+                save_raw_trajectory(trajectory_records, prompt=prompt)
             else:
                 print("Not executing actions.")
 
