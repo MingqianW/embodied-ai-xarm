@@ -24,6 +24,6 @@ Use this file to track the current multi-object pick-up dataset and compare the 
 | `pick up the smallest block` | 25 | 25 | 15 clean, 10 with distractors | size-based prompt |
 | `pick up the largest block` | 25 | 25 | 15 clean, 10 with distractors | size-based prompt |
 | `pick up the blackboard eraser` | 50 | 0 | 30 clean, 20 with distractors | non-block object |
-| `place red pepper on color paper` | 50 | 50 | 30 clean, 20 with distractors | size-based prompt |
+| `place red pepper on color paper` | 50 | 50 | 30 clean, 20 with distractors | more complicated prompt |
 | **Total** | **250** | **200** |  |  |
 
