@@ -6,6 +6,7 @@ Use the same test scenes: 3 pure + 2 with distractors.
 |---|---:|---:|---:|---|---:|---:|---:|---|
 | `pick up the red pepper` | 5 |  |  |  |  5|  |  |  |
 | `pick up the light blue block` | 5 |  |  |  | 5 |  |  |  |
+| `pick up the blackboard eraser` | 5 |  |  |  | 5 |  |  |  |
 | **Total** | 25 |  |  |  | 25 |  |  |  |
 
 
