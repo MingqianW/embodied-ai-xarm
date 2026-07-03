@@ -50,3 +50,7 @@ Record the OpenPI training settings used with each dataset version.
 |---|---|---|---|---:|---:|---:|---|---|---|---|
 | 2026-06-26 | `v1` | `pi05_xarm_full_finetune` | `gs://openpi-assets/checkpoints/pi05_base/params` | 16 | 30,000 | 5,000 | OpenPI default: cosine schedule, warmup `1,000`, peak `2.5e-5`, decay steps `30,000`, decay LR `2.5e-6` | OpenPI default: `0.99` | Full fine-tuning from pi0.5 base | Main config for the 50-episode one-task dataset |
 | 2026-07-03 | `v2` | `pi05_xarm` | `/content/drive/MyDrive/embodied_ai_xarm/openpi_checkpoints/pi05_xarm_full_finetune/pi05_xarm_full_finetune/25000/params` | 16 | 20,001 | 5,000 | Cosine schedule, warmup `500`, peak `1e-5`, decay steps `20,000`, decay LR `1e-6` | `0.999` | Continued full fine-tuning from v1 checkpoint |  |
+
+## Data Shuffling Note
+
+During OpenPI training, data shuffling is enabled.So shuffling changes which samples appear together in a mini-batch.
