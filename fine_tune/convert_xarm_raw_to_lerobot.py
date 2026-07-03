@@ -141,12 +141,18 @@ def _write_metadata(output_dir: Path, episodes: list[Episode], records: list[dic
 
 
 def _load_rgb(path: str) -> Any:
-    import cv2
+    try:
+        import cv2
 
-    image = cv2.imread(path, cv2.IMREAD_COLOR)
-    if image is None:
-        raise FileNotFoundError(path)
-    return cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        image = cv2.imread(path, cv2.IMREAD_COLOR)
+        if image is None:
+            raise FileNotFoundError(path)
+        return cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    except ModuleNotFoundError:
+        from PIL import Image
+        import numpy as np
+
+        return np.asarray(Image.open(path).convert("RGB"))
 
 
 def _try_write_hf_dataset(output_dir: Path, records: list[dict[str, Any]]) -> bool:
@@ -231,8 +237,12 @@ def _try_write_lerobot_dataset(
     image_writer_processes: int,
 ) -> bool:
     try:
-        from lerobot.common.datasets.lerobot_dataset import HF_LEROBOT_HOME
-        from lerobot.common.datasets.lerobot_dataset import LeRobotDataset
+        try:
+            from lerobot.datasets.lerobot_dataset import HF_LEROBOT_HOME
+            from lerobot.datasets.lerobot_dataset import LeRobotDataset
+        except ModuleNotFoundError:
+            from lerobot.common.datasets.lerobot_dataset import HF_LEROBOT_HOME
+            from lerobot.common.datasets.lerobot_dataset import LeRobotDataset
         import numpy as np
     except Exception as exc:
         print(f"skip LeRobotDataset export: {exc}")
