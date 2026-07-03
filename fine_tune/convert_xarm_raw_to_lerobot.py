@@ -57,12 +57,12 @@ class Episode:
 
 
 def _read_json(path: Path) -> dict[str, Any]:
-    with path.open("r", encoding="utf-8") as f:
+    with path.open("r", encoding="utf-8-sig") as f:
         return json.load(f)
 
 
 def _read_csv(path: Path) -> list[dict[str, str]]:
-    with path.open("r", encoding="utf-8", newline="") as f:
+    with path.open("r", encoding="utf-8-sig", newline="") as f:
         rows = []
         for row in csv.DictReader(f):
             rows.append({str(key).strip(): value.strip() for key, value in row.items() if key is not None})
@@ -120,6 +120,18 @@ def _write_jsonl(path: Path, records: list[dict[str, Any]], *, append: bool = Fa
             f.write(json.dumps(record, ensure_ascii=False, separators=(",", ":")) + "\n")
 
 
+def _read_jsonl(path: Path) -> list[dict[str, Any]]:
+    if not path.exists():
+        return []
+    records = []
+    with path.open("r", encoding="utf-8-sig") as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                records.append(json.loads(line))
+    return records
+
+
 def _write_metadata(output_dir: Path, episodes: list[Episode], records: list[dict[str, Any]]) -> None:
     metadata = {
         "format": "xarm_openpi_lerobot_light",
@@ -127,9 +139,9 @@ def _write_metadata(output_dir: Path, episodes: list[Episode], records: list[dic
         "action_columns": STATE_COLUMNS,
         "image_key": "image",
         "wrist_image_key": "wrist_image",
-        "num_episodes": len(episodes),
+        "num_episodes": len({record["episode_index"] for record in records}),
         "num_frames": len(records),
-        "tasks": sorted({episode.task for episode in episodes}),
+        "tasks": sorted({record["raw_task"] for record in records} or {episode.task for episode in episodes}),
         "tcp_columns_available_in_raw": TCP_COLUMNS,
         "notes": ["actions are the next frame state; the final raw row of each episode is dropped"],
     }
@@ -253,13 +265,25 @@ def _try_write_lerobot_dataset(
         shutil.rmtree(output_path)
 
     if output_path.exists() and append_new and not overwrite:
-        try:
-            dataset = LeRobotDataset(repo_id=repo_id)
-        except TypeError:
-            dataset = LeRobotDataset(repo_id)
+        if hasattr(LeRobotDataset, "resume"):
+            dataset = LeRobotDataset.resume(
+                repo_id=repo_id,
+                root=output_path,
+                image_writer_threads=image_writer_threads,
+                image_writer_processes=image_writer_processes,
+            )
+        else:
+            dataset = LeRobotDataset(
+                repo_id=repo_id,
+                root=output_path,
+                batch_encoding_size=1,
+                image_writer_threads=image_writer_threads,
+                image_writer_processes=image_writer_processes,
+            )
     else:
         dataset = LeRobotDataset.create(
             repo_id=repo_id,
+            root=output_path,
             robot_type=robot_type,
             fps=fps,
             features={
@@ -300,6 +324,9 @@ def _try_write_lerobot_dataset(
                 }
             )
         dataset.save_episode()
+
+    if hasattr(dataset, "finalize"):
+        dataset.finalize()
 
     if push_to_hub:
         dataset.push_to_hub(
@@ -417,8 +444,11 @@ def convert(
         preview = "\n".join(missing_images[:10])
         raise SystemExit(f"Missing {len(missing_images)} image files. First missing files:\n{preview}")
 
-    _write_jsonl(output_dir / "data" / "train.jsonl", records, append=append_new and not overwrite)
-    _write_metadata(output_dir, episodes, records)
+    jsonl_path = output_dir / "data" / "train.jsonl"
+    append_light_dataset = append_new and not overwrite
+    _write_jsonl(jsonl_path, records, append=append_light_dataset)
+    metadata_records = _read_jsonl(jsonl_path) if append_light_dataset else records
+    _write_metadata(output_dir, episodes, metadata_records)
     hf_written = False if skip_hf_dataset else _try_write_hf_dataset(output_dir, records)
     lerobot_written = _try_write_lerobot_dataset(
         records_by_episode,
