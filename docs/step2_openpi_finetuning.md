@@ -68,6 +68,56 @@ uv run python /path/to/embodied-ai-xarm/scripts/prepare_openpi_lerobot.py \
 
 The LeRobot dataset is saved under `$HF_LEROBOT_HOME/your_hf_username/xarm_pick_place`.
 
+## Convert and Upload the Current xArm Raw Folder from WSL
+
+For the raw folder layout under `fine_tune/data/xarm_pi05_data/raw`, keep all paths POSIX-style when running inside WSL. Do not use a Windows path such as `D:\...`; if a quoted Windows path ends in `\`, Bash can swallow the following flags into the same argument.
+
+```bash
+export HF_LEROBOT_HOME="${HF_LEROBOT_HOME:-$HOME/lerobot_cache}"
+
+python fine_tune/convert_xarm_raw_to_lerobot.py \
+  --raw-root "fine_tune/data/xarm_pi05_data/raw" \
+  --output-dir "converted/xarm_pi05_light" \
+  --repo-id local/xarm_pi05_data \
+  --robot-type xarm6 \
+  --fps 10 \
+  --overwrite \
+  --skip-light-image-copy \
+  --skip-hf-dataset
+```
+
+The real LeRobot dataset is written to:
+
+```text
+$HF_LEROBOT_HOME/local/xarm_pi05_data
+```
+
+Upload that directory, not a Colab-only path like `/content/drive/...`:
+
+```bash
+python - <<'PY'
+from pathlib import Path
+from huggingface_hub import HfApi
+import os
+
+local_repo_id = "local/xarm_pi05_data"
+hub_repo_id = "MingqianW/xarm_pi05_data"
+folder = Path(os.environ.get("HF_LEROBOT_HOME", "~/lerobot_cache")).expanduser() / local_repo_id
+
+if not folder.exists():
+    raise SystemExit(f"Missing converted LeRobot dataset: {folder}")
+
+api = HfApi()
+api.create_repo(repo_id=hub_repo_id, repo_type="dataset", private=True, exist_ok=True)
+api.upload_folder(
+    folder_path=str(folder),
+    repo_id=hub_repo_id,
+    repo_type="dataset",
+    commit_message="Upload converted xArm LeRobot dataset",
+)
+PY
+```
+
 ## Add the xArm OpenPI Config
 
 Print the config snippet:

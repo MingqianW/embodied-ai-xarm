@@ -235,6 +235,30 @@ def _write_manifest(path: Path, *, converted_raw_ids: set[str]) -> None:
     path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
+def _path_arg(value: str | None, *, arg_name: str, default: Path | None = None) -> Path | None:
+    if value is None:
+        return default
+
+    suspicious_tokens = (" --", "\n", "\r", "python ")
+    if any(token in value for token in suspicious_tokens):
+        raise SystemExit(
+            f"{arg_name} looks like it swallowed later shell arguments:\n"
+            f"  {value!r}\n"
+            "Check shell quoting and line continuations. In WSL/Linux, use a POSIX path like "
+            '"/mnt/d/2026 summer project/embodied-ai-xarm/converted/xarm_pi05_light", not a Windows path ending in a backslash.'
+        )
+
+    if os.name != "nt" and len(value) >= 3 and value[1] == ":" and value[2] in ("\\", "/"):
+        drive = value[0].lower()
+        rest = value[3:].replace("\\", "/")
+        raise SystemExit(
+            f"{arg_name} is a Windows-style path in a POSIX shell: {value!r}\n"
+            f"Use '/mnt/{drive}/{rest}' under WSL, or a relative path such as 'converted/xarm_pi05_light'."
+        )
+
+    return Path(value)
+
+
 def _try_write_lerobot_dataset(
     records_by_episode: list[list[dict[str, Any]]],
     *,
@@ -314,15 +338,18 @@ def _try_write_lerobot_dataset(
 
     for episode_records in records_by_episode:
         for record in episode_records:
-            dataset.add_frame(
-                {
-                    "image": _load_rgb(record["image"]),
-                    "wrist_image": _load_rgb(record["wrist_image"]),
-                    "state": np.asarray(record["state"], dtype=np.float32),
-                    "actions": np.asarray(record["actions"], dtype=np.float32),
-                    "task": record["task"],
-                }
-            )
+            frame = {
+                "image": _load_rgb(record["image"]),
+                "wrist_image": _load_rgb(record["wrist_image"]),
+                "state": np.asarray(record["state"], dtype=np.float32),
+                "actions": np.asarray(record["actions"], dtype=np.float32),
+            }
+            try:
+                dataset.add_frame(frame, task=record["task"])
+            except TypeError as exc:
+                if "required positional argument: 'task'" in str(exc):
+                    raise
+                dataset.add_frame({**frame, "task": record["task"]})
         dataset.save_episode()
 
     if hasattr(dataset, "finalize"):
@@ -484,14 +511,14 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--raw-root",
-        type=Path,
+        type=str,
         default=None,
         help="Override raw data root from xarm_data_config.json.",
     )
     parser.add_argument(
         "--output-dir",
-        type=Path,
-        default=Path("fine_tune/data/xarm_pi05_data/lerobot"),
+        type=str,
+        default="fine_tune/data/xarm_pi05_data/lerobot",
         help="Converted dataset directory.",
     )
     parser.add_argument(
@@ -511,7 +538,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--manifest-path",
-        type=Path,
+        type=str,
         default=None,
         help="Override the append-new manifest path. Defaults under HF_LEROBOT_HOME/repo-id/meta.",
     )
@@ -542,9 +569,19 @@ def main() -> None:
     if args.overwrite and args.append_new:
         raise SystemExit("--overwrite and --append-new cannot be used together")
 
-    convert(
-        get_raw_data_root(args.raw_root),
+    raw_root = _path_arg(args.raw_root, arg_name="--raw-root")
+    output_dir = _path_arg(
         args.output_dir,
+        arg_name="--output-dir",
+        default=Path("fine_tune/data/xarm_pi05_data/lerobot"),
+    )
+    manifest_path = _path_arg(args.manifest_path, arg_name="--manifest-path")
+    if output_dir is None:
+        raise SystemExit("--output-dir could not be resolved")
+
+    convert(
+        get_raw_data_root(raw_root),
+        output_dir,
         repo_id=args.repo_id,
         robot_type=args.robot_type,
         fps=args.fps,
@@ -552,7 +589,7 @@ def main() -> None:
         hub_private=args.hub_private,
         overwrite=args.overwrite,
         append_new=args.append_new,
-        manifest_path=args.manifest_path,
+        manifest_path=manifest_path,
         skip_light_image_copy=args.skip_light_image_copy,
         skip_hf_dataset=args.skip_hf_dataset,
         image_writer_threads=args.image_writer_threads,
