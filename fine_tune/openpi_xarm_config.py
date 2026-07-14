@@ -117,7 +117,7 @@ TrainConfig(
     # ),
     optimizer=_optimizer.AdamW(clip_gradient_norm=1.0),
     ema_decay=0.999,
-    weight_loader=weight_loaders.CheckpointWeightLoader("/content/drive/MyDrive/embodied_ai_xarm/openpi_checkpoints/pi05_xarm_full_finetune/pi05_xarm_full_finetune/25000/params"),
+    weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi05_base/params"),
     batch_size=16,
     num_train_steps=20_001,
     save_interval=5000,
