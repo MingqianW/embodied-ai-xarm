@@ -5,6 +5,7 @@ This is intentionally dry-run by default. Pass --apply to modify the dataset.
 Examples:
     python fine_tune/delete_lerobot_task_parquets.py
     python fine_tune/delete_lerobot_task_parquets.py --task "pick up the red pepper"
+    python fine_tune/delete_lerobot_task_parquets.py --episode-index 45 --episode-index 146 --apply
     python fine_tune/delete_lerobot_task_parquets.py --task-file tasks_to_delete.txt --apply
     python fine_tune/delete_lerobot_task_parquets.py --task-contains largest --task-contains smallest --apply
     python fine_tune/delete_lerobot_task_parquets.py --blocked-word largest --blocked-word smallest
@@ -89,6 +90,16 @@ def task_matches(
     if normalized in exact_tasks:
         return True
     return any(normalize_task(term) in normalized for term in contains_terms)
+
+
+def parse_episode_index(value: str) -> int:
+    try:
+        episode_index = int(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(f"episode index must be an integer, got {value!r}") from exc
+    if episode_index < 0:
+        raise argparse.ArgumentTypeError(f"episode index must be non-negative, got {episode_index}")
+    return episode_index
 
 
 def read_parquet_summary(parquet_path: Path, task_map: dict[int, str]) -> dict[str, Any]:
@@ -382,6 +393,16 @@ def main() -> None:
     )
     parser.add_argument("--task", action="append", default=None, help="Exact task text to remove. Repeat as needed.")
     parser.add_argument(
+        "--episode-index",
+        action="append",
+        type=parse_episode_index,
+        default=None,
+        help=(
+            "Episode index to remove, e.g. --episode-index 45. "
+            "Repeat as needed. Can be combined with task filters."
+        ),
+    )
+    parser.add_argument(
         "--task-file",
         type=Path,
         default=None,
@@ -419,6 +440,7 @@ def main() -> None:
     args = parser.parse_args()
 
     dataset_root = (args.dataset_root or default_dataset_root()).expanduser()
+    selected_episode_indices = set(args.episode_index or [])
     exact_task_values = list(args.task or [])
     if args.task_file is not None:
         exact_task_values.extend(load_task_file(args.task_file))
@@ -426,7 +448,7 @@ def main() -> None:
     contains_terms = tuple(args.task_contains or args.blocked_word or ())
     if args.task_contains and args.blocked_word:
         contains_terms = tuple(args.task_contains + args.blocked_word)
-    if not exact_tasks and not contains_terms:
+    if not selected_episode_indices and not exact_tasks and not contains_terms:
         contains_terms = DEFAULT_TASK_CONTAINS
 
     trash_dir = args.trash_dir.expanduser() if args.trash_dir else None
@@ -437,11 +459,20 @@ def main() -> None:
 
     task_map = load_task_map(dataset_root)
     summaries = [read_parquet_summary(path, task_map) for path in parquets]
-    to_remove = [
-        summary
-        for summary in summaries
-        if any(task_matches(task, exact_tasks=exact_tasks, contains_terms=contains_terms) for task in summary["tasks"])
-    ]
+    to_remove = []
+    for summary in summaries:
+        summary_episode_indices = set(summary["episode_indices"])
+        episode_selected = bool(summary_episode_indices & selected_episode_indices)
+        task_selected = any(
+            task_matches(task, exact_tasks=exact_tasks, contains_terms=contains_terms)
+            for task in summary["tasks"]
+        )
+        if episode_selected or task_selected:
+            to_remove.append(summary)
+
+    missing_episode_indices = selected_episode_indices - {
+        episode_index for summary in summaries for episode_index in summary["episode_indices"]
+    }
     episode_indices_to_delete = {
         episode_index for summary in to_remove for episode_index in summary["episode_indices"]
     }
@@ -450,6 +481,9 @@ def main() -> None:
     remaining_parquets = [path for path in parquets if path not in set(parquet_paths_to_delete)]
 
     print(f"dataset_root: {dataset_root}")
+    print(f"episode_indices: {sorted(selected_episode_indices)}")
+    if missing_episode_indices:
+        print(f"missing requested episode indices: {sorted(missing_episode_indices)}")
     print(f"exact_tasks: {sorted(exact_task_values)}")
     print(f"task_contains: {contains_terms}")
     print(f"mode: {'APPLY' if args.apply else 'DRY RUN'}")
@@ -474,6 +508,13 @@ def main() -> None:
         task_counts.update(summary["tasks"])
         row_count += int(summary["rows"])
     print(f"rows to remove: {row_count}")
+    episode_row_counts: Counter[int] = Counter()
+    for summary in to_remove:
+        for episode_index in summary["episode_indices"]:
+            episode_row_counts[episode_index] += int(summary["rows"])
+    print("episodes to remove:")
+    for episode_index, count in episode_row_counts.most_common():
+        print(f"  {episode_index:8d}  rows={count}")
     print("tasks to remove:")
     for task, count in task_counts.most_common():
         print(f"  {count:8d}  {task}")

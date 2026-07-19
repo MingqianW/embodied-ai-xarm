@@ -2,3 +2,4 @@
 xarm_colab_payload.zip
 fine_tune/xarm_data_config.json
 .*/
+fine_tune/third_party/*
