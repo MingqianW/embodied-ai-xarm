@@ -1,0 +1,3611 @@
+{
+  "metric_direction": "lower is better",
+  "aggregate": {
+    "calibration": {
+      "base_camera": {
+        "sample_count": 12,
+        "before_geometric_loss": 0.4510760022799174,
+        "after_geometric_loss": 0.2608892560601235,
+        "relative_improvement_percent": 42.16290497798919
+      },
+      "wrist_camera": {
+        "sample_count": 12,
+        "before_geometric_loss": 1.47302328057342,
+        "after_geometric_loss": 1.2245569428272836,
+        "relative_improvement_percent": 16.86778077597071
+      }
+    },
+    "validation": {
+      "base_camera": {
+        "sample_count": 4,
+        "before_geometric_loss": 0.4192302300930023,
+        "after_geometric_loss": 0.23763306907812756,
+        "relative_improvement_percent": 43.31680970968843
+      },
+      "wrist_camera": {
+        "sample_count": 4,
+        "before_geometric_loss": 3.7215524538358054,
+        "after_geometric_loss": 0.37422376894563875,
+        "relative_improvement_percent": 89.94441772384731
+      }
+    }
+  },
+  "optimization": {
+    "base_camera": {
+      "initial_loss": 0.4865183821442755,
+      "optimized_loss": 0.2530205842108505,
+      "trials": 298,
+      "seed": 17,
+      "objective": "weighted symmetric Canny-edge distance with density and wrist orientation-profile penalties",
+      "history": [
+        {
+          "stage": "coarse",
+          "trial": 0,
+          "loss": 0.47172984493190623
+        },
+        {
+          "stage": "coarse",
+          "trial": 1,
+          "loss": 0.38807283188428626
+        },
+        {
+          "stage": "coarse",
+          "trial": 2,
+          "loss": 0.3921470204581684
+        },
+        {
+          "stage": "coarse",
+          "trial": 3,
+          "loss": 0.4140025436728899
+        },
+        {
+          "stage": "coarse",
+          "trial": 4,
+          "loss": 0.33491214302081357
+        },
+        {
+          "stage": "coarse",
+          "trial": 5,
+          "loss": 0.45022626301302116
+        },
+        {
+          "stage": "coarse",
+          "trial": 6,
+          "loss": 0.4363804111586678
+        },
+        {
+          "stage": "coarse",
+          "trial": 7,
+          "loss": 0.5072950752854177
+        },
+        {
+          "stage": "coarse",
+          "trial": 8,
+          "loss": 0.45410818676832543
+        },
+        {
+          "stage": "coarse",
+          "trial": 9,
+          "loss": 0.31400817298837086
+        },
+        {
+          "stage": "coarse",
+          "trial": 10,
+          "loss": 0.4104412915559079
+        },
+        {
+          "stage": "coarse",
+          "trial": 11,
+          "loss": 0.41582419153114264
+        },
+        {
+          "stage": "coarse",
+          "trial": 12,
+          "loss": 0.3783355602957811
+        },
+        {
+          "stage": "coarse",
+          "trial": 13,
+          "loss": 0.45682040694812887
+        },
+        {
+          "stage": "coarse",
+          "trial": 14,
+          "loss": 0.401614925350781
+        },
+        {
+          "stage": "coarse",
+          "trial": 15,
+          "loss": 0.3478609532361896
+        },
+        {
+          "stage": "coarse",
+          "trial": 16,
+          "loss": 0.3267146098575239
+        },
+        {
+          "stage": "coarse",
+          "trial": 17,
+          "loss": 0.5300846963673151
+        },
+        {
+          "stage": "coarse",
+          "trial": 18,
+          "loss": 0.46368469368746024
+        },
+        {
+          "stage": "coarse",
+          "trial": 19,
+          "loss": 0.49243508832551286
+        },
+        {
+          "stage": "coarse",
+          "trial": 20,
+          "loss": 0.48179629407698754
+        },
+        {
+          "stage": "coarse",
+          "trial": 21,
+          "loss": 0.5014926892662505
+        },
+        {
+          "stage": "coarse",
+          "trial": 22,
+          "loss": 0.43515695262080106
+        },
+        {
+          "stage": "coarse",
+          "trial": 23,
+          "loss": 0.44203610845475144
+        },
+        {
+          "stage": "coarse",
+          "trial": 24,
+          "loss": 0.45565004752494087
+        },
+        {
+          "stage": "coarse",
+          "trial": 25,
+          "loss": 0.42349654395542025
+        },
+        {
+          "stage": "coarse",
+          "trial": 26,
+          "loss": 0.3764510864774951
+        },
+        {
+          "stage": "coarse",
+          "trial": 27,
+          "loss": 0.4325573684432793
+        },
+        {
+          "stage": "coarse",
+          "trial": 28,
+          "loss": 0.4750814977943054
+        },
+        {
+          "stage": "coarse",
+          "trial": 29,
+          "loss": 0.2960523809247944
+        },
+        {
+          "stage": "coarse",
+          "trial": 30,
+          "loss": 0.3974250749404106
+        },
+        {
+          "stage": "coarse",
+          "trial": 31,
+          "loss": 0.5318862935588795
+        },
+        {
+          "stage": "coarse",
+          "trial": 32,
+          "loss": 0.4784745705078909
+        },
+        {
+          "stage": "coarse",
+          "trial": 33,
+          "loss": 0.4852376368799614
+        },
+        {
+          "stage": "coarse",
+          "trial": 34,
+          "loss": 0.4683521863944913
+        },
+        {
+          "stage": "coarse",
+          "trial": 35,
+          "loss": 0.3394424568264597
+        },
+        {
+          "stage": "coarse",
+          "trial": 36,
+          "loss": 0.4250868038572407
+        },
+        {
+          "stage": "coarse",
+          "trial": 37,
+          "loss": 0.4241084497714642
+        },
+        {
+          "stage": "coarse",
+          "trial": 38,
+          "loss": 0.7101241600773526
+        },
+        {
+          "stage": "coarse",
+          "trial": 39,
+          "loss": 0.49897105486236115
+        },
+        {
+          "stage": "coarse",
+          "trial": 40,
+          "loss": 0.4496233917867253
+        },
+        {
+          "stage": "coarse",
+          "trial": 41,
+          "loss": 0.43476917039579654
+        },
+        {
+          "stage": "coarse",
+          "trial": 42,
+          "loss": 0.4090771032504461
+        },
+        {
+          "stage": "coarse",
+          "trial": 43,
+          "loss": 0.4567326261153857
+        },
+        {
+          "stage": "coarse",
+          "trial": 44,
+          "loss": 0.4118301324989855
+        },
+        {
+          "stage": "coarse",
+          "trial": 45,
+          "loss": 0.42046791457555854
+        },
+        {
+          "stage": "coarse",
+          "trial": 46,
+          "loss": 0.3935185643753859
+        },
+        {
+          "stage": "coarse",
+          "trial": 47,
+          "loss": 0.5207969244125384
+        },
+        {
+          "stage": "coarse",
+          "trial": 48,
+          "loss": 0.46584957957185813
+        },
+        {
+          "stage": "coarse",
+          "trial": 49,
+          "loss": 0.46185534679016965
+        },
+        {
+          "stage": "coarse",
+          "trial": 50,
+          "loss": 0.37398419013181555
+        },
+        {
+          "stage": "coarse",
+          "trial": 51,
+          "loss": 0.6110104596656861
+        },
+        {
+          "stage": "coarse",
+          "trial": 52,
+          "loss": 0.4511156459145555
+        },
+        {
+          "stage": "coarse",
+          "trial": 53,
+          "loss": 0.45237293644268994
+        },
+        {
+          "stage": "coarse",
+          "trial": 54,
+          "loss": 0.48704138886642073
+        },
+        {
+          "stage": "coarse",
+          "trial": 55,
+          "loss": 0.5146140351591698
+        },
+        {
+          "stage": "coarse",
+          "trial": 56,
+          "loss": 0.5144276167954764
+        },
+        {
+          "stage": "coarse",
+          "trial": 57,
+          "loss": 0.43900717406489076
+        },
+        {
+          "stage": "coarse",
+          "trial": 58,
+          "loss": 0.49461639208753194
+        },
+        {
+          "stage": "coarse",
+          "trial": 59,
+          "loss": 0.3833124250927897
+        },
+        {
+          "stage": "coarse",
+          "trial": 60,
+          "loss": 0.40035573405209085
+        },
+        {
+          "stage": "coarse",
+          "trial": 61,
+          "loss": 0.6756403201396455
+        },
+        {
+          "stage": "coarse",
+          "trial": 62,
+          "loss": 0.40629338378124064
+        },
+        {
+          "stage": "coarse",
+          "trial": 63,
+          "loss": 0.46901556544538414
+        },
+        {
+          "stage": "coarse",
+          "trial": 64,
+          "loss": 0.3658861269041474
+        },
+        {
+          "stage": "coarse",
+          "trial": 65,
+          "loss": 0.471952463930585
+        },
+        {
+          "stage": "coarse",
+          "trial": 66,
+          "loss": 0.4489371974435777
+        },
+        {
+          "stage": "coarse",
+          "trial": 67,
+          "loss": 0.5293811204119656
+        },
+        {
+          "stage": "coarse",
+          "trial": 68,
+          "loss": 0.4666974144865695
+        },
+        {
+          "stage": "coarse",
+          "trial": 69,
+          "loss": 0.44045539974782927
+        },
+        {
+          "stage": "coarse",
+          "trial": 70,
+          "loss": 0.4567118016668529
+        },
+        {
+          "stage": "coarse",
+          "trial": 71,
+          "loss": 0.3350585716437279
+        },
+        {
+          "stage": "coarse",
+          "trial": 72,
+          "loss": 0.4673062960197964
+        },
+        {
+          "stage": "coarse",
+          "trial": 73,
+          "loss": 0.40114257537594866
+        },
+        {
+          "stage": "coarse",
+          "trial": 74,
+          "loss": 0.4316962443085172
+        },
+        {
+          "stage": "coarse",
+          "trial": 75,
+          "loss": 0.4611256934403166
+        },
+        {
+          "stage": "coarse",
+          "trial": 76,
+          "loss": 0.4222798092544036
+        },
+        {
+          "stage": "coarse",
+          "trial": 77,
+          "loss": 0.3673213834697942
+        },
+        {
+          "stage": "coarse",
+          "trial": 78,
+          "loss": 0.4944222280976838
+        },
+        {
+          "stage": "coarse",
+          "trial": 79,
+          "loss": 0.5170948569799354
+        },
+        {
+          "stage": "coarse",
+          "trial": 80,
+          "loss": 0.4064814392280917
+        },
+        {
+          "stage": "coarse",
+          "trial": 81,
+          "loss": 0.4643149325524946
+        },
+        {
+          "stage": "coarse",
+          "trial": 82,
+          "loss": 0.444575700369736
+        },
+        {
+          "stage": "coarse",
+          "trial": 83,
+          "loss": 0.4246919570619312
+        },
+        {
+          "stage": "coarse",
+          "trial": 84,
+          "loss": 0.4018682530578549
+        },
+        {
+          "stage": "coarse",
+          "trial": 85,
+          "loss": 0.4291651347111299
+        },
+        {
+          "stage": "coarse",
+          "trial": 86,
+          "loss": 0.4378121674653462
+        },
+        {
+          "stage": "coarse",
+          "trial": 87,
+          "loss": 0.48549248202712814
+        },
+        {
+          "stage": "coarse",
+          "trial": 88,
+          "loss": 0.43814330130933854
+        },
+        {
+          "stage": "coarse",
+          "trial": 89,
+          "loss": 0.3796799034875012
+        },
+        {
+          "stage": "coarse",
+          "trial": 90,
+          "loss": 0.4175990602527815
+        },
+        {
+          "stage": "coarse",
+          "trial": 91,
+          "loss": 0.46889037415801954
+        },
+        {
+          "stage": "coarse",
+          "trial": 92,
+          "loss": 0.40809418555854565
+        },
+        {
+          "stage": "coarse",
+          "trial": 93,
+          "loss": 0.3218772412794794
+        },
+        {
+          "stage": "coarse",
+          "trial": 94,
+          "loss": 0.5033667663154704
+        },
+        {
+          "stage": "coarse",
+          "trial": 95,
+          "loss": 0.5863679572180168
+        },
+        {
+          "stage": "coarse",
+          "trial": 96,
+          "loss": 0.43772449616388664
+        },
+        {
+          "stage": "coarse",
+          "trial": 97,
+          "loss": 0.42645897616876605
+        },
+        {
+          "stage": "coarse",
+          "trial": 98,
+          "loss": 0.45996487218844956
+        },
+        {
+          "stage": "coarse",
+          "trial": 99,
+          "loss": 0.47315793989056487
+        },
+        {
+          "stage": "coarse",
+          "trial": 100,
+          "loss": 0.41680694353982084
+        },
+        {
+          "stage": "coarse",
+          "trial": 101,
+          "loss": 0.4317783550469381
+        },
+        {
+          "stage": "coarse",
+          "trial": 102,
+          "loss": 0.5203297514987801
+        },
+        {
+          "stage": "coarse",
+          "trial": 103,
+          "loss": 0.5705851975444317
+        },
+        {
+          "stage": "coarse",
+          "trial": 104,
+          "loss": 0.4881170323108533
+        },
+        {
+          "stage": "coarse",
+          "trial": 105,
+          "loss": 0.5744222910783072
+        },
+        {
+          "stage": "coarse",
+          "trial": 106,
+          "loss": 0.4864348460748316
+        },
+        {
+          "stage": "coarse",
+          "trial": 107,
+          "loss": 0.5321304319516796
+        },
+        {
+          "stage": "coarse",
+          "trial": 108,
+          "loss": 0.4252452214054838
+        },
+        {
+          "stage": "coarse",
+          "trial": 109,
+          "loss": 0.4551206641523786
+        },
+        {
+          "stage": "coarse",
+          "trial": 110,
+          "loss": 0.43149205926682777
+        },
+        {
+          "stage": "coarse",
+          "trial": 111,
+          "loss": 0.40987186175294177
+        },
+        {
+          "stage": "coarse",
+          "trial": 112,
+          "loss": 0.4801695461781846
+        },
+        {
+          "stage": "coarse",
+          "trial": 113,
+          "loss": 0.4494702509424406
+        },
+        {
+          "stage": "coarse",
+          "trial": 114,
+          "loss": 0.3783424175031235
+        },
+        {
+          "stage": "coarse",
+          "trial": 115,
+          "loss": 0.3792023280133698
+        },
+        {
+          "stage": "coarse",
+          "trial": 116,
+          "loss": 0.4722883112308656
+        },
+        {
+          "stage": "coarse",
+          "trial": 117,
+          "loss": 0.5177632347543762
+        },
+        {
+          "stage": "coarse",
+          "trial": 118,
+          "loss": 0.455392726900392
+        },
+        {
+          "stage": "coarse",
+          "trial": 119,
+          "loss": 0.3453867725982584
+        },
+        {
+          "stage": "coarse",
+          "trial": 120,
+          "loss": 0.44377598934487633
+        },
+        {
+          "stage": "coarse",
+          "trial": 121,
+          "loss": 0.39875310100125255
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 0,
+          "loss": 0.2991850565757712
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 0,
+          "loss": 0.29750820517134996
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 1,
+          "loss": 0.2992967618031745
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 1,
+          "loss": 0.33732954588652087
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 2,
+          "loss": 0.30608501622009215
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 2,
+          "loss": 0.2951664639903425
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 3,
+          "loss": 0.30751509545608435
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 3,
+          "loss": 0.2980268881157609
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 4,
+          "loss": 0.29337013481962265
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 4,
+          "loss": 0.2951664639903425
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 5,
+          "loss": 0.2968272276677791
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 5,
+          "loss": 0.29463565637113565
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 6,
+          "loss": 0.3042410556631709
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 6,
+          "loss": 0.2821274952382603
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 7,
+          "loss": 0.337707257458643
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 7,
+          "loss": 0.272241481611208
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 0,
+          "loss": 0.2792544454893718
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 0,
+          "loss": 0.27122813156856784
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 1,
+          "loss": 0.28971425606687734
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 1,
+          "loss": 0.29402705511448574
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 2,
+          "loss": 0.2755393001046297
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 2,
+          "loss": 0.2847549159882998
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 3,
+          "loss": 0.27445124945775945
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 3,
+          "loss": 0.29006624522377655
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 4,
+          "loss": 0.28512245982072704
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 4,
+          "loss": 0.2873193770048736
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 5,
+          "loss": 0.2708755161061254
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 5,
+          "loss": 0.27392690593278163
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 6,
+          "loss": 0.28158060334401336
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 6,
+          "loss": 0.27363613848828944
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 7,
+          "loss": 0.2925111457468106
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 7,
+          "loss": 0.288765084077355
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 0,
+          "loss": 0.27094631341676956
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 0,
+          "loss": 0.2808534654503663
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 1,
+          "loss": 0.28763633671819067
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 1,
+          "loss": 0.29777328882227605
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 2,
+          "loss": 0.27446515958979145
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 2,
+          "loss": 0.28653939397594475
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 3,
+          "loss": 0.27313862057588095
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 3,
+          "loss": 0.2891687896129437
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 4,
+          "loss": 0.2883877532336541
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 4,
+          "loss": 0.28474598292879344
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 5,
+          "loss": 0.2708755161061254
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 5,
+          "loss": 0.27392690593278163
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 6,
+          "loss": 0.28158060334401336
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 6,
+          "loss": 0.27363613848828944
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 7,
+          "loss": 0.2925111457468106
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 7,
+          "loss": 0.288765084077355
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 0,
+          "loss": 0.2738663377412515
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 0,
+          "loss": 0.2761068111645756
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 1,
+          "loss": 0.28051508606851455
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 1,
+          "loss": 0.2787162816243517
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 2,
+          "loss": 0.27247121175249056
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 2,
+          "loss": 0.2774362260376957
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 3,
+          "loss": 0.2687740271359924
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 3,
+          "loss": 0.2708755161061254
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 4,
+          "loss": 0.2742564252453595
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 4,
+          "loss": 0.2710356475868089
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 5,
+          "loss": 0.2687740271359924
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 5,
+          "loss": 0.26790571280581726
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 6,
+          "loss": 0.27282435849239073
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 6,
+          "loss": 0.26888800659705836
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 7,
+          "loss": 0.27168532305554854
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 7,
+          "loss": 0.27466706082817227
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 0,
+          "loss": 0.2692917363878326
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 0,
+          "loss": 0.2685048455479168
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 1,
+          "loss": 0.27760535674368875
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 1,
+          "loss": 0.2738523488039009
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 2,
+          "loss": 0.26641732541142105
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 2,
+          "loss": 0.26790571280581726
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 3,
+          "loss": 0.2705147587202814
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 3,
+          "loss": 0.26997701325667695
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 4,
+          "loss": 0.2692882858979241
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 4,
+          "loss": 0.2685940079813864
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 5,
+          "loss": 0.2707527092527077
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 5,
+          "loss": 0.26808280301829995
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 6,
+          "loss": 0.2682676999246233
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 6,
+          "loss": 0.26710908315663406
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 7,
+          "loss": 0.2745183570459637
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 7,
+          "loss": 0.27102816276502145
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 0,
+          "loss": 0.26615532242273043
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 0,
+          "loss": 0.26641732541142105
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 1,
+          "loss": 0.2693739383863073
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 1,
+          "loss": 0.2783476741300242
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 2,
+          "loss": 0.27127478706276076
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 2,
+          "loss": 0.2692917363878326
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 3,
+          "loss": 0.2734257184308342
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 3,
+          "loss": 0.2735591503303347
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 4,
+          "loss": 0.271476144169792
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 4,
+          "loss": 0.27638492247903934
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 5,
+          "loss": 0.26943759788756005
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 5,
+          "loss": 0.26873958081358207
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 6,
+          "loss": 0.27391943427272725
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 6,
+          "loss": 0.26441873681891054
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 7,
+          "loss": 0.2726396555802698
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 7,
+          "loss": 0.2649254097973117
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 0,
+          "loss": 0.2657170310467825
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 0,
+          "loss": 0.26710908315663406
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 1,
+          "loss": 0.26379398846427543
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 1,
+          "loss": 0.26441873681891054
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 2,
+          "loss": 0.2584448402601076
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 2,
+          "loss": 0.26379398846427543
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 3,
+          "loss": 0.2571287467413698
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 3,
+          "loss": 0.2584448402601076
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 4,
+          "loss": 0.2650437205429414
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 4,
+          "loss": 0.26341489665882223
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 5,
+          "loss": 0.2610947948025411
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 5,
+          "loss": 0.2606908744592546
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 6,
+          "loss": 0.26554575908848516
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 6,
+          "loss": 0.25493439769084797
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 7,
+          "loss": 0.26007849570779873
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 7,
+          "loss": 0.2581576161715939
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 0,
+          "loss": 0.25898456305900774
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 0,
+          "loss": 0.2590713834471571
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 1,
+          "loss": 0.26033061995444945
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 1,
+          "loss": 0.26093745712745575
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 2,
+          "loss": 0.2588095956419279
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 2,
+          "loss": 0.2600405216096809
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 3,
+          "loss": 0.2593537086351091
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 3,
+          "loss": 0.25642282195994515
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 4,
+          "loss": 0.26423012277108493
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 4,
+          "loss": 0.2530205842108505
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 5,
+          "loss": 0.2570866602745895
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 5,
+          "loss": 0.26228406860745357
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 6,
+          "loss": 0.26341489665882223
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 6,
+          "loss": 0.25446089472879735
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 7,
+          "loss": 0.2582222537051615
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 7,
+          "loss": 0.2628748283768008
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 0,
+          "loss": 0.2563948464322616
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 0,
+          "loss": 0.2623529174064377
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 1,
+          "loss": 0.2625247273131824
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 1,
+          "loss": 0.25979260119631664
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 2,
+          "loss": 0.2574517218368351
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 2,
+          "loss": 0.26295473283712034
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 3,
+          "loss": 0.25692816748636205
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 3,
+          "loss": 0.2575450341459384
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 4,
+          "loss": 0.25493439769084797
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 4,
+          "loss": 0.2613385812914483
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 5,
+          "loss": 0.2570866602745895
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 5,
+          "loss": 0.26228406860745357
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 6,
+          "loss": 0.26341489665882223
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 6,
+          "loss": 0.25446089472879735
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 7,
+          "loss": 0.2582222537051615
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 7,
+          "loss": 0.2628748283768008
+        },
+        {
+          "stage": "local",
+          "pass": 2,
+          "dimension": 0,
+          "loss": 0.25763628005465905
+        },
+        {
+          "stage": "local",
+          "pass": 2,
+          "dimension": 0,
+          "loss": 0.25807924419873485
+        },
+        {
+          "stage": "local",
+          "pass": 2,
+          "dimension": 1,
+          "loss": 0.2586454947607626
+        },
+        {
+          "stage": "local",
+          "pass": 2,
+          "dimension": 1,
+          "loss": 0.2560857095201318
+        },
+        {
+          "stage": "local",
+          "pass": 2,
+          "dimension": 2,
+          "loss": 0.25547286713052625
+        },
+        {
+          "stage": "local",
+          "pass": 2,
+          "dimension": 2,
+          "loss": 0.25995617577440405
+        },
+        {
+          "stage": "local",
+          "pass": 2,
+          "dimension": 3,
+          "loss": 0.25708439298475355
+        },
+        {
+          "stage": "local",
+          "pass": 2,
+          "dimension": 3,
+          "loss": 0.2565962425174681
+        },
+        {
+          "stage": "local",
+          "pass": 2,
+          "dimension": 4,
+          "loss": 0.2533245843479871
+        },
+        {
+          "stage": "local",
+          "pass": 2,
+          "dimension": 4,
+          "loss": 0.25967365625652983
+        },
+        {
+          "stage": "local",
+          "pass": 2,
+          "dimension": 5,
+          "loss": 0.2561233395778271
+        },
+        {
+          "stage": "local",
+          "pass": 2,
+          "dimension": 5,
+          "loss": 0.260223697223133
+        },
+        {
+          "stage": "local",
+          "pass": 2,
+          "dimension": 6,
+          "loss": 0.25849413063635196
+        },
+        {
+          "stage": "local",
+          "pass": 2,
+          "dimension": 6,
+          "loss": 0.25639160377293596
+        },
+        {
+          "stage": "local",
+          "pass": 2,
+          "dimension": 7,
+          "loss": 0.25717901461498377
+        },
+        {
+          "stage": "local",
+          "pass": 2,
+          "dimension": 7,
+          "loss": 0.25937491985006234
+        },
+        {
+          "stage": "local",
+          "pass": 3,
+          "dimension": 0,
+          "loss": 0.25506249708039647
+        },
+        {
+          "stage": "local",
+          "pass": 3,
+          "dimension": 0,
+          "loss": 0.2556774953311329
+        },
+        {
+          "stage": "local",
+          "pass": 3,
+          "dimension": 1,
+          "loss": 0.25722099603047455
+        },
+        {
+          "stage": "local",
+          "pass": 3,
+          "dimension": 1,
+          "loss": 0.25364241589834047
+        },
+        {
+          "stage": "local",
+          "pass": 3,
+          "dimension": 2,
+          "loss": 0.255961098729318
+        },
+        {
+          "stage": "local",
+          "pass": 3,
+          "dimension": 2,
+          "loss": 0.25344062102468784
+        },
+        {
+          "stage": "local",
+          "pass": 3,
+          "dimension": 3,
+          "loss": 0.2566798103164763
+        },
+        {
+          "stage": "local",
+          "pass": 3,
+          "dimension": 3,
+          "loss": 0.25652372434728304
+        },
+        {
+          "stage": "local",
+          "pass": 3,
+          "dimension": 4,
+          "loss": 0.25834137382982575
+        },
+        {
+          "stage": "local",
+          "pass": 3,
+          "dimension": 4,
+          "loss": 0.2563928849282238
+        },
+        {
+          "stage": "local",
+          "pass": 3,
+          "dimension": 5,
+          "loss": 0.2580319355247748
+        },
+        {
+          "stage": "local",
+          "pass": 3,
+          "dimension": 5,
+          "loss": 0.2568429358245598
+        },
+        {
+          "stage": "local",
+          "pass": 3,
+          "dimension": 6,
+          "loss": 0.25843355288614606
+        },
+        {
+          "stage": "local",
+          "pass": 3,
+          "dimension": 6,
+          "loss": 0.25327812092678187
+        },
+        {
+          "stage": "local",
+          "pass": 3,
+          "dimension": 7,
+          "loss": 0.2547433057080683
+        },
+        {
+          "stage": "local",
+          "pass": 3,
+          "dimension": 7,
+          "loss": 0.25696939008609887
+        }
+      ]
+    },
+    "wrist_camera": {
+      "initial_loss": 1.6057713484285543,
+      "optimized_loss": 0.354300511334617,
+      "trials": 298,
+      "seed": 18,
+      "objective": "weighted symmetric Canny-edge distance with density and wrist orientation-profile penalties",
+      "history": [
+        {
+          "stage": "coarse",
+          "trial": 0,
+          "loss": 2.377062145744931
+        },
+        {
+          "stage": "coarse",
+          "trial": 1,
+          "loss": 0.7880463724418543
+        },
+        {
+          "stage": "coarse",
+          "trial": 2,
+          "loss": 3.136895315452844
+        },
+        {
+          "stage": "coarse",
+          "trial": 3,
+          "loss": 5.357891739603046
+        },
+        {
+          "stage": "coarse",
+          "trial": 4,
+          "loss": 5.701067023213476
+        },
+        {
+          "stage": "coarse",
+          "trial": 5,
+          "loss": 3.412893456256691
+        },
+        {
+          "stage": "coarse",
+          "trial": 6,
+          "loss": 0.7387852705972761
+        },
+        {
+          "stage": "coarse",
+          "trial": 7,
+          "loss": 2.2880474090014307
+        },
+        {
+          "stage": "coarse",
+          "trial": 8,
+          "loss": 3.762276384990907
+        },
+        {
+          "stage": "coarse",
+          "trial": 9,
+          "loss": 4.243868890853584
+        },
+        {
+          "stage": "coarse",
+          "trial": 10,
+          "loss": 5.324774940165108
+        },
+        {
+          "stage": "coarse",
+          "trial": 11,
+          "loss": 5.33780721347046
+        },
+        {
+          "stage": "coarse",
+          "trial": 12,
+          "loss": 3.7780660857989536
+        },
+        {
+          "stage": "coarse",
+          "trial": 13,
+          "loss": 2.2924377900954562
+        },
+        {
+          "stage": "coarse",
+          "trial": 14,
+          "loss": 5.362523162115711
+        },
+        {
+          "stage": "coarse",
+          "trial": 15,
+          "loss": 2.301445830912058
+        },
+        {
+          "stage": "coarse",
+          "trial": 16,
+          "loss": 0.8022848735681469
+        },
+        {
+          "stage": "coarse",
+          "trial": 17,
+          "loss": 5.346208689375074
+        },
+        {
+          "stage": "coarse",
+          "trial": 18,
+          "loss": 0.5457223800077748
+        },
+        {
+          "stage": "coarse",
+          "trial": 19,
+          "loss": 1.5817264698962128
+        },
+        {
+          "stage": "coarse",
+          "trial": 20,
+          "loss": 3.4463151643821246
+        },
+        {
+          "stage": "coarse",
+          "trial": 21,
+          "loss": 0.792275898761677
+        },
+        {
+          "stage": "coarse",
+          "trial": 22,
+          "loss": 2.774851486193473
+        },
+        {
+          "stage": "coarse",
+          "trial": 23,
+          "loss": 5.278999102830688
+        },
+        {
+          "stage": "coarse",
+          "trial": 24,
+          "loss": 1.9106375466024201
+        },
+        {
+          "stage": "coarse",
+          "trial": 25,
+          "loss": 1.658915520153352
+        },
+        {
+          "stage": "coarse",
+          "trial": 26,
+          "loss": 2.307065072183263
+        },
+        {
+          "stage": "coarse",
+          "trial": 27,
+          "loss": 5.2805592858071835
+        },
+        {
+          "stage": "coarse",
+          "trial": 28,
+          "loss": 4.510721218229308
+        },
+        {
+          "stage": "coarse",
+          "trial": 29,
+          "loss": 5.77513259109953
+        },
+        {
+          "stage": "coarse",
+          "trial": 30,
+          "loss": 2.2519904174423706
+        },
+        {
+          "stage": "coarse",
+          "trial": 31,
+          "loss": 5.35044569890402
+        },
+        {
+          "stage": "coarse",
+          "trial": 32,
+          "loss": 5.344430953839594
+        },
+        {
+          "stage": "coarse",
+          "trial": 33,
+          "loss": 5.330475378899319
+        },
+        {
+          "stage": "coarse",
+          "trial": 34,
+          "loss": 0.4600482086879584
+        },
+        {
+          "stage": "coarse",
+          "trial": 35,
+          "loss": 1.1191926513178445
+        },
+        {
+          "stage": "coarse",
+          "trial": 36,
+          "loss": 1.6263388800703156
+        },
+        {
+          "stage": "coarse",
+          "trial": 37,
+          "loss": 5.325108595577306
+        },
+        {
+          "stage": "coarse",
+          "trial": 38,
+          "loss": 1.2061092148142085
+        },
+        {
+          "stage": "coarse",
+          "trial": 39,
+          "loss": 4.231921119733193
+        },
+        {
+          "stage": "coarse",
+          "trial": 40,
+          "loss": 0.6994877980056365
+        },
+        {
+          "stage": "coarse",
+          "trial": 41,
+          "loss": 3.823220387514449
+        },
+        {
+          "stage": "coarse",
+          "trial": 42,
+          "loss": 5.376994994628354
+        },
+        {
+          "stage": "coarse",
+          "trial": 43,
+          "loss": 1.0501586744050488
+        },
+        {
+          "stage": "coarse",
+          "trial": 44,
+          "loss": 3.794407690134247
+        },
+        {
+          "stage": "coarse",
+          "trial": 45,
+          "loss": 0.4064621932211592
+        },
+        {
+          "stage": "coarse",
+          "trial": 46,
+          "loss": 4.556079057399685
+        },
+        {
+          "stage": "coarse",
+          "trial": 47,
+          "loss": 3.691818435254501
+        },
+        {
+          "stage": "coarse",
+          "trial": 48,
+          "loss": 3.7780818054757974
+        },
+        {
+          "stage": "coarse",
+          "trial": 49,
+          "loss": 4.20111167251126
+        },
+        {
+          "stage": "coarse",
+          "trial": 50,
+          "loss": 2.3143222371614183
+        },
+        {
+          "stage": "coarse",
+          "trial": 51,
+          "loss": 3.7685567941677895
+        },
+        {
+          "stage": "coarse",
+          "trial": 52,
+          "loss": 3.781984617795825
+        },
+        {
+          "stage": "coarse",
+          "trial": 53,
+          "loss": 1.3787204200207015
+        },
+        {
+          "stage": "coarse",
+          "trial": 54,
+          "loss": 3.738103274146492
+        },
+        {
+          "stage": "coarse",
+          "trial": 55,
+          "loss": 5.826283595254075
+        },
+        {
+          "stage": "coarse",
+          "trial": 56,
+          "loss": 3.7955882671075334
+        },
+        {
+          "stage": "coarse",
+          "trial": 57,
+          "loss": 2.7859019000808467
+        },
+        {
+          "stage": "coarse",
+          "trial": 58,
+          "loss": 1.282442263293432
+        },
+        {
+          "stage": "coarse",
+          "trial": 59,
+          "loss": 2.344917566141033
+        },
+        {
+          "stage": "coarse",
+          "trial": 60,
+          "loss": 5.638964550876043
+        },
+        {
+          "stage": "coarse",
+          "trial": 61,
+          "loss": 2.360187503340639
+        },
+        {
+          "stage": "coarse",
+          "trial": 62,
+          "loss": 2.751513879488097
+        },
+        {
+          "stage": "coarse",
+          "trial": 63,
+          "loss": 3.2493313794919456
+        },
+        {
+          "stage": "coarse",
+          "trial": 64,
+          "loss": 5.980980748723821
+        },
+        {
+          "stage": "coarse",
+          "trial": 65,
+          "loss": 4.058276824098422
+        },
+        {
+          "stage": "coarse",
+          "trial": 66,
+          "loss": 5.2932243823715215
+        },
+        {
+          "stage": "coarse",
+          "trial": 67,
+          "loss": 2.0739924572158674
+        },
+        {
+          "stage": "coarse",
+          "trial": 68,
+          "loss": 5.722247756605265
+        },
+        {
+          "stage": "coarse",
+          "trial": 69,
+          "loss": 5.357469421230286
+        },
+        {
+          "stage": "coarse",
+          "trial": 70,
+          "loss": 3.4103036983402903
+        },
+        {
+          "stage": "coarse",
+          "trial": 71,
+          "loss": 1.2464145565836098
+        },
+        {
+          "stage": "coarse",
+          "trial": 72,
+          "loss": 5.356120937201319
+        },
+        {
+          "stage": "coarse",
+          "trial": 73,
+          "loss": 5.321786092371892
+        },
+        {
+          "stage": "coarse",
+          "trial": 74,
+          "loss": 2.5814391408846746
+        },
+        {
+          "stage": "coarse",
+          "trial": 75,
+          "loss": 5.567863517820506
+        },
+        {
+          "stage": "coarse",
+          "trial": 76,
+          "loss": 4.773382662037838
+        },
+        {
+          "stage": "coarse",
+          "trial": 77,
+          "loss": 5.545459467805829
+        },
+        {
+          "stage": "coarse",
+          "trial": 78,
+          "loss": 3.075429206772352
+        },
+        {
+          "stage": "coarse",
+          "trial": 79,
+          "loss": 5.366593296280021
+        },
+        {
+          "stage": "coarse",
+          "trial": 80,
+          "loss": 3.8730172639414664
+        },
+        {
+          "stage": "coarse",
+          "trial": 81,
+          "loss": 5.405480969786345
+        },
+        {
+          "stage": "coarse",
+          "trial": 82,
+          "loss": 2.13466162403863
+        },
+        {
+          "stage": "coarse",
+          "trial": 83,
+          "loss": 2.9070804545111044
+        },
+        {
+          "stage": "coarse",
+          "trial": 84,
+          "loss": 5.29189368867999
+        },
+        {
+          "stage": "coarse",
+          "trial": 85,
+          "loss": 5.345884576421429
+        },
+        {
+          "stage": "coarse",
+          "trial": 86,
+          "loss": 5.74665751652203
+        },
+        {
+          "stage": "coarse",
+          "trial": 87,
+          "loss": 5.897029175160781
+        },
+        {
+          "stage": "coarse",
+          "trial": 88,
+          "loss": 5.286634978738456
+        },
+        {
+          "stage": "coarse",
+          "trial": 89,
+          "loss": 5.339482980027418
+        },
+        {
+          "stage": "coarse",
+          "trial": 90,
+          "loss": 5.296620761718524
+        },
+        {
+          "stage": "coarse",
+          "trial": 91,
+          "loss": 5.361116031727021
+        },
+        {
+          "stage": "coarse",
+          "trial": 92,
+          "loss": 1.1977595056942756
+        },
+        {
+          "stage": "coarse",
+          "trial": 93,
+          "loss": 5.276693019199107
+        },
+        {
+          "stage": "coarse",
+          "trial": 94,
+          "loss": 4.149333363480385
+        },
+        {
+          "stage": "coarse",
+          "trial": 95,
+          "loss": 5.392896699719401
+        },
+        {
+          "stage": "coarse",
+          "trial": 96,
+          "loss": 5.259051025302094
+        },
+        {
+          "stage": "coarse",
+          "trial": 97,
+          "loss": 1.49310369295608
+        },
+        {
+          "stage": "coarse",
+          "trial": 98,
+          "loss": 5.299364836569766
+        },
+        {
+          "stage": "coarse",
+          "trial": 99,
+          "loss": 1.2061051283956374
+        },
+        {
+          "stage": "coarse",
+          "trial": 100,
+          "loss": 2.4478284201057043
+        },
+        {
+          "stage": "coarse",
+          "trial": 101,
+          "loss": 5.375570797463997
+        },
+        {
+          "stage": "coarse",
+          "trial": 102,
+          "loss": 2.7737672714281443
+        },
+        {
+          "stage": "coarse",
+          "trial": 103,
+          "loss": 4.271821735879434
+        },
+        {
+          "stage": "coarse",
+          "trial": 104,
+          "loss": 4.138058717598347
+        },
+        {
+          "stage": "coarse",
+          "trial": 105,
+          "loss": 2.416107103449874
+        },
+        {
+          "stage": "coarse",
+          "trial": 106,
+          "loss": 0.9083344489409442
+        },
+        {
+          "stage": "coarse",
+          "trial": 107,
+          "loss": 1.1194900361259494
+        },
+        {
+          "stage": "coarse",
+          "trial": 108,
+          "loss": 5.337526807382853
+        },
+        {
+          "stage": "coarse",
+          "trial": 109,
+          "loss": 0.5362734291951942
+        },
+        {
+          "stage": "coarse",
+          "trial": 110,
+          "loss": 2.250820172864541
+        },
+        {
+          "stage": "coarse",
+          "trial": 111,
+          "loss": 4.315849209861773
+        },
+        {
+          "stage": "coarse",
+          "trial": 112,
+          "loss": 2.177591643160232
+        },
+        {
+          "stage": "coarse",
+          "trial": 113,
+          "loss": 3.7483839851020044
+        },
+        {
+          "stage": "coarse",
+          "trial": 114,
+          "loss": 4.296838883277843
+        },
+        {
+          "stage": "coarse",
+          "trial": 115,
+          "loss": 2.8487290015413125
+        },
+        {
+          "stage": "coarse",
+          "trial": 116,
+          "loss": 5.337197781692684
+        },
+        {
+          "stage": "coarse",
+          "trial": 117,
+          "loss": 1.948895164541952
+        },
+        {
+          "stage": "coarse",
+          "trial": 118,
+          "loss": 1.8098232856660714
+        },
+        {
+          "stage": "coarse",
+          "trial": 119,
+          "loss": 3.9830327932735394
+        },
+        {
+          "stage": "coarse",
+          "trial": 120,
+          "loss": 5.325541871820696
+        },
+        {
+          "stage": "coarse",
+          "trial": 121,
+          "loss": 1.4634962172489747
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 0,
+          "loss": 0.4330457476525861
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 0,
+          "loss": 0.4531335336916286
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 1,
+          "loss": 0.4612856194286157
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 1,
+          "loss": 0.40486809615104413
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 2,
+          "loss": 3.6292074537723082
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 2,
+          "loss": 0.42190793009114513
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 3,
+          "loss": 0.40955252672456594
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 3,
+          "loss": 0.4043860297693995
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 4,
+          "loss": 0.39239439479814486
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 4,
+          "loss": 0.4043860297693995
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 5,
+          "loss": 0.3873285254791849
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 5,
+          "loss": 0.39239439479814486
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 6,
+          "loss": 0.3942280427687365
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 6,
+          "loss": 0.4116750644657792
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 7,
+          "loss": 0.3893600913360605
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 7,
+          "loss": 0.38609299937766006
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 0,
+          "loss": 0.4013297380213603
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 0,
+          "loss": 0.41643099649792814
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 1,
+          "loss": 0.3898710400769434
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 1,
+          "loss": 0.4118433568491632
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 2,
+          "loss": 3.6091360602782703
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 2,
+          "loss": 0.3959770384070318
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 3,
+          "loss": 0.40718129528415675
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 3,
+          "loss": 0.38311553968846046
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 4,
+          "loss": 0.37640566315074314
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 4,
+          "loss": 0.38311553968846046
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 5,
+          "loss": 0.3738538539365702
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 5,
+          "loss": 0.37640566315074314
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 6,
+          "loss": 0.3975638245431973
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 6,
+          "loss": 0.3922232751684825
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 7,
+          "loss": 0.3739495384708228
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 7,
+          "loss": 0.3738538539365702
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 0,
+          "loss": 0.38698057710560685
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 0,
+          "loss": 0.42157196294676497
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 1,
+          "loss": 0.3871851777397031
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 1,
+          "loss": 0.39536515923678933
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 2,
+          "loss": 3.607057109081462
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 2,
+          "loss": 0.3977105126533814
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 3,
+          "loss": 0.37903830265361027
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 3,
+          "loss": 0.3777921298838015
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 4,
+          "loss": 0.37701189304578064
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 4,
+          "loss": 0.37990462728050467
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 5,
+          "loss": 0.3742402907850582
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 5,
+          "loss": 0.37640566315074314
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 6,
+          "loss": 0.3975638245431973
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 6,
+          "loss": 0.3922232751684825
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 7,
+          "loss": 0.3739495384708228
+        },
+        {
+          "stage": "local",
+          "pass": 0,
+          "dimension": 7,
+          "loss": 0.3738538539365702
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 0,
+          "loss": 0.37490683616672765
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 0,
+          "loss": 0.37922964469734544
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 1,
+          "loss": 0.3692541056738335
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 1,
+          "loss": 0.3738538539365702
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 2,
+          "loss": 2.0156036880550188
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 2,
+          "loss": 0.3652273933130383
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 3,
+          "loss": 0.3644297957847243
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 3,
+          "loss": 0.3652273933130383
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 4,
+          "loss": 0.363485226032415
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 4,
+          "loss": 0.3644297957847243
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 5,
+          "loss": 0.3661435414855382
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 5,
+          "loss": 0.3640438838599552
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 6,
+          "loss": 0.38181261188535853
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 6,
+          "loss": 0.36716787791318334
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 7,
+          "loss": 0.3623837387673109
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 7,
+          "loss": 0.363485226032415
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 0,
+          "loss": 0.3611205429255357
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 0,
+          "loss": 0.3623837387673109
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 1,
+          "loss": 0.3807347235718583
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 1,
+          "loss": 0.35934425952731347
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 2,
+          "loss": 0.3722109058295941
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 2,
+          "loss": 0.36119890064657884
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 3,
+          "loss": 0.3621694484013115
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 3,
+          "loss": 0.3595009970600621
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 4,
+          "loss": 0.3622780120891888
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 4,
+          "loss": 0.3613941921071011
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 5,
+          "loss": 0.3589493494490543
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 5,
+          "loss": 0.35934425952731347
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 6,
+          "loss": 0.3665787667730058
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 6,
+          "loss": 0.3647881371885482
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 7,
+          "loss": 0.3564488696805079
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 7,
+          "loss": 0.3589493494490543
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 0,
+          "loss": 0.36484666410005745
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 0,
+          "loss": 0.3654653123500199
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 1,
+          "loss": 0.36425726507413947
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 1,
+          "loss": 0.3604747519217457
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 2,
+          "loss": 0.36815148187863533
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 2,
+          "loss": 0.3645007384875051
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 3,
+          "loss": 0.358690857775756
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 3,
+          "loss": 0.35913810828744214
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 4,
+          "loss": 0.3549402731672542
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 4,
+          "loss": 0.3564488696805079
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 5,
+          "loss": 0.3569673399626365
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 5,
+          "loss": 0.3555155129250633
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 6,
+          "loss": 0.36679974930703574
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 6,
+          "loss": 0.35839558302745306
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 7,
+          "loss": 0.35646108972175927
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 7,
+          "loss": 0.36165694463040415
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 0,
+          "loss": 0.3650629661638219
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 0,
+          "loss": 0.36397876519030115
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 1,
+          "loss": 0.3622246166161277
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 1,
+          "loss": 0.35924667944085054
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 2,
+          "loss": 0.36706355987654476
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 2,
+          "loss": 0.3612140568268749
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 3,
+          "loss": 0.359391467407139
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 3,
+          "loss": 0.35644358673375004
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 4,
+          "loss": 0.3555543074985058
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 4,
+          "loss": 0.3564488696805079
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 5,
+          "loss": 0.3569673399626365
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 5,
+          "loss": 0.3555155129250633
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 6,
+          "loss": 0.36679974930703574
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 6,
+          "loss": 0.35839558302745306
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 7,
+          "loss": 0.35646108972175927
+        },
+        {
+          "stage": "local",
+          "pass": 1,
+          "dimension": 7,
+          "loss": 0.36165694463040415
+        },
+        {
+          "stage": "local",
+          "pass": 2,
+          "dimension": 0,
+          "loss": 0.3594243181801105
+        },
+        {
+          "stage": "local",
+          "pass": 2,
+          "dimension": 0,
+          "loss": 0.35572606562179515
+        },
+        {
+          "stage": "local",
+          "pass": 2,
+          "dimension": 1,
+          "loss": 0.35721721411781787
+        },
+        {
+          "stage": "local",
+          "pass": 2,
+          "dimension": 1,
+          "loss": 0.35783979521092985
+        },
+        {
+          "stage": "local",
+          "pass": 2,
+          "dimension": 2,
+          "loss": 0.3613181614291351
+        },
+        {
+          "stage": "local",
+          "pass": 2,
+          "dimension": 2,
+          "loss": 0.3557100371237523
+        },
+        {
+          "stage": "local",
+          "pass": 2,
+          "dimension": 3,
+          "loss": 0.3574048576652463
+        },
+        {
+          "stage": "local",
+          "pass": 2,
+          "dimension": 3,
+          "loss": 0.3550963214885185
+        },
+        {
+          "stage": "local",
+          "pass": 2,
+          "dimension": 4,
+          "loss": 0.35453122002991244
+        },
+        {
+          "stage": "local",
+          "pass": 2,
+          "dimension": 4,
+          "loss": 0.3549402731672542
+        },
+        {
+          "stage": "local",
+          "pass": 2,
+          "dimension": 5,
+          "loss": 0.3560331843362672
+        },
+        {
+          "stage": "local",
+          "pass": 2,
+          "dimension": 5,
+          "loss": 0.35514233886243507
+        },
+        {
+          "stage": "local",
+          "pass": 2,
+          "dimension": 6,
+          "loss": 0.3586880880043193
+        },
+        {
+          "stage": "local",
+          "pass": 2,
+          "dimension": 6,
+          "loss": 0.3578850223302806
+        },
+        {
+          "stage": "local",
+          "pass": 2,
+          "dimension": 7,
+          "loss": 0.354375213697252
+        },
+        {
+          "stage": "local",
+          "pass": 2,
+          "dimension": 7,
+          "loss": 0.35453122002991244
+        },
+        {
+          "stage": "local",
+          "pass": 2,
+          "dimension": 0,
+          "loss": 0.3570976023896763
+        },
+        {
+          "stage": "local",
+          "pass": 2,
+          "dimension": 0,
+          "loss": 0.35593749297351085
+        },
+        {
+          "stage": "local",
+          "pass": 2,
+          "dimension": 1,
+          "loss": 0.357713853481525
+        },
+        {
+          "stage": "local",
+          "pass": 2,
+          "dimension": 1,
+          "loss": 0.355183986456375
+        },
+        {
+          "stage": "local",
+          "pass": 2,
+          "dimension": 2,
+          "loss": 0.3580380330588024
+        },
+        {
+          "stage": "local",
+          "pass": 2,
+          "dimension": 2,
+          "loss": 0.35540880759508403
+        },
+        {
+          "stage": "local",
+          "pass": 2,
+          "dimension": 3,
+          "loss": 0.355097946758407
+        },
+        {
+          "stage": "local",
+          "pass": 2,
+          "dimension": 3,
+          "loss": 0.3549594226740756
+        },
+        {
+          "stage": "local",
+          "pass": 2,
+          "dimension": 4,
+          "loss": 0.3556329608139579
+        },
+        {
+          "stage": "local",
+          "pass": 2,
+          "dimension": 4,
+          "loss": 0.35449132893140267
+        },
+        {
+          "stage": "local",
+          "pass": 2,
+          "dimension": 5,
+          "loss": 0.35456069112096
+        },
+        {
+          "stage": "local",
+          "pass": 2,
+          "dimension": 5,
+          "loss": 0.3548138611124502
+        },
+        {
+          "stage": "local",
+          "pass": 2,
+          "dimension": 6,
+          "loss": 0.35669344958583243
+        },
+        {
+          "stage": "local",
+          "pass": 2,
+          "dimension": 6,
+          "loss": 0.35541681479572623
+        },
+        {
+          "stage": "local",
+          "pass": 2,
+          "dimension": 7,
+          "loss": 0.3558182844870561
+        },
+        {
+          "stage": "local",
+          "pass": 2,
+          "dimension": 7,
+          "loss": 0.35453122002991244
+        },
+        {
+          "stage": "local",
+          "pass": 3,
+          "dimension": 0,
+          "loss": 0.3556480867386381
+        },
+        {
+          "stage": "local",
+          "pass": 3,
+          "dimension": 0,
+          "loss": 0.354300511334617
+        },
+        {
+          "stage": "local",
+          "pass": 3,
+          "dimension": 1,
+          "loss": 0.35610336133935694
+        },
+        {
+          "stage": "local",
+          "pass": 3,
+          "dimension": 1,
+          "loss": 0.3544754720391775
+        },
+        {
+          "stage": "local",
+          "pass": 3,
+          "dimension": 2,
+          "loss": 0.35602215565168444
+        },
+        {
+          "stage": "local",
+          "pass": 3,
+          "dimension": 2,
+          "loss": 0.3559432527598855
+        },
+        {
+          "stage": "local",
+          "pass": 3,
+          "dimension": 3,
+          "loss": 0.3547097712482494
+        },
+        {
+          "stage": "local",
+          "pass": 3,
+          "dimension": 3,
+          "loss": 0.3579944897926328
+        },
+        {
+          "stage": "local",
+          "pass": 3,
+          "dimension": 4,
+          "loss": 0.35457687447911623
+        },
+        {
+          "stage": "local",
+          "pass": 3,
+          "dimension": 4,
+          "loss": 0.3544407788317035
+        },
+        {
+          "stage": "local",
+          "pass": 3,
+          "dimension": 5,
+          "loss": 0.35438136518354274
+        },
+        {
+          "stage": "local",
+          "pass": 3,
+          "dimension": 5,
+          "loss": 0.35504203110998284
+        },
+        {
+          "stage": "local",
+          "pass": 3,
+          "dimension": 6,
+          "loss": 0.3546896134156742
+        },
+        {
+          "stage": "local",
+          "pass": 3,
+          "dimension": 6,
+          "loss": 0.3550003898618043
+        },
+        {
+          "stage": "local",
+          "pass": 3,
+          "dimension": 7,
+          "loss": 0.35520788500754424
+        },
+        {
+          "stage": "local",
+          "pass": 3,
+          "dimension": 7,
+          "loss": 0.3548557783498981
+        },
+        {
+          "stage": "local",
+          "pass": 3,
+          "dimension": 0,
+          "loss": 0.354375213697252
+        },
+        {
+          "stage": "local",
+          "pass": 3,
+          "dimension": 0,
+          "loss": 0.3570524161656596
+        },
+        {
+          "stage": "local",
+          "pass": 3,
+          "dimension": 1,
+          "loss": 0.35610336133935694
+        },
+        {
+          "stage": "local",
+          "pass": 3,
+          "dimension": 1,
+          "loss": 0.3544754720391775
+        },
+        {
+          "stage": "local",
+          "pass": 3,
+          "dimension": 2,
+          "loss": 0.35602215565168444
+        },
+        {
+          "stage": "local",
+          "pass": 3,
+          "dimension": 2,
+          "loss": 0.3559432527598855
+        },
+        {
+          "stage": "local",
+          "pass": 3,
+          "dimension": 3,
+          "loss": 0.3547097712482494
+        },
+        {
+          "stage": "local",
+          "pass": 3,
+          "dimension": 3,
+          "loss": 0.3579944897926328
+        },
+        {
+          "stage": "local",
+          "pass": 3,
+          "dimension": 4,
+          "loss": 0.35457687447911623
+        },
+        {
+          "stage": "local",
+          "pass": 3,
+          "dimension": 4,
+          "loss": 0.3544407788317035
+        },
+        {
+          "stage": "local",
+          "pass": 3,
+          "dimension": 5,
+          "loss": 0.35438136518354274
+        },
+        {
+          "stage": "local",
+          "pass": 3,
+          "dimension": 5,
+          "loss": 0.35504203110998284
+        },
+        {
+          "stage": "local",
+          "pass": 3,
+          "dimension": 6,
+          "loss": 0.3546896134156742
+        },
+        {
+          "stage": "local",
+          "pass": 3,
+          "dimension": 6,
+          "loss": 0.3550003898618043
+        },
+        {
+          "stage": "local",
+          "pass": 3,
+          "dimension": 7,
+          "loss": 0.35520788500754424
+        },
+        {
+          "stage": "local",
+          "pass": 3,
+          "dimension": 7,
+          "loss": 0.3548557783498981
+        }
+      ]
+    }
+  },
+  "per_sample": [
+    {
+      "sample_id": "sample_000",
+      "split": "calibration",
+      "cameras": {
+        "base_camera": {
+          "before_loss": 0.3870259599685669,
+          "after_loss": 0.23297800389925638
+        },
+        "wrist_camera": {
+          "before_loss": 1.208450468568241,
+          "after_loss": 0.39390150774281196
+        }
+      }
+    },
+    {
+      "sample_id": "sample_001",
+      "split": "calibration",
+      "cameras": {
+        "base_camera": {
+          "before_loss": 0.3355456323623657,
+          "after_loss": 0.29209429709116613
+        },
+        "wrist_camera": {
+          "before_loss": 2.124808717091878,
+          "after_loss": 0.21775793723566783
+        }
+      }
+    },
+    {
+      "sample_id": "sample_002",
+      "split": "calibration",
+      "cameras": {
+        "base_camera": {
+          "before_loss": 0.3918016510009766,
+          "after_loss": 0.23703523246447245
+        },
+        "wrist_camera": {
+          "before_loss": 1.7662790972391764,
+          "after_loss": 0.3972871723836012
+        }
+      }
+    },
+    {
+      "sample_id": "sample_003",
+      "split": "calibration",
+      "cameras": {
+        "base_camera": {
+          "before_loss": 0.45447321256001794,
+          "after_loss": 0.22349799529711406
+        },
+        "wrist_camera": {
+          "before_loss": 1.8513797322336834,
+          "after_loss": 0.45503196801850293
+        }
+      }
+    },
+    {
+      "sample_id": "sample_004",
+      "split": "calibration",
+      "cameras": {
+        "base_camera": {
+          "before_loss": 0.30630646562576297,
+          "after_loss": 0.2876209956010183
+        },
+        "wrist_camera": {
+          "before_loss": 1.618055542119344,
+          "after_loss": 0.3165579832268961
+        }
+      }
+    },
+    {
+      "sample_id": "sample_005",
+      "split": "calibration",
+      "cameras": {
+        "base_camera": {
+          "before_loss": 0.6714602963129679,
+          "after_loss": 0.25693594614664717
+        },
+        "wrist_camera": {
+          "before_loss": 1.0065761788532652,
+          "after_loss": 0.31909408053618205
+        }
+      }
+    },
+    {
+      "sample_id": "sample_006",
+      "split": "calibration",
+      "cameras": {
+        "base_camera": {
+          "before_loss": 0.6264495865503947,
+          "after_loss": 0.26283558400472007
+        },
+        "wrist_camera": {
+          "before_loss": 1.5081056930541992,
+          "after_loss": 0.4180661969066591
+        }
+      }
+    },
+    {
+      "sample_id": "sample_007",
+      "split": "calibration",
+      "cameras": {
+        "base_camera": {
+          "before_loss": 0.5256061080296835,
+          "after_loss": 0.26253520425160726
+        },
+        "wrist_camera": {
+          "before_loss": 1.1136902084350584,
+          "after_loss": 0.47013903077640484
+        }
+      }
+    },
+    {
+      "sample_id": "sample_008",
+      "split": "calibration",
+      "cameras": {
+        "base_camera": {
+          "before_loss": 0.43568010902404786,
+          "after_loss": 0.2580527148246765
+        },
+        "wrist_camera": {
+          "before_loss": 1.4324703258514404,
+          "after_loss": 0.4985043906566424
+        }
+      }
+    },
+    {
+      "sample_id": "sample_009",
+      "split": "calibration",
+      "cameras": {
+        "base_camera": {
+          "before_loss": 0.4120593169530232,
+          "after_loss": 0.27227618670463566
+        },
+        "wrist_camera": {
+          "before_loss": 2.011878945719401,
+          "after_loss": 10.0
+        }
+      }
+    },
+    {
+      "sample_id": "sample_010",
+      "split": "calibration",
+      "cameras": {
+        "base_camera": {
+          "before_loss": 0.4315122464497884,
+          "after_loss": 0.26825744048754374
+        },
+        "wrist_camera": {
+          "before_loss": 1.1512567001342775,
+          "after_loss": 0.6514323685752021
+        }
+      }
+    },
+    {
+      "sample_id": "sample_011",
+      "split": "calibration",
+      "cameras": {
+        "base_camera": {
+          "before_loss": 0.4349914425214132,
+          "after_loss": 0.2765514719486237
+        },
+        "wrist_camera": {
+          "before_loss": 0.8833277575810751,
+          "after_loss": 0.5569106778688329
+        }
+      }
+    },
+    {
+      "sample_id": "sample_012",
+      "split": "validation",
+      "cameras": {
+        "base_camera": {
+          "before_loss": 0.36014324426651,
+          "after_loss": 0.2786395595868429
+        },
+        "wrist_camera": {
+          "before_loss": 1.7187431466420489,
+          "after_loss": 0.34681122794601155
+        }
+      }
+    },
+    {
+      "sample_id": "sample_013",
+      "split": "validation",
+      "cameras": {
+        "base_camera": {
+          "before_loss": 0.38832194789250696,
+          "after_loss": 0.22586453779538473
+        },
+        "wrist_camera": {
+          "before_loss": 10.0,
+          "after_loss": 0.39908102005745283
+        }
+      }
+    },
+    {
+      "sample_id": "sample_014",
+      "split": "validation",
+      "cameras": {
+        "base_camera": {
+          "before_loss": 0.5283408581415812,
+          "after_loss": 0.20245827182133996
+        },
+        "wrist_camera": {
+          "before_loss": 1.7330351022084554,
+          "after_loss": 0.35126366117057933
+        }
+      }
+    },
+    {
+      "sample_id": "sample_015",
+      "split": "validation",
+      "cameras": {
+        "base_camera": {
+          "before_loss": 0.40011487007141117,
+          "after_loss": 0.24356990710894266
+        },
+        "wrist_camera": {
+          "before_loss": 1.4344315664927165,
+          "after_loss": 0.3997391666085112
+        }
+      }
+    }
+  ]
+}
