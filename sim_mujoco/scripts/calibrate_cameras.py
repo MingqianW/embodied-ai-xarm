@@ -54,6 +54,7 @@ def main() -> None:
         "calibrated_utc": datetime.now(timezone.utc).isoformat(),
         "units": {"translation": "meters", "angle_internal": "radians", "angle_serialized": "degrees"},
         "optimizer": "bounded deterministic random search plus coordinate refinement",
+        "base_camera_side": "positive_x_front_view",
         "calibration_sample_count": len(calibration_samples),
         "optimization_sample_count": len(optimization_samples),
     }

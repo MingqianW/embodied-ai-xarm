@@ -61,10 +61,10 @@ Final parameters in `../config/camera_calibration.yaml`:
 
 ```yaml
 base_camera:
-  position: [0.4527602407, -0.6664764088, 0.4859253368]
-  target: [0.4099162474, -0.0344442504, 0.0108]
-  roll_deg: 3.1023791743
-  fovy_deg: 43.8814065008
+  position: [1.0311492630, -0.2129129395, 0.30766]
+  target: [0.3094864211, -0.1108238904, 0.0391842418]
+  roll_deg: 2.0
+  fovy_deg: 44.0
 wrist_camera:
   parent_body: gripper_base
   position: [0.0674069555, 0.0057714126, 0.0865342728]
@@ -79,17 +79,35 @@ Lower geometric loss is better.
 
 | Split | Camera | Before | After | Improvement |
 |---|---:|---:|---:|---:|
-| Calibration (12) | Base | 0.4511 | 0.2609 | 42.2% |
-| Calibration (12) | Wrist | 1.4730 | 1.2246 | 16.9% |
-| Validation (4) | Base | 0.4192 | 0.2376 | 43.3% |
-| Validation (4) | Wrist | 3.7216 | 0.3742 | 89.9% |
+| Calibration (12) | Base | 0.2407 | 0.2325 | 3.4% |
+| Calibration (12) | Wrist | 1.2246 | 1.2246 | 0.0% |
+| Validation (4) | Base | 0.2418 | 0.2327 | 3.7% |
+| Validation (4) | Wrist | 0.3742 | 0.3742 | 0.0% |
 
-The contact sheets in `contact_sheets/` show real, simulated, and blended views
+The base camera is constrained to the positive-X front of the xArm, across the
+task workspace, and looks back toward the arm along negative X. The contact sheets in
+`contact_sheets/` show real, simulated, and blended views
 for every frame. The final views are upright and not mirrored; the tool remains
 on the correct side, the wrist view looks through the fingers, and the task
 workspace remains visible across all selected poses. Native renders are saved
 at 640x480. Policy images are created afterward with OpenPI
 `resize_with_pad(..., 224, 224)`, preserving the 4:3 image without stretching.
+
+The local refinement was anchored at the user-selected position
+`[1.0324, -0.17899, 0.31766]`. Position was limited to 0.01 m per axis and moved
+only 0.0108 m in total. The improvement comes primarily from target, roll, and
+FOV adjustments. `local_refinement_metrics.json` contains the anchor, final
+pose, per-frame scores, and measured displacement.
+
+After local refinement, the camera was moved another 0.03 m toward camera-left
+(negative world Y) for composition. At that step, target, roll, FOV, X, and Z
+were unchanged. The roll/FOV metrics in the table include this shifted position.
+
+With all extrinsics fixed, 578 roll/FOV combinations were then evaluated. The
+minimum edge-loss pair was `5.5 deg / 47.5 deg`; visual review showed excessive
+table-edge tilt. The selected `2 deg / 44 deg` pair keeps the raw table horizon
+level, better matches arm scale, and still improves both calibration and held-out
+loss. `roll_fovy_search.json` records both candidates and the selection rationale.
 
 ## Reproduce
 
@@ -99,6 +117,7 @@ Run from the repository root after activating `mujoco-pi`:
 python sim_mujoco/scripts/discover_raw_camera_data.py
 python sim_mujoco/scripts/select_camera_calibration_frames.py --calibration-count 12 --validation-count 4 --max-episodes 36
 python sim_mujoco/scripts/calibrate_cameras.py --trials 120 --optimization-width 160 --optimization-height 120
+python sim_mujoco/scripts/tune_base_roll_fovy.py --anchor-config sim_mujoco/calibration/backups/camera_calibration.yaml.pre_roll_fovy_tuning.bak --final-roll 2 --final-fovy 44
 python sim_mujoco/scripts/build_xarm6_pick_scene.py
 python sim_mujoco/scripts/evaluate_camera_calibration.py
 ```

@@ -1,0 +1,103 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mujoco model="xarm6_pick_scene">
+  <compiler angle="radian" autolimits="true" meshdir="../../../third_party/xarm_ros2/xarm_description/meshes/xarm6/visual" />
+  <option timestep="0.002" gravity="0 0 -9.81" integrator="implicitfast" />
+  <visual>
+    <global azimuth="135" elevation="-20" />
+    <headlight ambient="0.35 0.35 0.35" diffuse="0.6 0.6 0.6" specular="0.2 0.2 0.2" />
+  </visual>
+  <default>
+    <joint damping="1.0" armature="0.01" />
+    <geom contype="0" conaffinity="0" group="2" />
+  </default>
+  <asset>
+    <material name="robot_white" rgba="0.86 0.86 0.88 1" />
+    <material name="robot_silver" rgba="0.55 0.57 0.6 1" />
+    <mesh name="link_base_mesh" file="link_base.stl" />
+    <mesh name="link1_mesh" file="link1.stl" />
+    <mesh name="link2_mesh" file="link2.stl" />
+    <mesh name="link3_mesh" file="link3.stl" />
+    <mesh name="link4_mesh" file="link4.stl" />
+    <mesh name="link5_mesh" file="link5.stl" />
+    <mesh name="link6_mesh" file="link6.stl" />
+    <material name="gripper_dark" rgba="0.18 0.19 0.21 1" />
+    <material name="finger_pad" rgba="0.06 0.06 0.06 1" />
+    <material name="table_material" rgba="0.55 0.40 0.28 1" />
+    <material name="object_material" rgba="0.85 0.12 0.10 1" />
+  </asset>
+  <worldbody>
+    <light name="main_light" pos="1 -1 2.5" dir="-0.3 0.3 -1" />
+    <camera name="overview_camera" pos="1.4 -1.4 1.1" xyaxes="0.707 0.707 0 -0.36 0.36 0.86" fovy="50" />
+    <geom name="floor" type="plane" size="2 2 0.1" rgba="0.75 0.75 0.75 1" contype="1" conaffinity="1" friction="1 0.01 0.001" />
+    <body name="link_base" pos="0 0 0">
+      <geom name="link_base_visual" type="mesh" mesh="link_base_mesh" material="robot_white" />
+      <body name="link1" pos="0 0 0.267" euler="0 0 0">
+        <joint name="joint1" type="hinge" axis="0 0 1" limited="true" range="-6.283185307 6.283185307" />
+        <inertial pos="0.00022 0.02951 -0.0124" mass="2.3814" fullinertia="0.0058562 0.0050316 0.003536652 -1.79e-05 3.55e-06 -0.000888336" />
+        <geom name="link1_visual" type="mesh" mesh="link1_mesh" material="robot_white" />
+        <body name="link2" pos="0 0 0" euler="-1.5708 0 0">
+          <joint name="joint2" type="hinge" axis="0 0 1" limited="true" range="-2.059 2.0944" />
+          <inertial pos="0.03881 -0.22783 0.03496" mass="2.2675" fullinertia="0.028315776 0.0058 0.0273447 0.005 0.00066546 -0.0045741" />
+          <geom name="link2_visual" type="mesh" mesh="link2_mesh" material="robot_white" />
+          <body name="link3" pos="0.0535 -0.2845 0" euler="0 0 0">
+            <joint name="joint3" type="hinge" axis="0 0 1" limited="true" range="-3.927 0.19198" />
+            <inertial pos="0.07041 0.11631 0.0107" mass="1.875" fullinertia="0.0063483 0.00379758 0.00595768 -0.0015397 0.00096858 0.00186567" />
+            <geom name="link3_visual" type="mesh" mesh="link3_mesh" material="robot_white" />
+            <body name="link4" pos="0.0775 0.3425 0" euler="-1.5708 0 0">
+              <joint name="joint4" type="hinge" axis="0 0 1" limited="true" range="-6.283185307 6.283185307" />
+              <inertial pos="-0.00018 0.01798 -0.02291" mass="1.3192" fullinertia="0.004896 0.00445694 0.00134332 -6.925e-06 -1.418e-05 -0.00023186" />
+              <geom name="link4_visual" type="mesh" mesh="link4_mesh" material="robot_white" />
+              <body name="link5" pos="0 0 0" euler="1.5708 0 0">
+                <joint name="joint5" type="hinge" axis="0 0 1" limited="true" range="-1.69297 3.141592654" />
+                <inertial pos="0.0651 0.03096 0.00315" mass="1.33854" fullinertia="0.00146378 0.00184192 0.002333524 -0.000450624 0.000284306 0.000130866" />
+                <geom name="link5_visual" type="mesh" mesh="link5_mesh" material="robot_white" />
+                <body name="link6" pos="0.076 0.097 0" euler="-1.5708 0 0">
+                  <joint name="joint6" type="hinge" axis="0 0 1" limited="true" range="-6.283185307 6.283185307" />
+                  <inertial pos="0 -0.00677 -0.01098" mass="0.17" fullinertia="9.3e-05 5.87e-05 0.000132 -0 -0 -3.6e-06" />
+                  <geom name="link6_visual" type="mesh" mesh="link6_mesh" material="robot_silver" />
+                  <site name="end_effector_site" pos="0 0 0" size="0.01" rgba="1 0 0 1" />
+                  <body name="gripper_base" pos="0 0 0">
+                    <geom name="gripper_base_collision" type="cylinder" pos="0 0 0.055" size="0.043 0.055" mass="0.50" material="gripper_dark" contype="1" conaffinity="1" friction="0.8 0.01 0.001" />
+                    <site name="tool_center_point" pos="0 0 0.172" size="0.012" rgba="0 1 0 0" />
+                    <camera name="wrist_camera" pos="0.06740695546 0.005771412593 0.08653427275" xyaxes="0.1268161538 -0.9901172001 -0.05987982267 -0.9553583099 -0.1056782244 -0.2759032666" fovy="90.3695" />
+                    <body name="left_finger" pos="0 0.008 0.105">
+                      <joint name="left_finger_slide" type="slide" axis="0 1 0" limited="true" range="0 0.04" damping="4" armature="0.002" />
+                      <geom name="left_finger_collision" type="box" pos="0 0 0.052" size="0.012 0.006 0.052" mass="0.05" material="gripper_dark" contype="1" conaffinity="1" friction="1.2 0.01 0.001" />
+                      <geom name="left_fingertip_pad" type="box" pos="0 -0.0075 0.092" size="0.014 0.003 0.018" mass="0.01" material="finger_pad" contype="1" conaffinity="1" friction="2.0 0.02 0.002" />
+                    </body>
+                    <body name="right_finger" pos="0 -0.008 0.105">
+                      <joint name="right_finger_slide" type="slide" axis="0 -1 0" limited="true" range="0 0.04" damping="4" armature="0.002" />
+                      <geom name="right_finger_collision" type="box" pos="0 0 0.052" size="0.012 0.006 0.052" mass="0.05" material="gripper_dark" contype="1" conaffinity="1" friction="1.2 0.01 0.001" />
+                      <geom name="right_fingertip_pad" type="box" pos="0 0.0075 0.092" size="0.014 0.003 0.018" mass="0.01" material="finger_pad" contype="1" conaffinity="1" friction="2.0 0.02 0.002" />
+                    </body>
+                  </body>
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+    <geom name="table" type="box" pos="0.45 0 0.025" size="0.35 0.45 0.025" material="table_material" contype="1" conaffinity="1" friction="1.0 0.01 0.001" />
+    <body name="object" pos="0.45 0 0.085">
+      <freejoint name="object_freejoint" />
+      <geom name="object_geom" type="box" size="0.025 0.025 0.025" mass="0.075" material="object_material" contype="1" conaffinity="1" friction="1.2 0.01 0.001" />
+    </body>
+    <camera name="base_camera" pos="1.031149263 -0.2129129395 0.30766" xyaxes="0.1280395685 0.991228234 0.03274839035 -0.3469241848 0.01383018578 0.9377912006" fovy="44" />
+  </worldbody>
+  <actuator>
+    <position name="joint1_actuator" joint="joint1" kp="120" ctrlrange="-6.283185307 6.283185307" forcelimited="true" forcerange="-50 50" />
+    <position name="joint2_actuator" joint="joint2" kp="120" ctrlrange="-2.059 2.0944" forcelimited="true" forcerange="-50 50" />
+    <position name="joint3_actuator" joint="joint3" kp="100" ctrlrange="-3.927 0.19198" forcelimited="true" forcerange="-32 32" />
+    <position name="joint4_actuator" joint="joint4" kp="70" ctrlrange="-6.283185307 6.283185307" forcelimited="true" forcerange="-32 32" />
+    <position name="joint5_actuator" joint="joint5" kp="50" ctrlrange="-1.69297 3.141592654" forcelimited="true" forcerange="-32 32" />
+    <position name="joint6_actuator" joint="joint6" kp="30" ctrlrange="-6.283185307 6.283185307" forcelimited="true" forcerange="-20 20" />
+    <position name="gripper_actuator" joint="left_finger_slide" kp="500" ctrlrange="0 0.04" forcelimited="true" forcerange="-40 40" />
+  </actuator>
+  <keyframe>
+    <key name="home" qpos="0 -0.6 -1.2 0 1.8 0 0.04 0.04 0.45 0 0.085 1 0 0 0" ctrl="0 -0.6 -1.2 0 1.8 0 0.04" />
+  </keyframe>
+  <equality>
+    <joint name="symmetric_gripper" joint1="right_finger_slide" joint2="left_finger_slide" polycoef="0 1 0 0 0" solref="0.01 1" />
+  </equality>
+</mujoco>

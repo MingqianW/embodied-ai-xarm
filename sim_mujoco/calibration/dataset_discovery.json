@@ -1,0 +1,56 @@
+{
+  "raw_root": "fine_tune/data/xarm_pi05_data/raw",
+  "episode_count": 200,
+  "task_episode_counts": {
+    "pick up the largest block": 25,
+    "pick_up_the_blue_block": 25,
+    "pick_up_the_red_block": 25,
+    "pick_up_the_red_pepper": 50,
+    "pick_up_the_smallest_block": 25,
+    "place_the_red_pepper_in_the_ring": 50
+  },
+  "total_robot_rows": 23096,
+  "rows_with_base_and_wrist_images": 23096,
+  "image_resolutions": [
+    [
+      640,
+      480
+    ]
+  ],
+  "camera_mapping": {
+    "base_camera": "realsense_0 (RGB PNG)",
+    "wrist_camera": "realsense_1 (RGB PNG)",
+    "unused_camera": "realsense_2"
+  },
+  "joint_state_order": [
+    "j1_rad",
+    "j2_rad",
+    "j3_rad",
+    "j4_rad",
+    "j5_rad",
+    "j6_rad"
+  ],
+  "joint_units": "radians",
+  "gripper_column": "gripper_mm",
+  "csv_columns": [
+    "ts",
+    "j1_rad",
+    "j2_rad",
+    "j3_rad",
+    "j4_rad",
+    "j5_rad",
+    "j6_rad",
+    "tcp_x_m",
+    "tcp_y_m",
+    "tcp_z_m",
+    "tcp_rx_rad",
+    "tcp_ry_rad",
+    "tcp_rz_rad",
+    "gripper_mm",
+    "realsense_0_file",
+    "realsense_1_file",
+    "realsense_2_file"
+  ],
+  "opencv_note": "cv2.imread returns BGR; calibration loader converts BGR to RGB",
+  "tcp_note": "tcp_x_m/tcp_y_m/tcp_z_m contain millimeters despite their suffix"
+}

@@ -1,0 +1,55 @@
+version: 1
+base_camera:
+  frame: world
+  position:
+  - 1.031149262952967
+  - -0.18291293946099643
+  - 0.30766
+  target:
+  - 0.30948642111490315
+  - -0.11082389037822907
+  - 0.039184241834680084
+  roll_deg: 5.680333574710533
+  fovy_deg: 47.50684252531284
+wrist_camera:
+  parent_body: gripper_base
+  position:
+  - 0.06740695545751386
+  - 0.005771412592787307
+  - 0.08653427275157184
+  target:
+  - 0.001873941612191777
+  - -0.01687011945073941
+  - 0.32212490948712086
+  roll_deg: -96.09228858407916
+  fovy_deg: 90.3695
+gripper_mapping:
+  raw_closed: 50.0
+  raw_open: 845.0
+  sim_half_width_open_m: 0.04
+render:
+  native_width: 640
+  native_height: 480
+  policy_width: 224
+  policy_height: 224
+  preprocessing: resize_with_pad
+metadata:
+  status: locally_refined_from_user_anchor
+  adjustment: base pose refined locally with position constrained to the user anchor
+  calibrated_utc: '2026-07-20T15:32:05.829704+00:00'
+  units:
+    translation: meters
+    angle_internal: radians
+    angle_serialized: degrees
+  optimizer: bounded deterministic random search plus coordinate refinement
+  base_camera_side: positive_x_front_view
+  calibration_sample_count: 12
+  optimization_sample_count: 6
+  refined_utc: '2026-07-20T16:00:27.533884+00:00'
+  position_anchor_m:
+  - 1.0324
+  - -0.17899
+  - 0.31766
+  position_axis_limit_m: 0.01
+  position_displacement_m: 0.010814517889183214
+  local_optimization_sample_count: 10

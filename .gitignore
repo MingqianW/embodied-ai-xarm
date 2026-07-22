@@ -3,3 +3,18 @@ xarm_colab_payload.zip
 fine_tune/xarm_data_config.json
 .*/
 fine_tune/third_party/*
+# MuJoCo camera calibration generated artifacts
+sim_mujoco/calibration/before/
+sim_mujoco/calibration/after/
+sim_mujoco/calibration/overlays/
+sim_mujoco/calibration/contact_sheets/
+sim_mujoco/calibration/logs/
+
+# Rendered and temporary outputs
+sim_mujoco/outputs/
+sim_mujoco/calibration/**/*.tmp
+sim_mujoco/calibration/**/*.log
+
+# Keep manually selected representative figures
+!sim_mujoco/calibration/figures/
+!sim_mujoco/calibration/figures/**

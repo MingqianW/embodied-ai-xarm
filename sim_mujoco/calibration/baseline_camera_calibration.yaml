@@ -1,0 +1,29 @@
+version: 1
+base_camera:
+  frame: world
+  position: [1.0, -1.0, 0.82]
+  target: [0.43, 0.0, 0.15]
+  roll_deg: 0.0
+  fovy_deg: 52.0
+wrist_camera:
+  parent_body: gripper_base
+  position: [0.06, 0.0, 0.075]
+  target: [0.0, 0.0, 0.32]
+  roll_deg: 0.0
+  fovy_deg: 58.0
+gripper_mapping:
+  raw_closed: 50.0
+  raw_open: 845.0
+  sim_half_width_open_m: 0.04
+render:
+  native_width: 640
+  native_height: 480
+  policy_width: 224
+  policy_height: 224
+  preprocessing: resize_with_pad
+metadata:
+  status: baseline_before_calibration
+  units:
+    translation: meters
+    angle_internal: radians
+    angle_serialized: degrees

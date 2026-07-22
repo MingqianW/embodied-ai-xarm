@@ -387,9 +387,9 @@ def vector_parameters(vector: np.ndarray, template: dict[str, Any]) -> dict[str,
 
 def optimization_bounds(camera_name: str) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     if camera_name == "base_camera":
-        lower = np.array([0.30, -1.10, 0.40, 0.34, -0.20, 0.00, -15.0, 35.0])
-        upper = np.array([0.75, -0.50, 0.85, 0.58, 0.12, 0.20, 15.0, 65.0])
-        heuristic = np.array([0.45, -0.78, 0.55, 0.45, -0.02, 0.06, 0.0, 50.0])
+        lower = np.array([0.80, -0.40, 0.40, 0.05, -0.20, 0.00, -15.0, 35.0])
+        upper = np.array([1.40, 0.40, 1.00, 0.45, 0.20, 0.30, 15.0, 70.0])
+        heuristic = np.array([1.00, 0.0, 0.60, 0.20, 0.0, 0.18, 0.0, 50.0])
     else:
         lower = np.array([0.06, -0.03, 0.075, -0.03, -0.03, 0.30, -110.0, 60.0])
         upper = np.array([0.10, 0.03, 0.11, 0.03, 0.03, 0.40, -70.0, 95.0])
@@ -404,9 +404,10 @@ def optimize_camera(
     initial: dict[str, Any],
     trials: int = 120,
     seed: int = 7,
+    bounds_override: tuple[np.ndarray, np.ndarray, np.ndarray] | None = None,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     rng = np.random.default_rng(seed)
-    lower, upper, heuristic = optimization_bounds(camera_name)
+    lower, upper, heuristic = bounds_override or optimization_bounds(camera_name)
     real_key = "base_image" if camera_name == "base_camera" else "wrist_image"
     real_images = {sample["sample_id"]: load_rgb(project_path(sample[real_key])) for sample in samples}
     initial_vector = np.clip(parameter_vector(initial), lower, upper)

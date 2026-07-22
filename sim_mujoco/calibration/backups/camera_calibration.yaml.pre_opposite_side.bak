@@ -1,0 +1,45 @@
+version: 1
+base_camera:
+  frame: world
+  position:
+  - 0.45276024074100163
+  - -0.6664764087567886
+  - 0.4859253367613463
+  target:
+  - 0.4099162473682059
+  - -0.03444425041135149
+  - 0.0108
+  roll_deg: 3.1023791743436884
+  fovy_deg: 43.88140650076007
+wrist_camera:
+  parent_body: gripper_base
+  position:
+  - 0.06740695545751386
+  - 0.005771412592787307
+  - 0.08653427275157184
+  target:
+  - 0.001873941612191777
+  - -0.01687011945073941
+  - 0.32212490948712086
+  roll_deg: -96.09228858407916
+  fovy_deg: 90.3695
+gripper_mapping:
+  raw_closed: 50.0
+  raw_open: 845.0
+  sim_half_width_open_m: 0.04
+render:
+  native_width: 640
+  native_height: 480
+  policy_width: 224
+  policy_height: 224
+  preprocessing: resize_with_pad
+metadata:
+  status: calibrated
+  calibrated_utc: '2026-07-19T15:04:54.876978+00:00'
+  units:
+    translation: meters
+    angle_internal: radians
+    angle_serialized: degrees
+  optimizer: bounded deterministic random search plus coordinate refinement
+  calibration_sample_count: 12
+  optimization_sample_count: 6
