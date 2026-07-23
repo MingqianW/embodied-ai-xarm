@@ -1,16 +1,42 @@
-# Embodied AI xArm – Step 1
+# Embodied AI xArm
 
-This repository contains the first stage of an embodied AI project. In this step we define manipulation tasks, generate trajectories on a real xArm 6 robot, and record the data in a clean format suitable for demonstration learning.
+Tools for collecting xArm 6 demonstrations, validating and converting datasets,
+fine-tuning OpenPI policies, and reproducing the task in MuJoCo.
 
-## Contents
+## Repository Layout
 
-- `docs/task_specs/` — YAML files defining each manipulation task.
-- `scripts/teleop_collect.py` — skeleton script for collecting teleoperation demonstrations.
-- `scripts/validate_dataset.py` — script to validate demonstration datasets.
-- `scripts/prepare_openpi_lerobot.py` — converts raw xArm HDF5 demonstrations to LeRobot for OpenPI fine-tuning.
-- `fine_tune/` — OpenPI config snippet and fine-tuning helper script.
-- `requirements.txt` — list of Python dependencies.
+- `data_collection/` and `scripts/`: real-robot collection and dataset tools.
+- `docs/`: task specifications and workflow documentation.
+- `fine_tune/`: raw-data checks, LeRobot conversion, and OpenPI helpers.
+- `sim_mujoco/`: xArm 6 scene generation, camera calibration, and tests.
+- `third_party/openpi/`: OpenPI Git submodule.
+- `third_party/xarm_ros2/`: vendored xArm ROS 2 descriptions and meshes.
 
-More detailed documentation will be added as the project progresses.
-See `docs/step1_data_collection.md` for guidelines on Step 1 data collection, including task families, hours allocation and dataset quality.
-See `docs/step2_openpi_finetuning.md` for the raw data format, LeRobot conversion, and OpenPI pi0.5 fine-tuning instructions.
+## Clone
+
+Clone with submodules so the OpenPI dependency is available:
+
+```bash
+git clone --recurse-submodules <repository-url>
+```
+
+For an existing clone:
+
+```bash
+git submodule update --init --recursive
+```
+
+## Environments
+
+The root data-collection environment is described by `environment.yml` and
+`requirements.txt`. MuJoCo calibration has a small pinned dependency set in
+`sim_mujoco/constraints.txt`.
+
+Raw demonstrations, converted datasets, local environments, calibration
+renders, and machine-specific path configuration are intentionally excluded
+from Git. Fine-tuning scripts default to
+`fine_tune/data/xarm_pi05_data/raw`; pass `--raw-root` or create an ignored
+`fine_tune/xarm_data_config.json` to use another location.
+
+See `docs/step1_data_collection.md`, `docs/step2_openpi_finetuning.md`, and
+`sim_mujoco/calibration/README.md` for the detailed workflows.

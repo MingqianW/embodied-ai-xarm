@@ -1,158 +1,67 @@
 # xArm MuJoCo Camera Calibration
 
-This directory contains the completed local calibration run for the fixed base
-camera (`realsense_0`) and wrist camera (`realsense_1`). The workflow never
-connects to DeltaAI and does not run OpenPI inference.
+This workflow calibrates the fixed base camera (`realsense_0`) and wrist camera
+(`realsense_1`) against locally recorded xArm images. It does not connect to
+DeltaAI or run OpenPI inference.
 
-## Environment
+## Versioned Inputs
 
-The run used `D:\miniconda\envs\mujoco-pi\python.exe`, Python 3.11.15. NumPy
-was 1.26.4, and `python -m pip check` reported no broken requirements. No
-dependencies were installed or upgraded. OpenCV images are converted from BGR
-to RGB immediately after loading.
+- `../config/camera_calibration.yaml`: active camera extrinsics and FOV.
+- `baseline_camera_calibration.yaml`: original cameras used for comparisons.
+- `../assets/xarm6/xarm6_pick_scene.xml`: generated scene used by the tools.
 
-Verify the interpreter before reproducing the run:
+Camera translations are in meters. YAML roll and vertical FOV values are in
+degrees. The base camera uses world-frame position and target; the wrist camera
+uses coordinates relative to `gripper_base`.
 
-```powershell
-conda activate mujoco-pi
-where python
-python --version
-python -m pip check
-```
-
-Do not run these commands from the old Python 3.13 environment.
-
-## Raw Data Discovery
-
-The source data is under `fine_tune/data/xarm_pi05_data/raw`. It contains 200
-episodes and 23,096 synchronized robot rows across six tasks. Every row has
-valid base and wrist images. All source images are RGB PNG files at 640x480.
-
-The state order is `j1_rad, j2_rad, j3_rad, j4_rad, j5_rad, j6_rad,
-gripper_mm`; the six arm values are radians. Despite their names, the three
-`tcp_*_m` translation fields contain millimeters. See `dataset_discovery.json`
-for the complete discovered schema and counts.
-
-## Frame Selection
-
-`selected_frames.json` contains 16 sharp, pose-diverse samples from 16 distinct
-episodes: 12 calibration frames and four held-out validation frames. Selection
-filters candidates by Laplacian sharpness, edge content, valid paired images,
-and wrist-view contrast, then uses farthest-point sampling in normalized
-six-joint space. The manifest records image paths, task, timestamp, source
-resolution, joint values, and gripper value. It also stores a raw-data file
-snapshot used to verify that the originals were not changed.
-
-## Parameterization And Search
-
-The base camera uses world-frame position, look-at target, optical-axis roll,
-and vertical FOV. The wrist camera uses the same representation relative to
-`gripper_base`. Translations are meters; internal angle calculations use
-radians, while YAML roll and FOV values are degrees.
-
-The geometric objective is a weighted symmetric distance-transform loss over
-Canny edges. It emphasizes simulated-to-real edge alignment, includes edge
-density and dark-occlusion penalties, and adds a wrist upper-boundary profile
-term. Camera-to-target distance is weakly regularized. A seeded bounded random
-search is followed by coordinate refinement; no RGB MSE or large learned model
-is used.
-
-Final parameters in `../config/camera_calibration.yaml`:
+## Current Base Camera
 
 ```yaml
-base_camera:
-  position: [1.0311492630, -0.2129129395, 0.30766]
-  target: [0.3094864211, -0.1108238904, 0.0391842418]
-  roll_deg: 2.0
-  fovy_deg: 44.0
-wrist_camera:
-  parent_body: gripper_base
-  position: [0.0674069555, 0.0057714126, 0.0865342728]
-  target: [0.0018739416, -0.0168701195, 0.3221249095]
-  roll_deg: -96.0922885841
-  fovy_deg: 90.3695
+position: [1.0311492630, -0.2129129395, 0.30766]
+target: [0.3094864211, -0.1108238904, 0.0391842418]
+roll_deg: 2.0
+fovy_deg: 44.0
 ```
 
-## Results
-
-Lower geometric loss is better.
-
-| Split | Camera | Before | After | Improvement |
-|---|---:|---:|---:|---:|
-| Calibration (12) | Base | 0.2407 | 0.2325 | 3.4% |
-| Calibration (12) | Wrist | 1.2246 | 1.2246 | 0.0% |
-| Validation (4) | Base | 0.2418 | 0.2327 | 3.7% |
-| Validation (4) | Wrist | 0.3742 | 0.3742 | 0.0% |
-
-The base camera is constrained to the positive-X front of the xArm, across the
-task workspace, and looks back toward the arm along negative X. The contact sheets in
-`contact_sheets/` show real, simulated, and blended views
-for every frame. The final views are upright and not mirrored; the tool remains
-on the correct side, the wrist view looks through the fingers, and the task
-workspace remains visible across all selected poses. Native renders are saved
-at 640x480. Policy images are created afterward with OpenPI
-`resize_with_pad(..., 224, 224)`, preserving the 4:3 image without stretching.
-
-The local refinement was anchored at the user-selected position
-`[1.0324, -0.17899, 0.31766]`. Position was limited to 0.01 m per axis and moved
-only 0.0108 m in total. The improvement comes primarily from target, roll, and
-FOV adjustments. `local_refinement_metrics.json` contains the anchor, final
-pose, per-frame scores, and measured displacement.
-
-After local refinement, the camera was moved another 0.03 m toward camera-left
-(negative world Y) for composition. At that step, target, roll, FOV, X, and Z
-were unchanged. The roll/FOV metrics in the table include this shifted position.
-
-With all extrinsics fixed, 578 roll/FOV combinations were then evaluated. The
-minimum edge-loss pair was `5.5 deg / 47.5 deg`; visual review showed excessive
-table-edge tilt. The selected `2 deg / 44 deg` pair keeps the raw table horizon
-level, better matches arm scale, and still improves both calibration and held-out
-loss. `roll_fovy_search.json` records both candidates and the selection rationale.
+This places the camera on the positive-X side of the workspace, facing the
+front of the arm. From that view, decreasing world Y moves the camera left.
+Changing `position` moves the camera, changing `target` changes where it looks,
+and `roll_deg` rotates the image around its optical axis.
 
 ## Reproduce
 
-Run from the repository root after activating `mujoco-pi`:
+Activate an environment containing the packages pinned in
+`../constraints.txt`, then run from the repository root:
 
 ```powershell
 python sim_mujoco/scripts/discover_raw_camera_data.py
 python sim_mujoco/scripts/select_camera_calibration_frames.py --calibration-count 12 --validation-count 4 --max-episodes 36
 python sim_mujoco/scripts/calibrate_cameras.py --trials 120 --optimization-width 160 --optimization-height 120
-python sim_mujoco/scripts/tune_base_roll_fovy.py --anchor-config sim_mujoco/calibration/backups/camera_calibration.yaml.pre_roll_fovy_tuning.bak --final-roll 2 --final-fovy 44
+python sim_mujoco/scripts/tune_base_roll_fovy.py --final-roll 2 --final-fovy 44
 python sim_mujoco/scripts/build_xarm6_pick_scene.py
 python sim_mujoco/scripts/evaluate_camera_calibration.py
 ```
 
-Regenerate only the calibrated scene:
+Regenerate only the scene after manually changing the active camera config:
 
 ```powershell
 python sim_mujoco/scripts/build_xarm6_pick_scene.py
 ```
 
-Render one selected frame at native and policy resolution:
+Render a selected frame at native and policy resolution:
 
 ```powershell
 python sim_mujoco/scripts/render_calibration_frame.py --sample-id sample_000 --camera both
 ```
 
-The scene generator reads only `sim_mujoco/config/camera_calibration.yaml` for
-camera parameters. `baseline_camera_calibration.yaml` preserves the original
-hard-coded cameras, and `backups/` contains the pre-calibration scene generator.
+## Generated Outputs
 
-## Outputs And Limitations
+The scripts create frame manifests, metrics, validation reports, search logs,
+renders, overlays, contact sheets, and temporary config snapshots under this
+directory. These products are reproducible and ignored by Git. The source raw
+data is read-only and remains under `fine_tune/data/`.
 
-`before/`, `after/`, `overlays/`, and `contact_sheets/` contain the visual
-comparisons. `calibration_metrics.json` contains aggregate and per-frame scores;
-`logs/optimization_history.json` preserves the search history; and
-`validation_report.json` records model, render-size, actuator, camera-config,
-and raw-snapshot checks.
-
-The remaining mismatch is both geometric and photometric. The simulated
-gripper is a simplified dark cylinder and box-finger model, while the real
-gripper has a large white rectangular housing and clear finger guards. The
-simulated table, lighting, background, and objects also differ from the lab.
-RealSense lens distortion and exact intrinsics were unavailable, and the
-single simulated object is not reconstructed from each real frame. These
-differences limit edge alignment, especially on calibration wrist frames, but
-the held-out geometry and orientation remain stable. Improving the gripper
-mesh/materials and reconstructing per-frame objects would address the largest
-remaining errors without changing the calibrated camera interface.
+The remaining visual mismatch is partly photometric: the simulated gripper,
+objects, table, lighting, and background are simplified, and exact RealSense
+intrinsics and distortion were unavailable. Improving those scene assets is
+more useful than retaining generated calibration images in source control.
