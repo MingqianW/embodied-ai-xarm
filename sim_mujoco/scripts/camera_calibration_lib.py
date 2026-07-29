@@ -13,6 +13,7 @@ import numpy as np
 import yaml
 from openpi_client import image_tools
 from PIL import Image, ImageDraw
+from sim_mujoco.gripper_mapping import raw_gripper_to_sim_slide
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -278,14 +279,7 @@ def set_joint_qpos(model: mujoco.MjModel, data: mujoco.MjData, joint_name: str, 
 
 
 def raw_gripper_to_sim(raw_value: float, config: dict[str, Any]) -> float:
-    mapping = config["gripper_mapping"]
-    normalized = np.clip(
-        (float(raw_value) - float(mapping["raw_closed"]))
-        / (float(mapping["raw_open"]) - float(mapping["raw_closed"])),
-        0.0,
-        1.0,
-    )
-    return float(normalized * float(mapping["sim_half_width_open_m"]))
+    return raw_gripper_to_sim_slide(raw_value, config)
 
 
 class CalibrationRenderer:
@@ -524,6 +518,40 @@ def render_comparisons(
         renderer.close()
     create_contact_sheets(samples)
     return {"samples": records}
+
+
+def render_current_comparisons(
+    samples: list[dict[str, Any]],
+    config: dict[str, Any],
+) -> None:
+    render_config = config["render"]
+    renderer = CalibrationRenderer(
+        int(render_config["native_width"]),
+        int(render_config["native_height"]),
+    )
+    try:
+        for sample in samples:
+            for camera_name, real_key in (("base_camera", "base_image"), ("wrist_camera", "wrist_image")):
+                short = camera_name.replace("_camera", "")
+                real = load_rgb(project_path(sample[real_key]))
+                simulated = renderer.render(sample, camera_name, config[camera_name])
+                save_rgb(CALIBRATION_ROOT / "after" / f"{sample['sample_id']}_real_{short}.png", real)
+                save_rgb(CALIBRATION_ROOT / "after" / f"{sample['sample_id']}_sim_{short}.png", simulated)
+                save_rgb(
+                    CALIBRATION_ROOT / "after" / f"{sample['sample_id']}_policy_{short}.png",
+                    policy_image(simulated, config),
+                )
+                save_rgb(
+                    CALIBRATION_ROOT / "overlays" / f"{sample['sample_id']}_{short}.png",
+                    blend_overlay(real, simulated),
+                )
+                save_rgb(
+                    CALIBRATION_ROOT / "overlays" / f"{sample['sample_id']}_{short}_edges.png",
+                    edge_overlay(real, simulated),
+                )
+    finally:
+        renderer.close()
+    create_contact_sheets(samples)
 
 
 def create_contact_sheets(samples: list[dict[str, Any]]) -> None:

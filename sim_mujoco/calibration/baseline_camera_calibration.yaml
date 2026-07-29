@@ -14,7 +14,12 @@ wrist_camera:
 gripper_mapping:
   raw_closed: 50.0
   raw_open: 845.0
-  sim_half_width_open_m: 0.04
+  model: xarm_four_bar
+  driver_max_position: 850.0
+  driver_units_per_radian: 1000.0
+  sim_pad_inner_offset_m: 0.0025
+  sim_slide_min_m: 0.006
+  sim_slide_max_m: 0.047
 render:
   native_width: 640
   native_height: 480

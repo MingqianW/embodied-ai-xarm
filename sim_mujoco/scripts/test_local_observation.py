@@ -5,7 +5,8 @@ from pathlib import Path
 import mujoco
 import numpy as np
 
-from openpi_client import image_tools
+from policy_runtime.image_preprocessing import preprocess_policy_image
+from sim_mujoco.remote_policy_observation import gripper_sim_to_raw, load_camera_config
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -24,11 +25,6 @@ OUTPUT_PATH = (
     / "outputs"
     / "local_observation.npz"
 )
-
-
-GRIPPER_RAW_CLOSED = 50.0
-GRIPPER_RAW_OPEN = 845.0
-SIM_HALF_WIDTH_OPEN = 0.040
 
 
 def joint_qpos(
@@ -52,25 +48,6 @@ def joint_qpos(
     return float(data.qpos[qpos_address])
 
 
-def simulated_gripper_to_raw(
-    half_width: float,
-) -> float:
-    normalized = np.clip(
-        half_width / SIM_HALF_WIDTH_OPEN,
-        0.0,
-        1.0,
-    )
-
-    return float(
-        GRIPPER_RAW_CLOSED
-        + normalized
-        * (
-            GRIPPER_RAW_OPEN
-            - GRIPPER_RAW_CLOSED
-        )
-    )
-
-
 def render(
     renderer: mujoco.Renderer,
     data: mujoco.MjData,
@@ -86,11 +63,7 @@ def render(
         dtype=np.uint8,
     ).copy()
 
-    return image_tools.resize_with_pad(
-        image,
-        224,
-        224,
-    )
+    return preprocess_policy_image(image)
 
 
 def main() -> None:
@@ -156,9 +129,7 @@ def main() -> None:
         "left_finger_slide",
     )
 
-    gripper_raw = simulated_gripper_to_raw(
-        gripper_half_width
-    )
+    gripper_raw = gripper_sim_to_raw(gripper_half_width, load_camera_config())
 
     state = np.concatenate(
         [

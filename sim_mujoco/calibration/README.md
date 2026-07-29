@@ -17,10 +17,10 @@ uses coordinates relative to `gripper_base`.
 ## Current Base Camera
 
 ```yaml
-position: [1.0311492630, -0.2129129395, 0.30766]
-target: [0.3094864211, -0.1108238904, 0.0391842418]
+position: [1.34431495, -0.296122326, 0.707594031]
+target: [0.4473593, -0.0402923386, 0.394251153]
 roll_deg: 2.0
-fovy_deg: 44.0
+fovy_deg: 57.479524
 ```
 
 This places the camera on the positive-X side of the workspace, facing the
@@ -37,7 +37,7 @@ Activate an environment containing the packages pinned in
 python sim_mujoco/scripts/discover_raw_camera_data.py
 python sim_mujoco/scripts/select_camera_calibration_frames.py --calibration-count 12 --validation-count 4 --max-episodes 36
 python sim_mujoco/scripts/calibrate_cameras.py --trials 120 --optimization-width 160 --optimization-height 120
-python sim_mujoco/scripts/tune_base_roll_fovy.py --final-roll 2 --final-fovy 44
+python sim_mujoco/scripts/tune_base_roll_fovy.py --final-roll 2 --final-fovy 57.479524
 python sim_mujoco/scripts/build_xarm6_pick_scene.py
 python sim_mujoco/scripts/evaluate_camera_calibration.py
 ```

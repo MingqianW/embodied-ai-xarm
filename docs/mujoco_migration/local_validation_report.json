@@ -1,0 +1,106 @@
+{
+  "date": "2026-07-29",
+  "platform": "Windows AMD64",
+  "python": {
+    "executable": "D:/miniconda/envs/mujoco-pi/python.exe",
+    "version": "3.11.15"
+  },
+  "summary": {
+    "passed": 16,
+    "failed": 0,
+    "skipped": 2,
+    "unavailable_locally": 1,
+    "gated_until_deltaai": 1,
+    "unit_tests_passed": 85
+  },
+  "checks": [
+    {"name": "py_compile", "status": "passed"},
+    {
+      "name": "scene_regeneration",
+      "status": "passed",
+      "sha256_before": "9f6d8ef3dc3be7ed8996dfc8513742e6257322efaafe6268536b639f4e80edd4",
+      "sha256_after": "9f6d8ef3dc3be7ed8996dfc8513742e6257322efaafe6268536b639f4e80edd4"
+    },
+    {
+      "name": "scene_compile",
+      "status": "passed",
+      "nq": 43,
+      "nv": 38,
+      "nu": 7,
+      "ncam": 3,
+      "timestep_seconds": 0.002
+    },
+    {
+      "name": "environment_checker",
+      "status": "passed",
+      "warnings": ["local architecture is AMD64", "MUJOCO_GL was unset"]
+    },
+    {
+      "name": "headless_render_smoke",
+      "status": "passed",
+      "base_shape": [480, 640, 3],
+      "wrist_shape": [480, 640, 3],
+      "dtype": "uint8"
+    },
+    {"name": "mujoco_unit_tests", "status": "passed", "count": 43},
+    {"name": "policy_runtime_unit_tests", "status": "passed", "count": 20},
+    {"name": "remote_policy_unit_tests", "status": "passed", "count": 20},
+    {"name": "portable_path_unit_tests", "status": "passed", "count": 2},
+    {
+      "name": "scripted_oracle_fixed_scene",
+      "status": "passed",
+      "episodes": 1,
+      "successes": 1,
+      "action_steps": 72
+    },
+    {
+      "name": "raw_episode_recorder",
+      "status": "passed",
+      "episodes": 1,
+      "samples": 72
+    },
+    {
+      "name": "lerobot_conversion",
+      "status": "passed",
+      "codebase_version": "v2.1",
+      "episodes": 1,
+      "frames": 72
+    },
+    {"name": "converter_validate_only", "status": "passed"},
+    {
+      "name": "dataset_validation",
+      "status": "passed",
+      "action_horizon_shape": [10, 7],
+      "note": "Initial run failed on unwritable default HF cache; writable HF_* overrides resolved it."
+    },
+    {
+      "name": "openpi_transformed_batch",
+      "status": "skipped",
+      "reason": "Explicit --skip-openpi-batch; no OpenPI server/deployment dependency in migration check."
+    },
+    {
+      "name": "huggingface_dry_run",
+      "status": "passed",
+      "uploaded": false,
+      "file_count": 11,
+      "total_size_bytes": 4117650
+    },
+    {
+      "name": "huggingface_remote_query",
+      "status": "unavailable_locally",
+      "reason": "Socket access denied; local metadata and manifest validation passed."
+    },
+    {
+      "name": "live_remote_policy_evaluation",
+      "status": "skipped",
+      "reason": "No remote OpenPI server was required or contacted."
+    },
+    {
+      "name": "linux_aarch64_egl",
+      "status": "gated_until_deltaai",
+      "reason": "Requires an allocated DeltaAI GPU node and Linux EGL driver stack."
+    }
+  ],
+  "generated_artifacts_root": "sim_mujoco/output/migration_validation",
+  "generated_artifacts_tracked": false
+}

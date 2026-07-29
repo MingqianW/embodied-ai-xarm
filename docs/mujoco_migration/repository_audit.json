@@ -1,0 +1,142 @@
+{
+  "audit_date": "2026-07-29",
+  "timezone": "America/Chicago",
+  "repository": {
+    "root": "D:/2026 summer project/embodied-ai-xarm",
+    "branch": "main",
+    "head": "33104d957122a1830a2723d6e5e6f07036fb5a83",
+    "upstream": "origin/main",
+    "ahead": 3,
+    "behind": 0,
+    "configured_remote": "https://github.com/MingqianW/embedded-ai-xarm.git",
+    "brief_remote": "https://github.com/MingqianW/embodied-ai-xarm",
+    "remote_ambiguous": true
+  },
+  "working_tree": {
+    "clean": false,
+    "modified": [
+      ".gitignore",
+      "README.md",
+      "fine_tune/convert_xarm_raw_to_lerobot.py",
+      "sim_mujoco/assets/xarm6/xarm6_pick_scene.xml",
+      "sim_mujoco/calibration/README.md",
+      "sim_mujoco/calibration/baseline_camera_calibration.yaml",
+      "sim_mujoco/config/camera_calibration.yaml",
+      "sim_mujoco/scripts/build_xarm6_pick_scene.py",
+      "sim_mujoco/scripts/camera_calibration_lib.py",
+      "sim_mujoco/scripts/test_local_observation.py"
+    ],
+    "untracked_count": 124,
+    "untracked_groups": {
+      ".cache": 2,
+      "root_stray_files": ["1.0.5"],
+      "docs": 4,
+      "fine_tune": 2,
+      "policy_runtime": 13,
+      "pytest_config": 1,
+      "sim_isaac": 45,
+      "sim_mujoco": 44,
+      "tests": 20
+    },
+    "unrelated_uncommitted_work_detected": true
+  },
+  "large_files_over_50_mib": [
+    {
+      "path": "fine_tune/data/xarm_pi05_data/raw.tar",
+      "approx_mib": 24418.6,
+      "ignored": true
+    },
+    {
+      "path": "fine_tune/data/xarm_pi05_data/raw.zip",
+      "approx_mib": 22702.3,
+      "ignored": true
+    },
+    {
+      "path": ".cache/huggingface/datasets/parquet/.../parquet-train.arrow",
+      "approx_mib": 118.7,
+      "ignored_before_task": false
+    }
+  ],
+  "large_directories_over_500_mib": [
+    {"path": "fine_tune", "approx_mib": 87297.3},
+    {"path": "sim_mujoco", "approx_mib": 2540.5},
+    {"path": ".uv-cache", "approx_mib": 2022.8},
+    {"path": ".venv-lerobot", "approx_mib": 1988.2}
+  ],
+  "symlinks_or_reparse_points": [
+    ".uv-python/cpython-3.11-windows-x86_64-none",
+    "sim_isaac/generated/ament_prefix/share/xarm_description"
+  ],
+  "submodules": [
+    {
+      "path": "third_party/openpi",
+      "commit": "15a9616a00943ada6c20a0f158e3adb39df2ccac",
+      "initialized": false,
+      "url": "https://github.com/Physical-Intelligence/openpi.git"
+    }
+  ],
+  "git_lfs": {
+    "installed": true,
+    "configured_patterns": [],
+    "required": false,
+    "largest_tracked_file_mib": 9.94
+  },
+  "secret_scan": {
+    "literal_secrets_detected": false,
+    "private_keys_detected": false,
+    "informational_matches": [
+      "policy_runtime/remote_policy_client.py: optional api_key field",
+      "third_party/openpi: upstream token/key field names"
+    ]
+  },
+  "runtime": {
+    "active_xml": "sim_mujoco/assets/xarm6/xarm6_pick_scene.xml",
+    "generated_xml_sources": [
+      "sim_mujoco/scripts/generate_xarm6_mjcf.py",
+      "sim_mujoco/scripts/build_xarm6_pick_scene.py"
+    ],
+    "camera_config": "sim_mujoco/config/camera_calibration.yaml",
+    "task_config": "sim_mujoco/config/task_scenes.yaml",
+    "cameras": ["overview_camera", "base_camera", "wrist_camera"],
+    "required_mesh_glob": "third_party/xarm_ros2/xarm_description/meshes/xarm6/visual/link*.stl",
+    "required_mesh_count": 7,
+    "required_mesh_size_bytes": 2571738,
+    "scene_compile_passed": true,
+    "timestep_seconds": 0.002,
+    "nq": 43,
+    "nv": 38,
+    "nu": 7,
+    "ncam": 3
+  },
+  "generated_files_not_to_edit": [
+    "sim_mujoco/assets/xarm6/xarm6_arm.xml",
+    "sim_mujoco/assets/xarm6/xarm6_pick_scene.xml",
+    "sim_mujoco/calibration/after/**",
+    "sim_mujoco/calibration/before/**",
+    "sim_mujoco/calibration/contact_sheets/**",
+    "sim_mujoco/calibration/logs/**",
+    "sim_mujoco/calibration/overlays/**",
+    "sim_mujoco/output/**"
+  ],
+  "local_environment": {
+    "os": "Microsoft Windows NT 10.0.26200.0",
+    "python_executable": "D:/miniconda/envs/mujoco-pi/python.exe",
+    "python_version": "3.11.15",
+    "architecture": "AMD64",
+    "packages": {
+      "mujoco": "3.10.0",
+      "numpy": "2.4.6",
+      "opencv-python": "4.10.0.84",
+      "opencv-python-headless": "5.0.0.93",
+      "Pillow": "12.3.0",
+      "imageio": "2.37.4",
+      "imageio-ffmpeg": "0.6.0",
+      "lerobot": "0.1.0",
+      "datasets": "3.6.0",
+      "huggingface-hub": "1.24.0",
+      "PyYAML": "6.0.3",
+      "openpi-client": "0.1.0",
+      "pytest": null
+    }
+  }
+}

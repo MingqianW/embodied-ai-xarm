@@ -1,0 +1,102 @@
+BEGIN HANDOFF
+
+Project: Portable xArm6 MuJoCo oracle/data/policy workflow
+Repository: https://github.com/MingqianW/embodied-ai-xarm.git (owner-confirmed)
+Branch: main
+Commit: the commit with message "Prepare MuJoCo workflow for DeltaAI migration"; after cloning use git rev-parse HEAD and compare it with git ls-remote origin main (the completion response that accompanies this handoff contains the verified SHA)
+Local OS: Windows NT 10.0.26200.0, AMD64
+Local Python: D:/miniconda/envs/mujoco-pi/python.exe, Python 3.11.15
+DeltaAI account: bfmk-dtai-gh
+DeltaAI partitions: ghx4-interactive (interactive), ghx4 (batch)
+DeltaAI architecture: Linux aarch64
+Expected DeltaAI repo path: ~/repos/embodied-ai-xarm
+Expected data root: /work/nvme/bfmk/mw89/
+OpenPI repo: ~/repos/openpi
+Checkpoint: /work/nvme/bfmk/mw89/openpi_checkpoints/pi05_xarm/xarm_pi05_20260703_run1/30000
+
+Goal:
+Migrate the existing, locally validated MuJoCo xArm6 workflow to DeltaAI without changing the policy protocol, state/action ordering, camera semantics, gripper mapping, or LeRobot schema; verify EGL, collect oracle data, convert/validate it, prepare a Hugging Face upload, and run MuJoCo plus π0.5 on one node over localhost.
+
+Current working components:
+- Active scene sim_mujoco/assets/xarm6/xarm6_pick_scene.xml compiles with MuJoCo 3.10.0.
+- Base and wrist cameras render RGB uint8 480x640; policy preprocessing is resize-with-pad to 224x224.
+- State/action order is joint1..joint6, gripper_raw; policy output is (10,7).
+- Identity raw-joint/MuJoCo mapping and four-bar gripper conversion are tested.
+- All six task resets and collision checks pass.
+- Red-block oracle passed 1/1 current, 10/10 historical fixed, and 20/20 historical randomized.
+- One 72-frame raw episode was recorded, converted to LeRobot v2.1, and validated with a (10,7) action horizon.
+- HF-ready preparation and upload dry run passed; no upload occurred.
+- 85 relevant unit tests passed.
+- Portable paths support EMBODIED_AI_ROOT, MUJOCO_OUTPUT_ROOT, MUJOCO_DATASET_ROOT, OPENPI_ROOT, and OPENPI_CHECKPOINT_ROOT.
+- Video recorders fall back to PNG sequences when codecs fail.
+
+Known unresolved issues:
+- Linux aarch64 EGL/driver and wheel compatibility are unverified.
+- Set writable HF_HOME, HF_DATASETS_CACHE, and HF_HUB_CACHE; the Windows default cache was not writable.
+- Real/sim camera, lighting, texture, optics, and visual-gripper domain gaps remain.
+- Collision geometry is simplified and should be revalidated with the DeltaAI MuJoCo build.
+- Multi-task oracle and live remote-policy behavior were not exercised in this migration run.
+- Oracle data runs at 10 Hz; remote closed-loop defaults to 0.02 s action holds. Preserve this intentional difference.
+- Same-node π0.5 metadata, normalization compatibility, and localhost throughput are unverified.
+- Slurm batch scripts have not yet been generated.
+
+Critical files:
+- docs/mujoco_migration/DELTA_AI_MUJOCO_MIGRATION_HANDOFF.md
+- docs/mujoco_migration/required_files_manifest.json
+- environment/mujoco_deltaai_requirements.txt
+- environment/mujoco_deltaai_environment.md
+- scripts/check_deltaai_mujoco_environment.py
+- sim_mujoco/paths.py
+- sim_mujoco/config/camera_calibration.yaml
+- sim_mujoco/config/task_scenes.yaml
+- sim_mujoco/assets/xarm6/xarm6_pick_scene.xml
+- sim_mujoco/environment.py and sim_mujoco/data_collection/
+- sim_mujoco/scripts/smoke_test_headless_render.py
+- sim_mujoco/scripts/collect_oracle_data.py
+- sim_mujoco/scripts/convert_mujoco_to_lerobot.py
+- sim_mujoco/scripts/validate_mujoco_lerobot_dataset.py
+- sim_mujoco/scripts/prepare_mujoco_hf_ready.py
+- sim_mujoco/scripts/upload_mujoco_dataset_to_hf.py
+- sim_mujoco/scripts/run_remote_policy_closed_loop.py
+- policy_runtime/
+- fine_tune/xarm_lerobot_writer.py
+
+Local validation results:
+- Scene regeneration was deterministic; active XML SHA256 is 9f6d8ef3dc3be7ed8996dfc8513742e6257322efaafe6268536b639f4e80edd4.
+- Scene compile: nq=43, nv=38, nu=7, ncam=3, timestep=0.002 s.
+- Dual-camera smoke, task reset, state/action shapes, gripper round-trip, collisions, oracle, raw recorder, conversion, strict dataset validation, and HF dry run passed.
+- OpenPI transformed-batch and live server evaluation were skipped.
+- Linux aarch64 EGL is gated until DeltaAI.
+
+Files intentionally not pushed:
+- fine_tune/data/ raw real-robot data and its 24 GiB/22 GiB archives
+- sim_mujoco/output/ generated datasets, conversions, reports, and videos
+- checkpoints, caches, virtual/Conda environments, WandB/HF caches, .env files, secrets, arrays, Parquet, and archives
+- generated calibration imagery, logs, overlays, and contact sheets
+
+Required next steps on DeltaAI:
+1. Confirm the repository URL and exact pushed migration commit, then clone and verify hashes.
+2. Create a fresh Python 3.11 Linux aarch64 environment.
+3. Install MuJoCo, EGL/headless, conversion, test, and local OpenPI-client dependencies.
+4. Export repository, NVMe output/dataset, checkpoint, and Hugging Face cache variables.
+5. Run scripts/check_deltaai_mujoco_environment.py --require-egl.
+6. Run one dual-camera headless render.
+7. Run one, then ten, fixed red-block oracle episodes.
+8. Record three randomized raw episodes to NVMe.
+9. Convert and strictly validate the LeRobot dataset.
+10. Generate and submit a resumable ghx4 sbatch collection job; monitor logs and accounting.
+11. Prepare and inspect the HF dry run; do not upload without separate explicit authorization.
+12. Allocate one node, start π0.5 on localhost:18000, run headless MuJoCo evaluation, and clean up both processes.
+
+Please help me:
+1. clone and verify the exact commit,
+2. create the correct Linux aarch64 environment,
+3. install MuJoCo EGL/headless dependencies,
+4. run the environment and render smoke tests,
+5. run the scripted oracle locally on the compute node,
+6. submit a long batch data-collection job,
+7. convert and validate the dataset,
+8. prepare and confirm the Hugging Face upload,
+9. run MuJoCo and π0.5 on the same DeltaAI node with localhost communication.
+
+END HANDOFF

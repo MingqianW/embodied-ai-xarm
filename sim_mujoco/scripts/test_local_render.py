@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import sys
 
 import cv2
 import mujoco
@@ -9,7 +10,13 @@ import numpy as np
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 MODEL_PATH = PROJECT_ROOT / "sim_mujoco" / "scenes" / "minimal.xml"
-OUTPUT_PATH = PROJECT_ROOT / "sim_mujoco" / "outputs" / "test_camera.png"
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from sim_mujoco.paths import mujoco_output_root
+
+
+OUTPUT_PATH = mujoco_output_root() / "test_camera.png"
 
 
 def main() -> None:

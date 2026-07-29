@@ -1,7 +1,7 @@
 # Embodied AI xArm
 
 Tools for collecting xArm 6 demonstrations, validating and converting datasets,
-fine-tuning OpenPI policies, and reproducing the task in MuJoCo.
+fine-tuning OpenPI policies, and reproducing the task in MuJoCo or Isaac Sim.
 
 ## Repository Layout
 
@@ -9,6 +9,10 @@ fine-tuning OpenPI policies, and reproducing the task in MuJoCo.
 - `docs/`: task specifications and workflow documentation.
 - `fine_tune/`: raw-data checks, LeRobot conversion, and OpenPI helpers.
 - `sim_mujoco/`: xArm 6 scene generation, camera calibration, and tests.
+- `sim_isaac/`: local Isaac Sim asset preparation, scene/cameras, policy
+  runners, evaluation, and diagnostics.
+- `policy_runtime/`: simulator-independent OpenPI observations, transport,
+  action safety, logs, recording, and evaluation.
 - `third_party/openpi/`: OpenPI Git submodule.
 - `third_party/xarm_ros2/`: vendored xArm ROS 2 descriptions and meshes.
 
@@ -38,5 +42,6 @@ from Git. Fine-tuning scripts default to
 `fine_tune/data/xarm_pi05_data/raw`; pass `--raw-root` or create an ignored
 `fine_tune/xarm_data_config.json` to use another location.
 
-See `docs/step1_data_collection.md`, `docs/step2_openpi_finetuning.md`, and
-`sim_mujoco/calibration/README.md` for the detailed workflows.
+See `docs/step1_data_collection.md`, `docs/step2_openpi_finetuning.md`,
+`sim_mujoco/calibration/README.md`, and
+`docs/ISAAC_SIM_SETUP.md` for the detailed workflows.

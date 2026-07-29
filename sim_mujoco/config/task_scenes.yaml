@@ -1,0 +1,180 @@
+version: 1
+
+# The object catalog is always present in the compiled MJCF. A task reset
+# enables only the listed bodies and moves every other free body below the
+# floor. Dimensions and layouts are approximated from raw-data base-camera
+# frames.
+catalog:
+  free_bodies:
+    - object
+    - blue_block
+    - small_block
+    - large_block
+    - red_pepper
+  fixed_bodies:
+    - held_red_pepper
+    - ring
+  poses:
+    object: [0.458, -0.205, 0.063]
+    blue_block: [0.454, -0.204, 0.0685]
+    # Comparison blocks need enough separation for the gripper to approach
+    # either one without first contacting the other.
+    small_block: [0.440, -0.135, 0.063]
+    large_block: [0.500, -0.215, 0.0685]
+    red_pepper: [0.492, -0.178, 0.072]
+    held_red_pepper: [0.0, 0.0, 0.145]
+    ring: [0.48, 0.08, 0.052]
+  # Extra objects use these non-overlapping table slots in distractor scenes.
+  # The slots are shuffled deterministically per seed.
+  distractor_slots:
+    - [0.365, -0.075]
+    - [0.555, -0.080]
+    - [0.385, 0.055]
+
+tasks:
+  red_block:
+    aliases:
+      - pick_up_the_red_block
+      - pick up the red block
+    prompt: pick_up_the_red_block
+    active_bodies: [object]
+    target_body: object
+    wrist_visible_bodies: [object]
+    randomizable_bodies: [object]
+    distractor_bodies: [blue_block, red_pepper]
+    # Mean initial state observed across the 25 local real red-block
+    # demonstrations. Keeping this task-specific start pose avoids training
+    # simulation trajectories from the unrelated generic MuJoCo home pose.
+    initial_arm_qpos:
+      - -0.355801
+      - 0.174262
+      - -1.008701
+      - 0.017934
+      - 0.837781
+      - -0.367570
+    initial_gripper_raw: 840.0
+    success:
+      type: lift
+      lift_height_m: 0.05
+      sustained_policy_steps: 3
+
+  blue_block:
+    aliases:
+      - pick_up_the_blue_block
+      - pick up the blue block
+    prompt: pick_up_the_blue_block
+    active_bodies: [blue_block]
+    target_body: blue_block
+    wrist_visible_bodies: [blue_block]
+    randomizable_bodies: [blue_block]
+    distractor_bodies: [object, red_pepper]
+    initial_arm_qpos:
+      - -0.355810
+      - 0.174236
+      - -1.010665
+      - 0.017933
+      - 0.837783
+      - -0.367574
+    initial_gripper_raw: 838.04
+    success:
+      type: lift
+      lift_height_m: 0.05
+      sustained_policy_steps: 3
+
+  largest_block:
+    aliases:
+      - pick up the largest block
+      - pick_up_the_largest_block
+    prompt: pick up the largest block
+    active_bodies: [small_block, large_block]
+    target_body: large_block
+    wrist_visible_bodies: [small_block, large_block]
+    randomizable_bodies: [small_block, large_block]
+    shuffle_bodies: [small_block, large_block]
+    distractor_bodies: [object, red_pepper]
+    initial_arm_qpos:
+      - -0.356059
+      - 0.175593
+      - -1.010248
+      - 0.017932
+      - 0.837725
+      - -0.367573
+    initial_gripper_raw: 840.24
+    success:
+      type: lift
+      lift_height_m: 0.05
+      sustained_policy_steps: 3
+
+  smallest_block:
+    aliases:
+      - pick_up_the_smallest_block
+      - pick up the smallest block
+    prompt: pick_up_the_smallest_block
+    active_bodies: [small_block, large_block]
+    target_body: small_block
+    wrist_visible_bodies: [small_block, large_block]
+    randomizable_bodies: [small_block, large_block]
+    shuffle_bodies: [small_block, large_block]
+    distractor_bodies: [blue_block, red_pepper]
+    initial_arm_qpos:
+      - -0.355747
+      - 0.174194
+      - -1.008291
+      - 0.017931
+      - 0.837779
+      - -0.367573
+    initial_gripper_raw: 839.64
+    success:
+      type: lift
+      lift_height_m: 0.05
+      sustained_policy_steps: 3
+
+  red_pepper:
+    aliases:
+      - pick_up_the_red_pepper
+      - pick up the red pepper
+    prompt: pick_up_the_red_pepper
+    active_bodies: [red_pepper]
+    target_body: red_pepper
+    wrist_visible_bodies: [red_pepper]
+    randomizable_bodies: [red_pepper]
+    initial_arm_qpos:
+      - -0.355816
+      - 0.174296
+      - -1.010222
+      - 0.017933
+      - 0.837781
+      - -0.367573
+    initial_gripper_raw: 840.0
+    success:
+      type: lift
+      lift_height_m: 0.05
+      sustained_policy_steps: 3
+
+  place_red_pepper_in_ring:
+    aliases:
+      - place_the_red_pepper_in_the_ring
+      - place the red pepper in the ring
+    prompt: place_the_red_pepper_in_the_ring
+    active_bodies: [held_red_pepper, ring]
+    target_body: red_pepper
+    wrist_visible_bodies: [held_red_pepper, ring]
+    randomizable_bodies: [ring]
+    distractor_bodies: [object, blue_block]
+    initial_arm_qpos:
+      - 0.0250091
+      - 0.0575577
+      - -0.9924203
+      - 0.1974191
+      - 0.9403786
+      - -0.3792221
+    initial_gripper_raw: 492.58
+    initial_gripper_sim_half_width: 0.0273
+    release_gripper_raw: 650.0
+    release_min_sim_half_width: 0.038
+    success:
+      type: place_in_ring
+      ring_body: ring
+      ring_radius_m: 0.052
+      max_height_above_table_m: 0.09
+      sustained_policy_steps: 3

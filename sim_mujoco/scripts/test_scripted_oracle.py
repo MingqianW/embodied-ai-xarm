@@ -1,0 +1,183 @@
+from __future__ import annotations
+
+import argparse
+import json
+import math
+import sys
+from pathlib import Path
+from typing import Any
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from policy_runtime.recording import VideoRecorder
+from sim_mujoco.data_collection.oracle_controller import (
+    OracleConfig,
+    ScriptedOracleController,
+)
+from sim_mujoco.data_collection.task_success import (
+    accepted_oracle_episode,
+    simulation_is_finite,
+    update_task_success,
+)
+from sim_mujoco.environment import MuJoCoEnvironment
+from sim_mujoco.paths import mujoco_output_root
+
+
+DEFAULT_OUTPUT = mujoco_output_root() / "scripted_oracle_test"
+
+
+def run_one_episode(
+    environment: MuJoCoEnvironment,
+    *,
+    seed: int,
+    output_dir: Path,
+    record_video: bool,
+) -> dict[str, Any]:
+    environment.reset(seed=seed)
+    controller = ScriptedOracleController(
+        environment,
+        OracleConfig(action_dt_s=0.1),
+    )
+    recorder = (
+        VideoRecorder(output_dir=output_dir, fps=10)
+        if record_video
+        else None
+    )
+    task_metrics = environment.task_runtime.metrics()
+    try:
+        if recorder is not None:
+            recorder.write(environment.recording_frames())
+        while not controller.terminal:
+            action = controller.next_action()
+            if action is None:
+                break
+            environment.apply_action(action)
+            environment.step_physics(controller.config.action_dt_s)
+            task_metrics = update_task_success(environment)
+            collision = environment.safety_diagnostics()["collision"]
+            controller.notify_post_step(
+                task_metrics=task_metrics,
+                collision=collision,
+                simulation_finite=simulation_is_finite(environment),
+            )
+            if recorder is not None:
+                recorder.write(environment.recording_frames())
+    finally:
+        if recorder is not None:
+            recorder.close()
+
+    failure_reason = controller.failure_reason
+    success = accepted_oracle_episode(
+        terminal_stage=controller.stage.value,
+        task_metrics=task_metrics,
+        failure_reason=failure_reason,
+    )
+    result = {
+        "seed": seed,
+        "success": success,
+        "terminal_stage": controller.stage.value,
+        "failure_reason": failure_reason,
+        "action_steps": controller.action_steps,
+        "simulation_time_s": float(environment.context.data.time),
+        "task_metrics": task_metrics,
+        "transitions": controller.transition_log(),
+        "plan": controller.plan.to_json(),
+    }
+    if recorder is not None:
+        result["video"] = recorder.metadata()
+    output_dir.mkdir(parents=True, exist_ok=True)
+    (output_dir / "result.json").write_text(
+        json.dumps(result, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    return result
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--task", default="red_block")
+    parser.add_argument("--episodes", type=int, default=10)
+    parser.add_argument("--seed-start", type=int, default=0)
+    parser.add_argument("--object-xy-range", type=float, default=0.0)
+    parser.add_argument("--object-yaw-range-deg", type=float, default=0.0)
+    parser.add_argument("--joint-noise", type=float, default=0.0)
+    parser.add_argument("--record-video", action="store_true")
+    parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT)
+    args = parser.parse_args()
+
+    if args.task != "red_block":
+        raise SystemExit("The initial scripted oracle supports only red_block")
+    if args.episodes < 1:
+        raise SystemExit("--episodes must be positive")
+
+    args.output_dir.mkdir(parents=True, exist_ok=True)
+    results = []
+    with MuJoCoEnvironment(
+        task=args.task,
+        object_xy_range=args.object_xy_range,
+        object_yaw_range_deg=args.object_yaw_range_deg,
+        joint_noise=args.joint_noise,
+    ) as environment:
+        for episode_offset in range(args.episodes):
+            seed = args.seed_start + episode_offset
+            episode_dir = (
+                args.output_dir / f"episode_{episode_offset:06d}_seed_{seed}"
+            )
+            result = run_one_episode(
+                environment,
+                seed=seed,
+                output_dir=episode_dir,
+                record_video=args.record_video,
+            )
+            results.append(result)
+            print(
+                f"[{episode_offset + 1}/{args.episodes}] seed={seed} "
+                f"success={result['success']} "
+                f"stage={result['terminal_stage']} "
+                f"steps={result['action_steps']} "
+                f"failure={result['failure_reason']}"
+            )
+
+    successes = sum(bool(result["success"]) for result in results)
+    summary = {
+        "task": args.task,
+        "episodes": args.episodes,
+        "successes": successes,
+        "failures": args.episodes - successes,
+        "success_rate": successes / args.episodes,
+        "seed_start": args.seed_start,
+        "object_xy_range": args.object_xy_range,
+        "object_yaw_range_deg": args.object_yaw_range_deg,
+        "joint_noise": args.joint_noise,
+    }
+    (args.output_dir / "summary.json").write_text(
+        json.dumps(summary, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    print(json.dumps(summary, indent=2))
+
+    randomized = any(
+        value > 0.0
+        for value in (
+            args.object_xy_range,
+            args.object_yaw_range_deg,
+            args.joint_noise,
+        )
+    )
+    required = (
+        math.ceil(0.9 * args.episodes)
+        if randomized
+        else args.episodes
+    )
+    if successes < required:
+        raise SystemExit(
+            f"Oracle gate failed: {successes}/{args.episodes}; "
+            f"required at least {required}"
+        )
+
+
+if __name__ == "__main__":
+    main()

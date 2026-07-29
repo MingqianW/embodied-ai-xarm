@@ -25,17 +25,13 @@ from pathlib import Path
 from typing import Any
 
 from xarm_data_config import get_raw_data_root
-
-
-STATE_COLUMNS = (
-    "j1_rad",
-    "j2_rad",
-    "j3_rad",
-    "j4_rad",
-    "j5_rad",
-    "j6_rad",
-    "gripper_mm",
+from xarm_lerobot_writer import (
+    XARM_STATE_COLUMNS,
+    write_xarm_lerobot_dataset,
 )
+
+
+STATE_COLUMNS = XARM_STATE_COLUMNS
 
 TCP_COLUMNS = (
     "tcp_x_m",
@@ -273,97 +269,30 @@ def _try_write_lerobot_dataset(
     image_writer_processes: int,
 ) -> bool:
     try:
-        try:
-            from lerobot.datasets.lerobot_dataset import HF_LEROBOT_HOME
-            from lerobot.datasets.lerobot_dataset import LeRobotDataset
-        except ModuleNotFoundError:
-            from lerobot.common.datasets.lerobot_dataset import HF_LEROBOT_HOME
-            from lerobot.common.datasets.lerobot_dataset import LeRobotDataset
-        import numpy as np
+        from xarm_lerobot_writer import default_lerobot_output_path
     except Exception as exc:
         print(f"skip LeRobotDataset export: {exc}")
         return False
 
-    output_path = HF_LEROBOT_HOME / repo_id
-    if output_path.exists() and overwrite:
-        shutil.rmtree(output_path)
-
-    if output_path.exists() and append_new and not overwrite:
-        if hasattr(LeRobotDataset, "resume"):
-            dataset = LeRobotDataset.resume(
-                repo_id=repo_id,
-                root=output_path,
-                image_writer_threads=image_writer_threads,
-                image_writer_processes=image_writer_processes,
-            )
-        else:
-            dataset = LeRobotDataset(
-                repo_id=repo_id,
-                root=output_path,
-                batch_encoding_size=1,
-                image_writer_threads=image_writer_threads,
-                image_writer_processes=image_writer_processes,
-            )
-    else:
-        dataset = LeRobotDataset.create(
+    try:
+        output_path = default_lerobot_output_path(repo_id)
+        result = write_xarm_lerobot_dataset(
+            records_by_episode,
             repo_id=repo_id,
-            root=output_path,
+            output_path=output_path,
             robot_type=robot_type,
             fps=fps,
-            features={
-                "image": {
-                    "dtype": "image",
-                    "shape": (480, 640, 3),
-                    "names": ["height", "width", "channel"],
-                },
-                "wrist_image": {
-                    "dtype": "image",
-                    "shape": (480, 640, 3),
-                    "names": ["height", "width", "channel"],
-                },
-                "state": {
-                    "dtype": "float32",
-                    "shape": (len(STATE_COLUMNS),),
-                    "names": ["state"],
-                },
-                "actions": {
-                    "dtype": "float32",
-                    "shape": (len(STATE_COLUMNS),),
-                    "names": ["actions"],
-                },
-        },
-        image_writer_threads=image_writer_threads,
-        image_writer_processes=image_writer_processes,
+            overwrite=overwrite,
+            resume=append_new and not overwrite,
+            image_writer_threads=image_writer_threads,
+            image_writer_processes=image_writer_processes,
+            push_to_hub=push_to_hub,
+            hub_private=hub_private,
         )
-
-    for episode_records in records_by_episode:
-        for record in episode_records:
-            frame = {
-                "image": _load_rgb(record["image"]),
-                "wrist_image": _load_rgb(record["wrist_image"]),
-                "state": np.asarray(record["state"], dtype=np.float32),
-                "actions": np.asarray(record["actions"], dtype=np.float32),
-            }
-            try:
-                dataset.add_frame(frame, task=record["task"])
-            except TypeError as exc:
-                if "required positional argument: 'task'" in str(exc):
-                    raise
-                dataset.add_frame({**frame, "task": record["task"]})
-        dataset.save_episode()
-
-    if hasattr(dataset, "finalize"):
-        dataset.finalize()
-
-    if push_to_hub:
-        dataset.push_to_hub(
-            tags=["xarm", "xarm6", "openpi"],
-            private=hub_private,
-            push_videos=True,
-            license="apache-2.0",
-        )
-
-    print(f"lerobot dataset: {output_path}")
+    except Exception as exc:
+        print(f"skip LeRobotDataset export: {exc}")
+        return False
+    print(f"lerobot dataset: {result['output_path']}")
     return True
 
 
