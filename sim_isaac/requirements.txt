@@ -1,0 +1,9 @@
+# Lightweight dependencies used by configuration, diagnostics, and recording.
+# Isaac Sim itself must be installed using NVIDIA's supported distribution and
+# launched through its python.bat; it is intentionally not installed here.
+numpy>=1.26,<2
+Pillow>=10
+PyYAML>=6
+opencv-python>=4.10
+websockets>=11
+

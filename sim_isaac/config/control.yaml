@@ -1,0 +1,32 @@
+schema_version: "1.0"
+simulation:
+  physics_hz: 120
+  rendering_hz: 30
+  headless: false
+  seed: 0
+  renderer: RayTracedLighting
+  anti_aliasing: 1
+policy:
+  host: 127.0.0.1
+  port: 18000
+  timeout_s: 10.0
+  prompt: pick up the object
+  control_hz: 10
+  execute_chunk_steps: 1
+  action_horizon: 10
+  action_mode: absolute_joint_position
+safety:
+  max_joint_delta_rad: 0.05
+  reject_if_clip_exceeds_rad: 0.25
+  max_joint_tracking_error_rad: 0.20
+  max_contact_impulse_ns: 10.0
+  require_contact_impulse_sensor: false
+  minimum_table_clearance_m: -0.002
+  stale_camera_timeout_s: 0.5
+  real_time_factor_warning: 0.5
+recording:
+  enabled: false
+  fps: 30
+  max_frames: 18000
+  keep_raw_frames: false
+  fallback_to_frame_directory: true

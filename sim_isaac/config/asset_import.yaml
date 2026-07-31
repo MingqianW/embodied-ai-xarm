@@ -1,0 +1,37 @@
+schema_version: "1.0"
+source:
+  xacro: third_party/xarm_ros2/xarm_description/urdf/xarm_device.urdf.xacro
+  package_root: third_party/xarm_ros2
+  xarm_description: third_party/xarm_ros2/xarm_description
+  arguments:
+    dof: "6"
+    robot_type: xarm
+    add_gripper: "true"
+    add_realsense_d435i: "false"
+    limited: "true"
+    mesh_suffix: stl
+generated:
+  urdf: sim_isaac/generated/xarm6_with_gripper.urdf
+  usd: sim_isaac/generated/xarm6_with_gripper/xarm6_with_gripper.usda
+  validation_report: sim_isaac/generated/asset_validation.json
+isaac_import:
+  fix_base: true
+  merge_fixed_joints: false
+  merge_meshes: true
+  import_inertia_tensor: true
+  collision_from_visuals: false
+  allow_self_collision: false
+  robot_type: Manipulator
+  joint_drive_type: force
+  joint_target_type: position
+  override_joint_stiffness:
+    "^joint1$": 120.0
+    "^joint2$": 120.0
+    "^joint3$": 100.0
+    "^joint4$": 70.0
+    "^joint5$": 50.0
+    "^joint6$": 30.0
+    "^drive_joint$": 20.0
+  override_joint_damping:
+    "^joint[1-6]$": 1.0
+    "^drive_joint$": 1.0

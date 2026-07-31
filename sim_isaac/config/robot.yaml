@@ -1,0 +1,58 @@
+schema_version: "1.0"
+robot:
+  name: xarm6
+  articulation_prim_path: /World/xarm6
+  asset_path: sim_isaac/generated/xarm6_with_gripper/xarm6_with_gripper.usda
+  source_xacro: third_party/xarm_ros2/xarm_description/urdf/xarm_device.urdf.xacro
+  base_frame: Geometry/world/link_base
+  end_effector_frame: Geometry/world/link_base/link1/link2/link3/link4/link5/link6/link_eef/xarm_gripper_base_link/link_tcp
+  action_mode: absolute_joint_position
+canonical:
+  state_order: [joint1, joint2, joint3, joint4, joint5, joint6, gripper_mm]
+  action_order: [joint1, joint2, joint3, joint4, joint5, joint6, gripper_mm]
+  arm_joint_names: [joint1, joint2, joint3, joint4, joint5, joint6]
+isaac:
+  # The authoritative MuJoCo xArm model uses gravcomp="1" on every robot body.
+  # Disabling link gravity is the matching PhysX behavior.
+  gravity_enabled: false
+  gripper_visual_frame: Geometry/world/link_base/link1/link2/link3/link4/link5/link6/link_eef/xarm_gripper_base_link
+  gripper_color_rgb: [0.015, 0.015, 0.02]
+  arm_joint_names: [joint1, joint2, joint3, joint4, joint5, joint6]
+  gripper_joint_name: drive_joint
+  gripper_mimic_joint_names:
+    - left_finger_joint
+    - left_inner_knuckle_joint
+    - right_outer_knuckle_joint
+    - right_finger_joint
+    - right_inner_knuckle_joint
+joint_limits_rad:
+  joint1: [-3.1101767271, 3.1101767271]
+  joint2: [-2.059, 2.0944]
+  joint3: [-3.1101767271, 0.19198]
+  joint4: [-3.1101767271, 3.1101767271]
+  joint5: [-1.69297, 3.1101767271]
+  joint6: [-3.1101767271, 3.1101767271]
+initial_pose:
+  # Matches sim_mujoco/config/task_scenes.yaml:red_block.
+  arm_joint_positions_rad: [-0.355801, 0.174262, -1.008701, 0.017934, 0.837781, -0.367570]
+  gripper_mm: 839.68
+gripper:
+  policy_name: gripper_mm
+  policy_unit: xarm_sdk_position
+  policy_closed: 50.0
+  policy_open: 845.0
+  isaac_joint_name: drive_joint
+  isaac_unit: rad
+  isaac_closed: 0.85
+  isaac_open: 0.0
+  formula: isaac_closed + normalized_policy_opening * (isaac_open - isaac_closed)
+  inverse_formula: policy_closed + normalized_isaac_opening * (policy_open - policy_closed)
+  physical_aperture_validated: true
+  physical_measurement:
+    method: finger_mesh_world_aabb_inward_face_gap
+    source_report: sim_isaac/output/gripper_conversion.json
+    measured_at_utc: "2026-07-24T13:59:34Z"
+    policy_closed_gap_m: 0.0011193531852844271
+    policy_open_gap_m: 0.08860416691413087
+    sample_count: 5
+    maximum_drive_tracking_error_rad: 0.0028306192252784967

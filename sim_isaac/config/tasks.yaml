@@ -1,0 +1,133 @@
+schema_version: "1.1"
+# Dataset task catalog.  The collector uses collection.target_episodes and
+# collection.scene_mix to produce the requested 200-episode mix.
+tasks:
+  pick_up_red_pepper:
+    prompt: pick up the red pepper
+    target_type: object
+    object:
+      type: pepper
+      name: red_pepper
+      size_m: [0.025, 0.075, 0.025]
+      mass_kg: 0.025
+      color_rgb: [0.85, 0.04, 0.03]
+      pose:
+        position_m: [0.462063, -0.210543, 0.075]
+        orientation_quaternion_wxyz: [1.0, 0.0, 0.0, 0.0]
+    table: &default_table
+      size_m: [0.70, 0.90, 0.05]
+      position_m: [0.45, 0.0, 0.025]
+    randomization:
+      object_xy_range_m: 0.04
+      object_yaw_range_deg: 25.0
+      arm_joint_noise_rad: 0.02
+      distractor_probability: 0.0
+    collection: {target_episodes: 50, scene_mix: {clean: 50, distractors: 0}}
+    success: {lift_height_m: 0.05, partial_credit_height_m: 0.025}
+
+  pick_up_light_blue_block:
+    prompt: pick up the light blue block
+    target_type: object
+    object:
+      type: cube
+      name: light_blue_block
+      size_m: [0.035, 0.035, 0.035]
+      mass_kg: 0.03
+      color_rgb: [0.30, 0.72, 0.95]
+      pose: {position_m: [0.462063, -0.210543, 0.0675], orientation_quaternion_wxyz: [1.0, 0.0, 0.0, 0.0]}
+    table: *default_table
+    randomization: {object_xy_range_m: 0.04, object_yaw_range_deg: 30.0, arm_joint_noise_rad: 0.02, distractor_probability: 0.4}
+    distractors:
+      - {name: blue_distractor, size_m: [0.045, 0.045, 0.045], mass_kg: 0.03, color_rgb: [0.08, 0.25, 0.75], pose: {position_m: [0.40, -0.10, 0.0725], orientation_quaternion_wxyz: [1.0, 0.0, 0.0, 0.0]}}
+      - {name: yellow_distractor, size_m: [0.03, 0.03, 0.03], mass_kg: 0.02, color_rgb: [0.95, 0.75, 0.05], pose: {position_m: [0.53, -0.12, 0.065], orientation_quaternion_wxyz: [1.0, 0.0, 0.0, 0.0]}}
+    collection: {target_episodes: 25, scene_mix: {clean: 15, distractors: 10}}
+    success: {lift_height_m: 0.05, partial_credit_height_m: 0.025}
+
+  pick_up_red_block:
+    prompt: pick up the red block
+    target_type: object
+    object:
+      type: cube
+      name: red_block
+      size_m: [0.035, 0.035, 0.035]
+      mass_kg: 0.03
+      color_rgb: [0.85, 0.06, 0.04]
+      pose: {position_m: [0.462063, -0.210543, 0.0675], orientation_quaternion_wxyz: [1.0, 0.0, 0.0, 0.0]}
+    table: *default_table
+    randomization: {object_xy_range_m: 0.04, object_yaw_range_deg: 30.0, arm_joint_noise_rad: 0.02, distractor_probability: 0.4}
+    distractors:
+      - {name: green_distractor, size_m: [0.045, 0.045, 0.045], mass_kg: 0.03, color_rgb: [0.08, 0.70, 0.20], pose: {position_m: [0.40, -0.10, 0.0725], orientation_quaternion_wxyz: [1.0, 0.0, 0.0, 0.0]}}
+      - {name: blue_distractor, size_m: [0.03, 0.03, 0.03], mass_kg: 0.02, color_rgb: [0.10, 0.35, 0.90], pose: {position_m: [0.53, -0.12, 0.065], orientation_quaternion_wxyz: [1.0, 0.0, 0.0, 0.0]}}
+    collection: {target_episodes: 25, scene_mix: {clean: 15, distractors: 10}}
+    success: {lift_height_m: 0.05, partial_credit_height_m: 0.025}
+
+  pick_up_smallest_block:
+    prompt: pick up the smallest block
+    target_type: smallest
+    object:
+      type: cube
+      name: smallest_block
+      size_m: [0.025, 0.025, 0.025]
+      mass_kg: 0.02
+      color_rgb: [0.95, 0.75, 0.05]
+      pose: {position_m: [0.462063, -0.210543, 0.0625], orientation_quaternion_wxyz: [1.0, 0.0, 0.0, 0.0]}
+    table: *default_table
+    randomization: {object_xy_range_m: 0.04, object_yaw_range_deg: 30.0, arm_joint_noise_rad: 0.02, distractor_probability: 0.4}
+    distractors:
+      - {name: medium_block, size_m: [0.04, 0.04, 0.04], mass_kg: 0.04, color_rgb: [0.10, 0.40, 0.90], pose: {position_m: [0.40, -0.10, 0.07], orientation_quaternion_wxyz: [1.0, 0.0, 0.0, 0.0]}}
+      - {name: large_block, size_m: [0.06, 0.06, 0.06], mass_kg: 0.06, color_rgb: [0.10, 0.70, 0.20], pose: {position_m: [0.53, -0.12, 0.08], orientation_quaternion_wxyz: [1.0, 0.0, 0.0, 0.0]}}
+    collection: {target_episodes: 25, scene_mix: {clean: 15, distractors: 10}}
+    success: {lift_height_m: 0.05, partial_credit_height_m: 0.025}
+
+  pick_up_largest_block:
+    prompt: pick up the largest block
+    target_type: largest
+    object:
+      type: cube
+      name: largest_block
+      size_m: [0.06, 0.06, 0.06]
+      mass_kg: 0.06
+      color_rgb: [0.10, 0.70, 0.20]
+      pose: {position_m: [0.462063, -0.210543, 0.08], orientation_quaternion_wxyz: [1.0, 0.0, 0.0, 0.0]}
+    table: *default_table
+    randomization: {object_xy_range_m: 0.04, object_yaw_range_deg: 30.0, arm_joint_noise_rad: 0.02, distractor_probability: 0.4}
+    distractors:
+      - {name: small_block, size_m: [0.025, 0.025, 0.025], mass_kg: 0.02, color_rgb: [0.95, 0.75, 0.05], pose: {position_m: [0.40, -0.10, 0.0625], orientation_quaternion_wxyz: [1.0, 0.0, 0.0, 0.0]}}
+      - {name: medium_block, size_m: [0.04, 0.04, 0.04], mass_kg: 0.04, color_rgb: [0.10, 0.40, 0.90], pose: {position_m: [0.53, -0.12, 0.07], orientation_quaternion_wxyz: [1.0, 0.0, 0.0, 0.0]}}
+    collection: {target_episodes: 25, scene_mix: {clean: 15, distractors: 10}}
+    success: {lift_height_m: 0.05, partial_credit_height_m: 0.025}
+
+  place_red_pepper_in_ring:
+    prompt: place red pepper in the ring
+    target_type: place
+    place_in_ring: true
+    object:
+      type: pepper
+      name: red_pepper
+      size_m: [0.025, 0.075, 0.025]
+      mass_kg: 0.025
+      color_rgb: [0.85, 0.04, 0.03]
+      pose: {position_m: [0.462063, -0.210543, 0.075], orientation_quaternion_wxyz: [1.0, 0.0, 0.0, 0.0]}
+    table: *default_table
+    randomization: {object_xy_range_m: 0.04, object_yaw_range_deg: 25.0, arm_joint_noise_rad: 0.02, distractor_probability: 0.4}
+    distractors:
+      - {name: blue_block_distractor, size_m: [0.04, 0.04, 0.04], mass_kg: 0.03, color_rgb: [0.10, 0.40, 0.90], pose: {position_m: [0.40, -0.10, 0.07], orientation_quaternion_wxyz: [1.0, 0.0, 0.0, 0.0]}}
+      - {name: yellow_block_distractor, size_m: [0.03, 0.03, 0.03], mass_kg: 0.02, color_rgb: [0.95, 0.75, 0.05], pose: {position_m: [0.53, -0.12, 0.065], orientation_quaternion_wxyz: [1.0, 0.0, 0.0, 0.0]}}
+    collection: {target_episodes: 50, scene_mix: {clean: 30, distractors: 20}}
+    success: {lift_height_m: 0.05, partial_credit_height_m: 0.025}
+
+  # Backward-compatible baseline used by the original validation commands.
+  pick_up_object:
+    prompt: pick up the object
+    target_type: object
+    object:
+      type: cube
+      name: target_object
+      size_m: [0.03, 0.03, 0.03]
+      mass_kg: 0.03
+      color_rgb: [0.85, 0.12, 0.08]
+      pose: {position_m: [0.462063, -0.210543, 0.065], orientation_quaternion_wxyz: [1.0, 0.0, 0.0, 0.0]}
+    table: *default_table
+    randomization: {object_xy_range_m: 0.0, object_yaw_range_deg: 0.0, arm_joint_noise_rad: 0.0, distractor_probability: 0.0}
+    collection: {target_episodes: 0, scene_mix: {clean: 0, distractors: 0}}
+    success: {lift_height_m: 0.05, partial_credit_height_m: 0.025}

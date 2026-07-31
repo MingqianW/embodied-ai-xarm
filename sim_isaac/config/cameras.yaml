@@ -1,0 +1,39 @@
+schema_version: "1.0"
+notes:
+  - Initial estimates copied from the active MuJoCo calibration.
+  - Orientations assume a local negative-Z optical axis and require Isaac comparison.
+  - MuJoCo source snapshot refreshed 2026-07-24 09:21 CDT; tune only this file after comparison.
+base_camera:
+  prim_path: /World/base_camera
+  parent_frame: world
+  translation_m: [0.6998640343, -0.2034187962, 0.3691466327]
+  orientation_quaternion_wxyz: [0.7417799076776007, 0.2664430590971282, 0.30030905752934767, 0.5372012051276591]
+  source_target_m: [0.3784729309, -0.171520319, 0.0715365659]
+  source_roll_deg: -12.5073468556
+  vertical_fov_deg: 46.7280905796
+  resolution: [320, 240]
+  near_clip_m: 0.01
+  far_clip_m: 10.0
+  preprocessing:
+    input_color_order: RGB
+    flip_horizontal: false
+    flip_vertical: false
+    crop: [0, 0, 0, 0]
+    resize_with_pad: [224, 224]
+wrist_camera:
+  prim_path: /World/xarm6/Geometry/world/link_base/link1/link2/link3/link4/link5/link6/link_eef/xarm_gripper_base_link/wrist_camera
+  parent_frame: Geometry/world/link_base/link1/link2/link3/link4/link5/link6/link_eef/xarm_gripper_base_link
+  translation_m: [0.06432955545751386, -0.0014285874072126926, 0.08233427275157185]
+  orientation_quaternion_wxyz: [-0.08063062187599285, 0.7369830235384631, -0.6573532733331744, 0.1350607266016167]
+  source_target_m: [-0.01648605838780822, 0.014125880549260589, 0.33412490948712087]
+  source_roll_deg: -97.06428858407915
+  vertical_fov_deg: 95.0
+  resolution: [320, 240]
+  near_clip_m: 0.01
+  far_clip_m: 5.0
+  preprocessing:
+    input_color_order: RGB
+    flip_horizontal: false
+    flip_vertical: false
+    crop: [0, 0, 0, 0]
+    resize_with_pad: [224, 224]
