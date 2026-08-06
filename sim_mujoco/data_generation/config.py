@@ -9,7 +9,7 @@ from typing import Any
 import yaml
 
 from sim_mujoco.data_generation.registry import TASKS, TASK_BY_ID
-from sim_mujoco.data_generation.safety import AUTHORIZED_ROOTS
+from sim_mujoco.data_generation.plans import expected_counts, expected_roots
 
 
 @dataclass(frozen=True)
@@ -269,20 +269,17 @@ def load_pipeline_config(path: Path) -> PipelineConfig:
 
 
 def validate_pipeline_config(config: PipelineConfig) -> None:
-    expected_counts = {
-        "red_pepper": 50,
-        "blue_block": 25,
-        "red_block": 25,
-        "smallest_block": 25,
-        "largest_block": 25,
-        "place_red_pepper_in_ring": 50,
-    }
+    plan_counts = expected_counts(config.dataset_version)
     if config.schema_version != 1 or not config.dataset_version:
         raise ValueError("Unsupported or missing pipeline schema/dataset version")
-    if {task.task_id: task.episodes for task in config.tasks} != expected_counts:
-        raise ValueError("Task episode counts do not match the required 200-episode plan")
-    if config.total_episodes != 200:
-        raise ValueError("Collection total must be exactly 200 episodes")
+    if {task.task_id: task.episodes for task in config.tasks} != plan_counts:
+        raise ValueError(
+            f"Task episode counts do not match {config.dataset_version}"
+        )
+    if config.total_episodes != sum(plan_counts.values()):
+        raise ValueError(
+            f"Collection total does not match {config.dataset_version}"
+        )
     if config.action_hz != 10 or config.scene_variant != "clean":
         raise ValueError("This version requires 10 Hz clean-scene collection")
     if config.distractor_count != 0:
@@ -316,8 +313,12 @@ def validate_pipeline_config(config: PipelineConfig) -> None:
         raise ValueError("Every Pick prompt must begin with 'pick up '")
     if not config.camera_config.is_file() or not config.task_scene_config.is_file():
         raise FileNotFoundError("Camera and task-scene configuration files must exist")
-    if set(vars(config.outputs).values()) != AUTHORIZED_ROOTS:
-        raise ValueError("Configured outputs must be the four exact authorized v3 roots")
+    if set(vars(config.outputs).values()) != expected_roots(
+        config.dataset_version
+    ):
+        raise ValueError(
+            "Configured outputs must be the four exact roots for the dataset version"
+        )
     scene_config = _mapping(
         yaml.safe_load(config.task_scene_config.read_text(encoding="utf-8")),
         "task scene config",

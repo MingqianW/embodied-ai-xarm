@@ -371,7 +371,7 @@ def _run_config(config: PipelineConfig, output: Path, *, smoke: bool, overwrite:
             }
             for task in config.tasks
         ],
-        "total_target_episodes": 6 if smoke else 200,
+        "total_target_episodes": 6 if smoke else config.total_episodes,
         "smoke": smoke,
         "overwrite": overwrite,
     }

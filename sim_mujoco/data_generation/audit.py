@@ -45,7 +45,7 @@ def audit_raw(
     expected = {
         task.task_id: (1 if smoke else task.episodes) for task in config.tasks
     }
-    expected_total = 6 if smoke else 200
+    expected_total = 6 if smoke else config.total_episodes
     if manifest.get("complete") is not True or summary.get("complete") is not True:
         raise ValueError("Raw manifests are incomplete")
     if (
@@ -253,8 +253,13 @@ def write_raw_audit_reports(
     raw_report: dict[str, Any],
     report_dir: Path,
 ) -> dict[str, Any]:
-    if raw_report.get("episode_count") != 200 or raw_report.get("smoke"):
-        raise ValueError("Raw audit report requires the complete 200-episode dataset")
+    if (
+        raw_report.get("episode_count") != config.total_episodes
+        or raw_report.get("smoke")
+    ):
+        raise ValueError(
+            "Raw audit report requires the complete configured dataset"
+        )
     report_dir.mkdir(parents=True, exist_ok=True)
     result = {
         "schema_version": "xarm_mujoco_raw_audit_v1",
@@ -270,7 +275,7 @@ def write_raw_audit_reports(
                 "",
                 "**RAW_PASS**",
                 "",
-                "- Accepted episodes: 200",
+                f"- Accepted episodes: {config.total_episodes}",
                 "- Tasks: 6",
                 "- Distractor episodes: 0",
                 "- Canonical prompts: PASS",
@@ -305,7 +310,10 @@ def audit_converted(config: PipelineConfig, converted: Path, *, decode_all_image
     )
     expected = {task.prompt: task.episodes for task in config.tasks}
     actual_tasks = {str(row["task"]) for row in tasks}
-    if int(info["total_episodes"]) != 200 or int(info["total_tasks"]) != 6:
+    if (
+        int(info["total_episodes"]) != config.total_episodes
+        or int(info["total_tasks"]) != 6
+    ):
         raise ValueError("Converted totals are invalid")
     if actual_tasks != set(expected) or any("_" in prompt for prompt in actual_tasks):
         raise ValueError("Converted prompts are invalid")
@@ -315,8 +323,10 @@ def audit_converted(config: PipelineConfig, converted: Path, *, decode_all_image
     if mapping.get("total_distractor_episodes") != 0 or not mapping.get("clean_scene_only"):
         raise ValueError("Converted dataset contains distractor metadata")
     files = sorted((converted / "data").glob("chunk-*/episode_*.parquet"))
-    if len(files) != 200:
-        raise ValueError(f"Expected 200 parquet episodes, found {len(files)}")
+    if len(files) != config.total_episodes:
+        raise ValueError(
+            f"Expected {config.total_episodes} parquet episodes, found {len(files)}"
+        )
     seen_indices: set[int] = set()
     seen_frames: set[tuple[int, int]] = set()
     total_frames = 0

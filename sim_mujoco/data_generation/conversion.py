@@ -32,7 +32,7 @@ def convert_dataset(
     raw = Path(raw).resolve()
     output = Path(output).resolve(strict=False)
     if raw != config.outputs.raw or output != config.outputs.converted:
-        raise ValueError("Raw and converted paths must equal the configured v3 roots")
+        raise ValueError("Raw and converted paths must equal the configured dataset roots")
     raw_audit = json.loads(
         (config.outputs.log / "RAW_DATASET_AUDIT.json").read_text(encoding="utf-8")
     )
@@ -46,13 +46,13 @@ def convert_dataset(
     completed = manifest.get("completed") or []
     completed_counts = Counter(str(entry.get("task_id")) for entry in completed)
     if (
-        len(completed) != 200
-        or summary.get("total_accepted_episodes") != 200
+        len(completed) != config.total_episodes
+        or summary.get("total_accepted_episodes") != config.total_episodes
         or summary.get("total_distractor_episodes") != 0
         or dict(completed_counts) != expected_counts
         or summary.get("accepted_counts_by_task") != expected_counts
     ):
-        raise ValueError("Raw collection counts do not match the exact v3 plan")
+        raise ValueError("Raw collection counts do not match the configured dataset plan")
     replacement = replace_authorized_roots(
         [output], overwrite=overwrite, git_sha=git_sha(config.path.parents[3]),
         config_path=config.path,

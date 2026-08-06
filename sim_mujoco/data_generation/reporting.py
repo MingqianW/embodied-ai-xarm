@@ -1,4 +1,4 @@
-"""Durable audit and handoff reports for the v3 pipeline."""
+"""Durable audit and handoff reports for versioned simulation pipelines."""
 
 from __future__ import annotations
 
@@ -17,11 +17,26 @@ def _read_json(path: Path) -> dict[str, Any]:
 
 def write_initial_audit(config: PipelineConfig) -> Path:
     path = config.outputs.log / "INITIAL_AUDIT.md"
+    repository = config.path.parents[3]
+    branch = subprocess.run(
+        ["git", "branch", "--show-current"],
+        cwd=repository,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    commit = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repository,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
     text = f"""# Initial MuJoCo Pipeline Audit
 
 - Repository: `{config.path.parents[3]}`
-- Starting branch: `sim-pipeline-camera-sync-20260806`
-- Starting commit: `b60f6ad7550d9f0af8edb3ab2631b7be64493d53`
+- Starting branch: `{branch}`
+- Starting commit: `{commit}`
 - Authoritative camera file: `{config.camera_config}` (preserved; never replaced)
 
 ## Findings before refactoring
@@ -41,7 +56,7 @@ def write_initial_audit(config: PipelineConfig) -> Path:
 
 ## Integrated design
 
-The v3 package separates the registry, typed config, scene setup, Pick and Place controllers, shared validators, recording, seed/retry state, manifests, conversion, audits, artifacts, status, permissions, and Slurm orchestration. The camera YAML above remains authoritative.
+The versioned package separates the registry, typed config, scene setup, Pick and Place controllers, shared validators, recording, seed/retry state, manifests, conversion, audits, artifacts, status, permissions, and Slurm orchestration. The camera YAML above remains authoritative.
 """
     path.write_text(text, encoding="utf-8")
     return path
@@ -65,6 +80,13 @@ def write_final_handoff(config: PipelineConfig) -> Path:
     commit = subprocess.run(
         ["git", "rev-parse", "HEAD"], cwd=repository, check=True,
         capture_output=True, text=True,
+    ).stdout.strip()
+    branch = subprocess.run(
+        ["git", "branch", "--show-current"],
+        cwd=repository,
+        check=True,
+        capture_output=True,
+        text=True,
     ).stdout.strip()
     changed = subprocess.run(
         ["git", "show", "--pretty=format:", "--name-only", "HEAD"],
@@ -93,12 +115,13 @@ def write_final_handoff(config: PipelineConfig) -> Path:
 
 1. Repository: `{repository}`
 2. Branch: `sim-pipeline-camera-sync-20260806`
-3. Local commit: `{commit}`
-4. Original problems: hard-coded mixed-prompt/distractor plan, short Pick streak acceptance, and a fixed-to-free Place pepper identity swap.
-5. Architecture: typed YAML config plus registry, scene runtime, separate Pick/Place controllers, canonical stability validators, recorder, atomic manifest, converter, strict audits, artifact writer, and self-contained Slurm phases.
-6. Files in the focused commit: {', '.join(f'`{name}`' for name in changed if name) or '(inspect Git commit)'}.
-7. Public CLI: `python -m sim_mujoco.data_generation.cli {{generate,convert,audit,inspect}} ...`.
-8. Versioned config: `{config.path}`.
+3. Branch: `{branch}`
+4. Local commit: `{commit}`
+5. Original problems: hard-coded mixed-prompt/distractor plan, short Pick streak acceptance, and a fixed-to-free Place pepper identity swap.
+6. Architecture: typed YAML config plus registry, scene runtime, separate Pick/Place controllers, canonical stability validators, recorder, atomic manifest, converter, strict audits, artifact writer, and self-contained Slurm phases.
+7. Files in the focused commit: {', '.join(f'`{name}`' for name in changed if name) or '(inspect Git commit)'}.
+8. Public CLI: `python -m sim_mujoco.data_generation.cli {{generate,convert,audit,inspect}} ...`.
+9. Versioned config: `{config.path}`.
 
 ## Tasks, prompts, and clean plan
 
@@ -136,7 +159,7 @@ def write_final_handoff(config: PipelineConfig) -> Path:
 
 ## Scoped overwrite record
 
-The user authorized replacement of only the four exact v3 roots. Each phase required `--overwrite`, validated the canonical non-symlink path, saved an inventory outside the replaced root, and recreated the root with an overwrite marker.
+The user authorized replacement of only the four exact roots for `{config.dataset_version}`. Each phase required `--overwrite`, validated the canonical non-symlink path, saved an inventory outside the replaced root, and recreated the root with an overwrite marker.
 
 {marker_rows}
 

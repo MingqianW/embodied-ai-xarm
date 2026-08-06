@@ -11,15 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-
-AUTHORIZED_ROOTS = frozenset(
-    {
-        Path("/work/nvme/bfmk/mw89/mujoco_datasets/raw/xarm_mujoco_clean_multitask_stable_v3"),
-        Path("/work/nvme/bfmk/mw89/mujoco_datasets/local/xarm_mujoco_clean_multitask_stable_v3"),
-        Path("/work/nvme/bfmk/mw89/mujoco_datasets/smoke/xarm_mujoco_clean_multitask_stable_v3"),
-        Path("/work/nvme/bfmk/mw89/logs/xarm_mujoco_clean_multitask_stable_v3"),
-    }
-)
+from sim_mujoco.data_generation.plans import AUTHORIZED_ROOTS
 REJECTED_ROOTS = frozenset(
     Path(value)
     for value in (
@@ -41,7 +33,7 @@ def validate_authorized_root(path: Path) -> Path:
         raise ValueError(f"Output root must not be a symbolic link: {raw}")
     resolved = raw.resolve(strict=False)
     if resolved in REJECTED_ROOTS or resolved not in AUTHORIZED_ROOTS:
-        raise ValueError(f"Output root is not an exact authorized v3 root: {resolved}")
+        raise ValueError(f"Output root is not an exact authorized dataset root: {resolved}")
     if resolved.exists() and resolved.is_symlink():
         raise ValueError(f"Resolved output root must not be a symbolic link: {resolved}")
     return resolved
@@ -74,7 +66,7 @@ def _write_preoverwrite_inventory(rows: list[dict[str, Any]], timestamp: str) ->
     LOG_PARENT.mkdir(parents=True, exist_ok=True)
     safe_timestamp = timestamp.replace(":", "").replace("+", "_")
     path = LOG_PARENT / (
-        "xarm_mujoco_clean_multitask_stable_v3_preoverwrite_inventory_"
+        "xarm_mujoco_pipeline_preoverwrite_inventory_"
         f"{safe_timestamp}.txt"
     )
     if path.exists():

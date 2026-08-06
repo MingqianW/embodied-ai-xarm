@@ -17,6 +17,7 @@ from sim_mujoco.data_generation.registry import (
     resolve_task_id,
 )
 from sim_mujoco.data_generation import safety
+from sim_mujoco.data_generation.plans import expected_roots
 from sim_mujoco.data_generation.stability import (
     StabilitySample,
     evaluate_pick_stability,
@@ -112,7 +113,9 @@ class TestTaskRegistryAndConfig:
     def test_output_paths_are_exact_and_overwrite_defaults_false(self) -> None:
         config = _config()
         assert config.overwrite_existing_outputs is False
-        assert set(vars(config.outputs).values()) == safety.AUTHORIZED_ROOTS
+        assert set(vars(config.outputs).values()) == expected_roots(
+            config.dataset_version
+        )
 
     def test_seed_resolution_is_deterministic_and_task_separated(self) -> None:
         config = _config()
