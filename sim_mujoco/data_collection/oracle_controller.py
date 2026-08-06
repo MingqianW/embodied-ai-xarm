@@ -15,6 +15,15 @@ from sim_mujoco.data_collection.conversions import (
     policy_state_from_mujoco,
 )
 from sim_mujoco.data_collection.ik_solver import IKSolution, solve_site_pose
+from sim_mujoco.data_generation.config import (
+    PickVerificationConfig,
+    PlaceVerificationConfig,
+)
+from sim_mujoco.data_generation.stability import (
+    StabilitySample,
+    evaluate_pick_stability,
+    evaluate_place_stability,
+)
 from sim_mujoco.environment import MuJoCoEnvironment
 
 
@@ -45,8 +54,15 @@ class OracleConfig:
     grasp_tcp_offset_from_object_m: float = -0.011
     lift_clearance_from_object_m: float = 0.107
     hold_steps: int = 5
-    verify_steps: int = 10
-    max_action_steps: int = 180
+    verify_steps: int = 20
+    verification_entry_lift_height_m: float = 0.05
+    verification_minimum_lift_height_m: float = 0.04
+    maximum_relative_downward_slip_m: float = 0.01
+    maximum_final_relative_downward_slip_m: float = 0.01
+    maximum_final_downward_speed_mps: float = 0.01
+    maximum_grasp_region_delta_m: float = 0.015
+    velocity_fit_samples: int = 10
+    max_action_steps: int = 240
 
     def validate(self) -> None:
         if not self.task:
@@ -63,6 +79,8 @@ class OracleConfig:
             raise ValueError("hold_steps and verify_steps must be positive")
         if self.max_action_steps < 1:
             raise ValueError("max_action_steps must be positive")
+        if self.verify_steps != 20 or self.action_dt_s != 0.1:
+            raise ValueError("Stable Pick verification requires 20 steps at 0.1 s")
 
 
 RED_PEPPER_CLOSED_GRIPPER_RAW = 250.0
@@ -180,6 +198,38 @@ def _policy_action(arm_qpos: np.ndarray, gripper_raw: float) -> np.ndarray:
     return policy_action_from_mujoco_target(internal_target)
 
 
+def _named_position(
+    environment: MuJoCoEnvironment,
+    name: str,
+    object_type: mujoco.mjtObj,
+) -> np.ndarray:
+    object_id = mujoco.mj_name2id(environment.context.model, object_type, name)
+    if object_id < 0:
+        raise RuntimeError(f"MuJoCo object not found: {name}")
+    values = (
+        environment.context.data.site_xpos
+        if object_type == mujoco.mjtObj.mjOBJ_SITE
+        else environment.context.data.xpos
+    )
+    return np.asarray(values[object_id], dtype=np.float64).copy()
+
+
+def _target_table_contact(
+    collision: dict[str, Any], target_body: str
+) -> bool:
+    return any(
+        (
+            contact.get("body1") == target_body
+            or contact.get("body2") == target_body
+        )
+        and (
+            contact.get("geom1") == "table"
+            or contact.get("geom2") == "table"
+        )
+        for contact in collision.get("contacts") or ()
+    )
+
+
 class ScriptedOracleController:
     """Pre-planned pose IK with an explicit action-timestep state machine."""
 
@@ -225,6 +275,10 @@ class ScriptedOracleController:
         self.plan = self._build_plan()
         self._stage_actions = self._build_stage_actions()
         self._stage_action_index = 0
+        self._verification_samples: list[StabilitySample] = []
+        self._verification_start_object: np.ndarray | None = None
+        self._verification_start_tcp: np.ndarray | None = None
+        self._stability_result: dict[str, Any] | None = None
 
     def _build_plan(self) -> OraclePlan:
         model = self.environment.context.model
@@ -436,6 +490,20 @@ class ScriptedOracleController:
                 reason=reason,
             )
         )
+        if to_stage == OracleStage.VERIFY:
+            runtime = self.environment.task_runtime
+            assert runtime is not None
+            self._verification_start_object = _named_position(
+                self.environment, runtime.target_body, mujoco.mjtObj.mjOBJ_BODY
+            )
+            self._verification_start_tcp = _named_position(
+                self.environment, self.config.tcp_site, mujoco.mjtObj.mjOBJ_SITE
+            )
+            entry_lift = float(
+                self._verification_start_object[2] - runtime.initial_target_z
+            )
+            if entry_lift < self.config.verification_entry_lift_height_m:
+                self._fail("stable_grasp_initial_lift_below_threshold")
 
     def _fail(self, reason: str) -> None:
         if self.terminal:
@@ -475,6 +543,58 @@ class ScriptedOracleController:
         if self.terminal:
             return
         self.action_steps += 1
+        if self.stage == OracleStage.VERIFY:
+            runtime = self.environment.task_runtime
+            assert runtime is not None
+            object_position = _named_position(
+                self.environment, runtime.target_body, mujoco.mjtObj.mjOBJ_BODY
+            )
+            tcp_position = _named_position(
+                self.environment, self.config.tcp_site, mujoco.mjtObj.mjOBJ_SITE
+            )
+            self._verification_samples.append(
+                StabilitySample(
+                    simulation_time_s=float(self.environment.context.data.time),
+                    object_position_m=tuple(float(value) for value in object_position),
+                    tcp_position_m=tuple(float(value) for value in tcp_position),
+                    finite=bool(
+                        simulation_finite
+                        and np.isfinite(object_position).all()
+                        and np.isfinite(tcp_position).all()
+                    ),
+                    table_contact=_target_table_contact(collision, runtime.target_body),
+                    forbidden_collision=bool(collision.get("forbidden")),
+                )
+            )
+            if len(self._verification_samples) == self.config.verify_steps:
+                assert self._verification_start_object is not None
+                assert self._verification_start_tcp is not None
+                self._stability_result = evaluate_pick_stability(
+                    self._verification_samples,
+                    config=PickVerificationConfig(
+                        entry_lift_height_m=self.config.verification_entry_lift_height_m,
+                        minimum_lift_height_m=self.config.verification_minimum_lift_height_m,
+                        maximum_relative_downward_slip_m=self.config.maximum_relative_downward_slip_m,
+                        maximum_final_relative_downward_slip_m=(
+                            self.config.maximum_final_relative_downward_slip_m
+                        ),
+                        maximum_final_downward_speed_mps=(
+                            self.config.maximum_final_downward_speed_mps
+                        ),
+                        maximum_grasp_region_delta_m=self.config.maximum_grasp_region_delta_m,
+                        steps=self.config.verify_steps,
+                        action_dt_s=self.config.action_dt_s,
+                        velocity_fit_samples=self.config.velocity_fit_samples,
+                    ),
+                    initial_object_z_m=runtime.initial_target_z,
+                    verification_start_object_position_m=self._verification_start_object,
+                    verification_start_tcp_position_m=self._verification_start_tcp,
+                )
+                if self._stability_result["stable_grasp_success"]:
+                    self._transition(OracleStage.COMPLETE, "stable_grasp_verified")
+                else:
+                    self._fail(str(self._stability_result["stable_grasp_failure_reason"]))
+            return
         if not simulation_finite:
             self._fail("simulation_non_finite")
             return
@@ -485,10 +605,18 @@ class ScriptedOracleController:
             )
             self._fail(reason)
             return
-        if self.stage == OracleStage.VERIFY and task_metrics.get(
-            "task_success"
-        ):
-            self._transition(OracleStage.COMPLETE, "sustained_task_success")
+
+    def stability_metadata(self) -> dict[str, Any]:
+        if self._stability_result is not None:
+            return dict(self._stability_result)
+        return {
+            "verification_steps_required": self.config.verify_steps,
+            "verification_steps_executed": len(self._verification_samples),
+            "verification_duration_s": len(self._verification_samples)
+            * self.config.action_dt_s,
+            "stable_grasp_success": False,
+            "stable_grasp_failure_reason": self.failure_reason,
+        }
 
     def transition_log(self) -> list[dict[str, Any]]:
         return [asdict(transition) for transition in self.transitions]
@@ -499,6 +627,7 @@ class PlaceOracleStage(str, enum.Enum):
     MOVE_TO_PREPLACE = "MOVE_TO_PREPLACE"
     LOWER_TO_TARGET = "LOWER_TO_TARGET"
     RELEASE = "RELEASE"
+    RETREAT = "RETREAT"
     VERIFY = "VERIFY"
     COMPLETE = "COMPLETE"
     FAILED = "FAILED"
@@ -515,7 +644,11 @@ class PlaceOracleConfig:
     preplace_pepper_height_m: float = 0.20
     release_pepper_height_m: float = 0.125
     verify_steps: int = 20
-    max_action_steps: int = 180
+    ring_radius_m: float = 0.052
+    maximum_height_above_table_m: float = 0.09
+    maximum_final_speed_mps: float = 0.01
+    velocity_fit_samples: int = 10
+    max_action_steps: int = 240
 
     def validate(self) -> None:
         if not self.task:
@@ -526,14 +659,16 @@ class PlaceOracleConfig:
             raise ValueError("max_joint_step_rad must be positive")
         if self.max_gripper_step_raw <= 0.0:
             raise ValueError("max_gripper_step_raw must be positive")
-        if self.verify_steps < 1 or self.max_action_steps < 1:
+        if self.verify_steps != 20 or self.action_dt_s != 0.1:
+            raise ValueError("Stable Place verification requires 20 steps at 0.1 s")
+        if self.max_action_steps < 1:
             raise ValueError("verify_steps and max_action_steps must be positive")
 
 
 @dataclass(frozen=True)
 class PlaceOraclePlan:
     ring_position: np.ndarray
-    held_pepper_offset_from_tcp: np.ndarray
+    tcp_to_pepper_translation: np.ndarray
     tcp_rotation: np.ndarray
     initial_arm_qpos: np.ndarray
     preplace: IKSolution
@@ -542,8 +677,8 @@ class PlaceOraclePlan:
     def to_json(self) -> dict[str, Any]:
         return {
             "ring_position": self.ring_position.tolist(),
-            "held_pepper_offset_from_tcp": (
-                self.held_pepper_offset_from_tcp.tolist()
+            "tcp_to_pepper_translation": (
+                self.tcp_to_pepper_translation.tolist()
             ),
             "tcp_rotation": self.tcp_rotation.tolist(),
             "initial_arm_qpos": self.initial_arm_qpos.tolist(),
@@ -566,6 +701,7 @@ class PlaceRedPepperOracleController:
         PlaceOracleStage.MOVE_TO_PREPLACE,
         PlaceOracleStage.LOWER_TO_TARGET,
         PlaceOracleStage.RELEASE,
+        PlaceOracleStage.RETREAT,
         PlaceOracleStage.VERIFY,
     )
 
@@ -603,6 +739,10 @@ class PlaceRedPepperOracleController:
         self.plan = self._build_plan()
         self._stage_actions = self._build_stage_actions()
         self._stage_action_index = 0
+        self.release_step: int | None = None
+        self.retreat_detected = False
+        self._verification_samples: list[StabilitySample] = []
+        self._stability_result: dict[str, Any] | None = None
 
     def _named_position(self, name: str, object_type: mujoco.mjtObj) -> np.ndarray:
         model = self.environment.context.model
@@ -634,11 +774,12 @@ class PlaceRedPepperOracleController:
             str(runtime.spec["success"]["ring_body"]),
             mujoco.mjtObj.mjOBJ_BODY,
         )
-        held_position = self._named_position(
-            "held_red_pepper",
+        pepper_position = self._named_position(
+            runtime.target_body,
             mujoco.mjtObj.mjOBJ_BODY,
         )
-        held_offset = held_position - tcp_position
+        tcp_to_pepper = tcp_rotation.T @ (pepper_position - tcp_position)
+        pepper_offset_world = tcp_rotation @ tcp_to_pepper
         initial_arm = policy_state_from_mujoco(model, data)[:6].astype(np.float64)
 
         preplace_pepper = np.asarray(
@@ -661,7 +802,7 @@ class PlaceRedPepperOracleController:
             model,
             data,
             site_name=self.config.tcp_site,
-            target_position=preplace_pepper - held_offset,
+            target_position=preplace_pepper - pepper_offset_world,
             target_rotation=tcp_rotation,
             seed_joint_qpos=initial_arm,
         )
@@ -669,13 +810,13 @@ class PlaceRedPepperOracleController:
             model,
             data,
             site_name=self.config.tcp_site,
-            target_position=release_pepper - held_offset,
+            target_position=release_pepper - pepper_offset_world,
             target_rotation=tcp_rotation,
             seed_joint_qpos=preplace.joint_qpos,
         )
         plan = PlaceOraclePlan(
             ring_position=ring_position,
-            held_pepper_offset_from_tcp=held_offset,
+            tcp_to_pepper_translation=tcp_to_pepper,
             tcp_rotation=tcp_rotation,
             initial_arm_qpos=initial_arm,
             preplace=preplace,
@@ -738,9 +879,13 @@ class PlaceRedPepperOracleController:
                 _policy_action(self.plan.release.joint_qpos, value)
                 for value in open_values
             ],
+            PlaceOracleStage.RETREAT: [
+                _policy_action(arm, self.config.open_gripper_raw)
+                for arm in reversed(release_arms)
+            ],
             PlaceOracleStage.VERIFY: [
                 _policy_action(
-                    self.plan.release.joint_qpos,
+                    self.plan.preplace.joint_qpos,
                     self.config.open_gripper_raw,
                 )
                 for _ in range(self.config.verify_steps)
@@ -767,6 +912,8 @@ class PlaceRedPepperOracleController:
                 reason=reason,
             )
         )
+        if to_stage == PlaceOracleStage.RETREAT:
+            self.retreat_detected = True
 
     def _fail(self, reason: str) -> None:
         if self.terminal:
@@ -806,6 +953,53 @@ class PlaceRedPepperOracleController:
         if self.terminal:
             return
         self.action_steps += 1
+        runtime = self.environment.task_runtime
+        assert runtime is not None
+        if runtime.released and self.release_step is None:
+            self.release_step = self.action_steps
+        if self.stage == PlaceOracleStage.VERIFY:
+            object_position = _named_position(
+                self.environment, runtime.target_body, mujoco.mjtObj.mjOBJ_BODY
+            )
+            tcp_position = _named_position(
+                self.environment, self.config.tcp_site, mujoco.mjtObj.mjOBJ_SITE
+            )
+            self._verification_samples.append(
+                StabilitySample(
+                    simulation_time_s=float(self.environment.context.data.time),
+                    object_position_m=tuple(float(value) for value in object_position),
+                    tcp_position_m=tuple(float(value) for value in tcp_position),
+                    finite=bool(
+                        simulation_finite
+                        and np.isfinite(object_position).all()
+                        and np.isfinite(tcp_position).all()
+                    ),
+                    table_contact=_target_table_contact(collision, runtime.target_body),
+                    forbidden_collision=bool(collision.get("forbidden")),
+                    inside_ring=bool(task_metrics.get("instant_success")),
+                    released=bool(runtime.released),
+                    retreat_detected=self.retreat_detected,
+                )
+            )
+            if len(self._verification_samples) == self.config.verify_steps:
+                self._stability_result = evaluate_place_stability(
+                    self._verification_samples,
+                    config=PlaceVerificationConfig(
+                        steps=self.config.verify_steps,
+                        action_dt_s=self.config.action_dt_s,
+                        ring_radius_m=self.config.ring_radius_m,
+                        maximum_height_above_table_m=(
+                            self.config.maximum_height_above_table_m
+                        ),
+                        maximum_final_speed_mps=self.config.maximum_final_speed_mps,
+                        velocity_fit_samples=self.config.velocity_fit_samples,
+                    ),
+                )
+                if self._stability_result["stable_place_success"]:
+                    self._transition(PlaceOracleStage.COMPLETE, "stable_place_verified")
+                else:
+                    self._fail(str(self._stability_result["stable_place_failure_reason"]))
+            return
         if not simulation_finite:
             self._fail("simulation_non_finite")
             return
@@ -817,14 +1011,23 @@ class PlaceRedPepperOracleController:
                 )
             )
             return
-        if (
-            self.stage == PlaceOracleStage.VERIFY
-            and task_metrics.get("task_success")
-        ):
-            self._transition(
-                PlaceOracleStage.COMPLETE,
-                "sustained_task_success",
-            )
+
+    def stability_metadata(self) -> dict[str, Any]:
+        result = dict(self._stability_result or {})
+        result.update(
+            {
+                "release_detected": self.release_step is not None,
+                "release_step": self.release_step,
+                "retreat_detected": self.retreat_detected,
+                "place_verification_steps_required": self.config.verify_steps,
+                "place_verification_steps_executed": len(self._verification_samples),
+                "place_verification_duration_s": len(self._verification_samples)
+                * self.config.action_dt_s,
+            }
+        )
+        result.setdefault("stable_place_success", False)
+        result.setdefault("stable_place_failure_reason", self.failure_reason)
+        return result
 
     def transition_log(self) -> list[dict[str, Any]]:
         return [asdict(transition) for transition in self.transitions]

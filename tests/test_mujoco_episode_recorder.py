@@ -202,6 +202,7 @@ class EpisodeRecorderTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             results = []
+            successes = []
             for name in ("first", "second"):
                 success, metadata = _record_attempt(
                     self.environment,
@@ -210,8 +211,12 @@ class EpisodeRecorderTests(unittest.TestCase):
                     args=args,
                     record_video=False,
                 )
-                self.assertTrue(success)
+                successes.append(success)
                 results.append(metadata)
+            self.assertEqual(successes[0], successes[1])
+            self.assertEqual(
+                results[0]["failure_reason"], results[1]["failure_reason"]
+            )
             keys = (
                 "state",
                 "actions",

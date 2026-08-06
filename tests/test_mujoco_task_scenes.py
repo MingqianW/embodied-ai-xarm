@@ -117,10 +117,11 @@ class TaskSceneRuntimeTests(unittest.TestCase):
             context_a.close()
             context_b.close()
 
-    def test_place_task_transfers_pepper_on_open_command(self) -> None:
+    def test_place_task_releases_same_free_pepper_without_pose_swap(self) -> None:
         context, runtime, _ = self.make_scene("place_red_pepper_in_ring")
         try:
             self.assertFalse(runtime.released)
+            self.assertEqual(runtime.target_body, "red_pepper")
             self.assertAlmostEqual(
                 runtime.physical_gripper_target(440.0, 0.0196),
                 0.0273,
@@ -132,22 +133,22 @@ class TaskSceneRuntimeTests(unittest.TestCase):
                 )
             }
             runtime.adjust_observation(observation)
-            self.assertAlmostEqual(
-                float(observation["observation/state"][6]),
-                float(runtime.spec["initial_gripper_raw"]),
-                places=3,
-            )
-            self.assertFalse(runtime.release_if_requested(600.0))
-            self.assertTrue(runtime.release_if_requested(700.0))
-            self.assertTrue(runtime.released)
-            self.assertAlmostEqual(
-                runtime.physical_gripper_target(700.0, 0.0327),
-                0.038,
-            )
+            self.assertEqual(float(observation["observation/state"][6]), 845.0)
             pepper_id = mujoco.mj_name2id(
                 context.model,
                 mujoco.mjtObj.mjOBJ_BODY,
                 "red_pepper",
+            )
+            position_before_release = context.data.xpos[pepper_id].copy()
+            self.assertFalse(runtime.release_if_requested(600.0))
+            self.assertTrue(runtime.release_if_requested(700.0))
+            self.assertTrue(runtime.released)
+            np.testing.assert_array_equal(
+                context.data.xpos[pepper_id], position_before_release
+            )
+            self.assertAlmostEqual(
+                runtime.physical_gripper_target(700.0, 0.0327),
+                0.038,
             )
             self.assertGreater(float(context.data.xpos[pepper_id, 2]), 0.05)
         finally:

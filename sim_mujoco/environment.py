@@ -24,7 +24,12 @@ from sim_mujoco.remote_policy_observation import (
     policy_image,
     render_native_rgb,
 )
-from sim_mujoco.task_scenes import TaskSceneRuntime, configure_task_scene, resolve_task
+from sim_mujoco.task_scenes import (
+    TASK_CONFIG_PATH,
+    TaskSceneRuntime,
+    configure_task_scene,
+    resolve_task,
+)
 
 
 class MuJoCoEnvironment:
@@ -35,6 +40,7 @@ class MuJoCoEnvironment:
         *,
         model_path: Path = DEFAULT_MODEL_PATH,
         camera_config_path: Path = DEFAULT_CAMERA_CONFIG_PATH,
+        task_scene_config_path: Path = TASK_CONFIG_PATH,
         task: str = "red_block",
         prompt: str | None = None,
         settle_steps: int = 500,
@@ -44,7 +50,8 @@ class MuJoCoEnvironment:
         scene_variant: str = "clean",
     ) -> None:
         self.context = load_simulation(model_path, camera_config_path)
-        self.task, task_spec = resolve_task(task)
+        self.task_scene_config_path = Path(task_scene_config_path).resolve()
+        self.task, task_spec = resolve_task(task, self.task_scene_config_path)
         self.prompt = str(prompt or task_spec["prompt"])
         self.settle_steps = int(settle_steps)
         self.object_xy_range = float(object_xy_range)
@@ -92,6 +99,7 @@ class MuJoCoEnvironment:
             joint_noise=self.joint_noise,
             scene_variant=self.scene_variant,
             settle_steps=self.settle_steps,
+            config_path=self.task_scene_config_path,
         )
         self._last_step_started_s = float(self.context.data.time)
         self._last_step_duration_s = 0.0
@@ -119,15 +127,6 @@ class MuJoCoEnvironment:
             frame_ids={"base": f"{self.context.data.time:.9f}", "wrist": f"{self.context.data.time:.9f}"},
             metadata={"simulator": "mujoco", "task": self.task},
         )
-        if (
-            self.task_runtime is not None
-            and not self.task_runtime.released
-            and self.task_runtime.spec["success"]["type"] == "place_in_ring"
-            and "initial_gripper_raw" in self.task_runtime.spec
-        ):
-            observation.state[6] = float(
-                self.task_runtime.spec["initial_gripper_raw"]
-            )
         return observation
 
     def apply_action(self, action: np.ndarray) -> None:

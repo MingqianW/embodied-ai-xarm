@@ -159,6 +159,7 @@ class TaskSceneRuntime:
     released: bool = False
     success_streak: int = 0
     initial_target_z: float = 0.0
+    release_simulation_time_s: float | None = None
 
     @property
     def prompt(self) -> str:
@@ -169,20 +170,13 @@ class TaskSceneRuntime:
         return str(self.spec["target_body"])
 
     def _target_pose(self) -> np.ndarray:
-        body_name = self.target_body
-        if self.spec["success"]["type"] == "place_in_ring" and not self.released:
-            body_name = "held_red_pepper"
-        return np.asarray(self.data.xpos[_body_id(self.model, body_name)], dtype=np.float64)
+        return np.asarray(
+            self.data.xpos[_body_id(self.model, self.target_body)],
+            dtype=np.float64,
+        )
 
     def adjust_observation(self, observation: dict[str, Any]) -> None:
-        if (
-            self.spec["success"]["type"] == "place_in_ring"
-            and not self.released
-            and "initial_gripper_raw" in self.spec
-        ):
-            observation["observation/state"][6] = float(
-                self.spec["initial_gripper_raw"]
-            )
+        del observation
 
     def physical_gripper_target(
         self,
@@ -208,16 +202,10 @@ class TaskSceneRuntime:
         if threshold is None or self.released or float(gripper_raw_target) < float(threshold):
             return False
 
-        held_body_id = _body_id(self.model, "held_red_pepper")
-        object_addr = _freejoint_qpos_address(self.model, "red_pepper")
-        dof_addr = _freejoint_dof_address(self.model, "red_pepper")
-        self.data.qpos[object_addr : object_addr + 3] = self.data.xpos[held_body_id]
-        self.data.qpos[object_addr + 3 : object_addr + 7] = self.data.xquat[held_body_id]
-        self.data.qvel[dof_addr : dof_addr + 6] = 0.0
-        _set_body_enabled(self.model, "held_red_pepper", False)
-        _set_body_enabled(self.model, "red_pepper", True)
+        # The free red_pepper body is used from reset through release. Opening
+        # the physical fingers is the release; no body swap or teleport occurs.
         self.released = True
-        mujoco.mj_forward(self.model, self.data)
+        self.release_simulation_time_s = float(self.data.time)
         return True
 
     def metrics(self) -> dict[str, Any]:
@@ -230,6 +218,7 @@ class TaskSceneRuntime:
             "target_body": self.target_body,
             "target_position": target_position.tolist(),
             "released": self.released,
+            "release_simulation_time_s": self.release_simulation_time_s,
         }
         if success_type == "lift":
             lift_height = float(target_position[2] - self.initial_target_z)
@@ -391,6 +380,7 @@ def configure_task_scene(
             data.qpos[int(model.jnt_qposadr[joint_id])] = gripper_sim
         data.ctrl[6] = gripper_sim
 
+    initial_tcp_to_object = spec.get("initial_tcp_to_object")
     scene_delta = np.zeros(2, dtype=np.float64)
     if seed is not None:
         scene_delta = rng.uniform(-float(object_xy_range), float(object_xy_range), size=2)
@@ -424,6 +414,43 @@ def configure_task_scene(
         joint_values.append(clamped)
 
     mujoco.mj_forward(model, data)
+    # Apply the one-time free-body initialization only after the randomized arm
+    # pose is final.  This implements T_world_object = T_world_tcp @
+    # T_tcp_object and avoids arm noise introducing an unrecorded pose jump.
+    if initial_tcp_to_object is not None:
+        if task_name != "place_red_pepper_in_ring":
+            raise ValueError("initial_tcp_to_object is supported only for Place")
+        if spec.get("object_identity") != runtime.target_body:
+            raise ValueError("Place object identity must equal target_body")
+        translation = np.asarray(
+            initial_tcp_to_object.get("translation_m"), dtype=np.float64
+        )
+        quaternion = np.asarray(
+            initial_tcp_to_object.get("quaternion_wxyz"), dtype=np.float64
+        )
+        if translation.shape != (3,) or quaternion.shape != (4,):
+            raise ValueError("Invalid initial TCP-to-object transform")
+        quaternion_norm = float(np.linalg.norm(quaternion))
+        if not np.isfinite(quaternion_norm) or quaternion_norm <= 0.0:
+            raise ValueError("Initial TCP-to-object quaternion must be finite and nonzero")
+        quaternion = quaternion / quaternion_norm
+        site_id = mujoco.mj_name2id(
+            model, mujoco.mjtObj.mjOBJ_SITE, "tool_center_point"
+        )
+        tcp_position = np.asarray(data.site_xpos[site_id], dtype=np.float64)
+        tcp_rotation = np.asarray(data.site_xmat[site_id], dtype=np.float64).reshape(3, 3)
+        relative_rotation = np.empty(9, dtype=np.float64)
+        mujoco.mju_quat2Mat(relative_rotation, quaternion)
+        world_rotation = tcp_rotation @ relative_rotation.reshape(3, 3)
+        world_quaternion = np.empty(4, dtype=np.float64)
+        mujoco.mju_mat2Quat(world_quaternion, world_rotation.reshape(-1))
+        qpos_addr = _freejoint_qpos_address(model, runtime.target_body)
+        dof_addr = _freejoint_dof_address(model, runtime.target_body)
+        data.qpos[qpos_addr : qpos_addr + 3] = tcp_position + tcp_rotation @ translation
+        data.qpos[qpos_addr + 3 : qpos_addr + 7] = world_quaternion
+        data.qvel[dof_addr : dof_addr + 6] = 0.0
+        mujoco.mj_forward(model, data)
+
     for _ in range(int(settle_steps)):
         mujoco.mj_step(model, data)
 
@@ -461,6 +488,8 @@ def configure_task_scene(
         "initial_joint_positions": joint_values,
         "wrist_visibility": wrist_visibility,
         "initial_target_z": runtime.initial_target_z,
+        "object_identity": spec.get("object_identity", runtime.target_body),
+        "initial_tcp_to_object": initial_tcp_to_object,
     }
     target_position = runtime._target_pose()
     initial_conditions.update(

@@ -31,9 +31,14 @@ def accepted_oracle_episode(
     terminal_stage: str,
     task_metrics: dict[str, Any],
     failure_reason: str | None,
+    validation_success: bool | None = None,
 ) -> bool:
     return bool(
         terminal_stage == "COMPLETE"
-        and task_metrics.get("task_success")
+        and (
+            bool(validation_success)
+            if validation_success is not None
+            else task_metrics.get("task_success")
+        )
         and failure_reason is None
     )

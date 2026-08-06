@@ -93,6 +93,11 @@ class RealRawEpisodeRecorder:
         scene_variant: str,
         environment: MuJoCoEnvironment,
         save_hz: int = 10,
+        task_id: str | None = None,
+        task_prompt: str | None = None,
+        requested_episode_index: int | None = None,
+        base_seed: int | None = None,
+        retry_index: int | None = None,
     ) -> None:
         if save_hz != 10:
             raise ValueError("The audited real raw format is recorded at 10 Hz")
@@ -105,7 +110,14 @@ class RealRawEpisodeRecorder:
         for camera_name in CAMERA_MAPPING:
             (self.output_dir / camera_name).mkdir(parents=True, exist_ok=True)
         self.task = str(task)
+        self.task_id = str(task_id or task)
+        self.task_prompt = str(task_prompt or task)
         self.episode_index = int(episode_index)
+        self.requested_episode_index = int(
+            episode_index if requested_episode_index is None else requested_episode_index
+        )
+        self.base_seed = int(seed if base_seed is None else base_seed)
+        self.retry_index = int(0 if retry_index is None else retry_index)
         self.seed = int(seed)
         self.scene_variant = str(scene_variant)
         self.environment = environment
@@ -123,14 +135,6 @@ class RealRawEpisodeRecorder:
             self.environment.context.model,
             self.environment.context.data,
         ).astype(np.float64)
-        runtime = self.environment.task_runtime
-        if (
-            runtime is not None
-            and runtime.spec["success"]["type"] == "place_in_ring"
-            and not runtime.released
-            and "initial_gripper_raw" in runtime.spec
-        ):
-            state[6] = float(runtime.spec["initial_gripper_raw"])
         return state
 
     def _tcp(self) -> tuple[np.ndarray, np.ndarray]:
@@ -235,6 +239,7 @@ class RealRawEpisodeRecorder:
         task_metrics: dict[str, Any],
         oracle_transitions: list[dict[str, Any]],
         oracle_plan: dict[str, Any],
+        validation_metadata: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         if len(self.rows) < 2:
             raise ValueError("A raw episode needs at least two robot-log rows")
@@ -265,8 +270,11 @@ class RealRawEpisodeRecorder:
             writer.writerows(self.gripper_events)
 
         meta = {
-            "task": self.task,
+            "task": self.task_prompt,
+            "task_id": self.task_id,
+            "task_prompt": self.task_prompt,
             "episode_index": self.episode_index,
+            "requested_episode_index": self.requested_episode_index,
             "created_ts": self.created_ts,
             "poll_hz": 30.0,
             "save_hz": float(self.save_hz),
@@ -287,6 +295,9 @@ class RealRawEpisodeRecorder:
             "simulation": {
                 "schema_version": "xarm_real_raw_compatible_sim_v1",
                 "seed": self.seed,
+                "base_seed": self.base_seed,
+                "retry_index": self.retry_index,
+                "resolved_seed": self.seed,
                 "scene_variant": self.scene_variant,
                 "success": bool(success),
                 "failure_reason": failure_reason,
@@ -300,6 +311,7 @@ class RealRawEpisodeRecorder:
                 "task_metrics": task_metrics,
                 "oracle_transitions": oracle_transitions,
                 "oracle_plan": oracle_plan,
+                "validation": validation_metadata or {},
             },
         }
         _write_json(self.output_dir / "meta.json", meta)

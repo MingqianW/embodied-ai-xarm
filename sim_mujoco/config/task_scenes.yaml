@@ -36,7 +36,7 @@ tasks:
     aliases:
       - pick_up_the_red_block
       - pick up the red block
-    prompt: pick_up_the_red_block
+    prompt: pick up the red block
     active_bodies: [object]
     target_body: object
     wrist_visible_bodies: [object]
@@ -62,7 +62,7 @@ tasks:
     aliases:
       - pick_up_the_blue_block
       - pick up the blue block
-    prompt: pick_up_the_blue_block
+    prompt: pick up the blue block
     active_bodies: [blue_block]
     target_body: blue_block
     wrist_visible_bodies: [blue_block]
@@ -109,7 +109,7 @@ tasks:
     aliases:
       - pick_up_the_smallest_block
       - pick up the smallest block
-    prompt: pick_up_the_smallest_block
+    prompt: pick up the smallest block
     active_bodies: [small_block, large_block]
     target_body: small_block
     wrist_visible_bodies: [small_block, large_block]
@@ -133,7 +133,7 @@ tasks:
     aliases:
       - pick_up_the_red_pepper
       - pick up the red pepper
-    prompt: pick_up_the_red_pepper
+    prompt: pick up the red pepper
     active_bodies: [red_pepper]
     target_body: red_pepper
     wrist_visible_bodies: [red_pepper]
@@ -155,10 +155,10 @@ tasks:
     aliases:
       - place_the_red_pepper_in_the_ring
       - place the red pepper in the ring
-    prompt: place_the_red_pepper_in_the_ring
-    active_bodies: [held_red_pepper, ring]
+    prompt: place the red pepper in the ring
+    active_bodies: [red_pepper, ring]
     target_body: red_pepper
-    wrist_visible_bodies: [held_red_pepper, ring]
+    wrist_visible_bodies: [red_pepper, ring]
     randomizable_bodies: [ring]
     distractor_bodies: [object, blue_block]
     initial_arm_qpos:
@@ -172,6 +172,12 @@ tasks:
     initial_gripper_sim_half_width: 0.0273
     release_gripper_raw: 650.0
     release_min_sim_half_width: 0.038
+    # One free body is initialized once from T_world_tcp @ T_tcp_pepper.
+    # It remains under normal contact, friction, gravity, and actuator physics.
+    initial_tcp_to_object:
+      translation_m: [0.0, 0.0, -0.027]
+      quaternion_wxyz: [1.0, 0.0, 0.0, 0.0]
+    object_identity: red_pepper
     success:
       type: place_in_ring
       ring_body: ring
