@@ -19,6 +19,26 @@ ROBOT_BODY_NAMES = {
 }
 SUPPORT_GEOM_NAMES = {"table", "floor"}
 SUPPORT_PENETRATION_TOLERANCE_M = 1e-4
+GRIPPER_CONTACT_BODIES = {"left_finger", "right_finger"}
+
+
+def target_gripper_contact_count(
+    diagnostics: dict[str, Any], target_body: str
+) -> int:
+    """Count reliable target-body contacts with either physical finger."""
+
+    return sum(
+        1
+        for contact in diagnostics.get("contacts") or ()
+        if (
+            contact.get("body1") == target_body
+            and contact.get("body2") in GRIPPER_CONTACT_BODIES
+        )
+        or (
+            contact.get("body2") == target_body
+            and contact.get("body1") in GRIPPER_CONTACT_BODIES
+        )
+    )
 
 
 def _name(

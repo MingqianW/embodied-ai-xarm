@@ -77,17 +77,40 @@ def _freejoint_dof_address(model: mujoco.MjModel, body_name: str) -> int:
     return int(model.jnt_dofadr[_freejoint_id(model, body_name)])
 
 
-def _set_body_enabled(model: mujoco.MjModel, body_name: str, enabled: bool) -> None:
+def _set_body_enabled(
+    model: mujoco.MjModel,
+    body_name: str,
+    enabled: bool,
+    *,
+    contact_profile: str | None = None,
+) -> None:
     body_id = _body_id(model, body_name)
     geom_ids = np.flatnonzero(model.geom_bodyid == body_id)
     alpha = 1.0 if enabled else 0.0
     for geom_id in geom_ids:
+        geom_name = mujoco.mj_id2name(
+            model, mujoco.mjtObj.mjOBJ_GEOM, int(geom_id)
+        )
         material_id = int(model.geom_matid[geom_id])
         if enabled and material_id >= 0:
             model.geom_rgba[geom_id] = model.mat_rgba[material_id]
         model.geom_rgba[geom_id, 3] = alpha
-        model.geom_contype[geom_id] = 1 if enabled else 0
-        model.geom_conaffinity[geom_id] = 1 if enabled else 0
+        # The pepper uses rendered compound lobes around one convex physical
+        # contact surface. Do not reactivate overlapping visual contacts when
+        # the scene enables the free body.
+        if body_name == "red_pepper" and enabled:
+            if contact_profile not in {"compound", "convex"}:
+                raise ValueError(
+                    "Active red_pepper requires compound or convex contact profile"
+                )
+            contact_enabled = bool(
+                contact_profile == "compound"
+                or geom_name == "red_pepper_grasp_collision"
+            )
+        else:
+            contact_enabled = bool(enabled)
+        model.geom_contype[geom_id] = 1 if contact_enabled else 0
+        model.geom_conaffinity[geom_id] = 1 if contact_enabled else 0
 
 
 def _yaw_quaternion(yaw: float) -> np.ndarray:
@@ -353,7 +376,19 @@ def configure_task_scene(
         )
 
     for body_name in (*free_bodies, *fixed_bodies):
-        _set_body_enabled(model, body_name, body_name in active_bodies)
+        contact_profile = (
+            str(spec.get("target_contact_profile"))
+            if body_name == runtime.target_body
+            and body_name == "red_pepper"
+            and body_name in active_bodies
+            else None
+        )
+        _set_body_enabled(
+            model,
+            body_name,
+            body_name in active_bodies,
+            contact_profile=contact_profile,
+        )
     for body_name in free_bodies:
         if body_name not in active_bodies:
             qpos_addr = _freejoint_qpos_address(model, body_name)

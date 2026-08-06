@@ -12,6 +12,7 @@ from typing import Any
 import mujoco
 import numpy as np
 
+from sim_mujoco.collision import target_gripper_contact_count
 from sim_mujoco.data_collection.conversions import policy_state_from_mujoco
 from sim_mujoco.data_collection.oracle_controller import (
     OracleConfig,
@@ -102,6 +103,16 @@ def _validate_place_initial_grasp(
     action = policy_state_from_mujoco(
         environment.context.model, environment.context.data
     ).astype(np.float32)
+    # Hold the randomized reset target, not the contact-deflected measured
+    # joint state. Re-commanding the measured state unloads the arm servos and
+    # can move the TCP relative to an otherwise settled physical grasp.
+    initial_arm_target = np.asarray(
+        environment.initial_conditions["initial_joint_positions"],
+        dtype=np.float32,
+    )
+    if initial_arm_target.shape != (6,) or not np.isfinite(initial_arm_target).all():
+        raise ValueError("Place initial arm target must be finite with shape (6,)")
+    action[:6] = initial_arm_target
     action[6] = float(runtime.spec["initial_gripper_raw"])
     samples: list[StabilitySample] = []
     diagnostic_frames: dict[str, list[np.ndarray]] = {
@@ -129,6 +140,9 @@ def _validate_place_initial_grasp(
                 table_contact=_table_contact(collision, runtime.target_body),
                 forbidden_collision=bool(collision.get("forbidden")),
                 inside_ring=ring_distance <= config.place.ring_radius_m,
+                gripper_contact_count=target_gripper_contact_count(
+                    collision, runtime.target_body
+                ),
             )
         )
         for raw_name, camera_name in (
@@ -166,6 +180,7 @@ def _validate_place_initial_grasp(
                 ),
             },
             "initial_gripper_raw": float(runtime.spec["initial_gripper_raw"]),
+            "initial_arm_hold_target": initial_arm_target.tolist(),
             "initialization_frames_recorded": 0,
             "object_identity": runtime.target_body,
             "permanent_attachment": False,
@@ -189,7 +204,13 @@ def _controller(environment: MuJoCoEnvironment, config: PipelineConfig):
                 velocity_fit_samples=config.place.velocity_fit_samples,
             ),
         )
-    base = oracle_config_for_task(environment.task, action_dt_s=config.pick.action_dt_s)
+    task = next(task for task in config.tasks if task.task_id == environment.task)
+    base = oracle_config_for_task(
+        environment.task,
+        action_dt_s=config.pick.action_dt_s,
+        closed_gripper_raw=task.closed_gripper_raw,
+        grasp_tcp_offset_from_object_m=task.grasp_tcp_offset_from_object_m,
+    )
     values = asdict(base)
     values.update(
         {

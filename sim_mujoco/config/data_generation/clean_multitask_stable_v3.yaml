@@ -46,7 +46,10 @@ verification:
     maximum_relative_drift_m: 0.005
     maximum_grasp_region_delta_m: 0.015
     minimum_height_above_table_m: 0.04
-    tcp_to_pepper_translation_m: [0.0, 0.0, -0.027]
+    # Strict reset diagnostics passed 20/20 retry seeds with 0.55-0.84 mm
+    # drift and at least four physical finger contacts per sample.
+    gripper_half_width_m: 0.012
+    tcp_to_pepper_translation_m: [0.0, 0.0, -0.030]
     tcp_to_pepper_quaternion_wxyz: [1.0, 0.0, 0.0, 0.0]
   place_stable_release:
     steps: 20
@@ -65,6 +68,11 @@ tasks:
     distractor_episodes: 0
     base_seed: 100000
     required_active_objects: [red_pepper]
+    oracle:
+      closed_gripper_raw: 250.0
+      # Centers the pepper in the fingertip-pad height after lift. The convex
+      # free-body torso contact passed 13/20 strict retry-sequence trials.
+      grasp_tcp_offset_from_object_m: -0.022
   blue_block:
     prompt: pick up the blue block
     aliases: [pick_up_the_blue_block, pick up the light blue block, blue block]
@@ -73,6 +81,9 @@ tasks:
     distractor_episodes: 0
     base_seed: 200000
     required_active_objects: [blue_block]
+    oracle:
+      closed_gripper_raw: 211.0
+      grasp_tcp_offset_from_object_m: -0.011
   red_block:
     prompt: pick up the red block
     aliases: [pick_up_the_red_block, red block]
@@ -81,6 +92,11 @@ tasks:
     distractor_episodes: 0
     base_seed: 300000
     required_active_objects: [object]
+    oracle:
+      # The 26 mm cube needs slightly more closure than the 37 mm blocks.
+      # Raw 200 passed 5/5 strict retry-sequence trials at this offset.
+      closed_gripper_raw: 200.0
+      grasp_tcp_offset_from_object_m: -0.011
   smallest_block:
     prompt: pick up the smallest block
     aliases: [pick_up_the_smallest_block, smallest block, smallest]
@@ -89,6 +105,10 @@ tasks:
     distractor_episodes: 0
     base_seed: 400000
     required_active_objects: [small_block, large_block]
+    oracle:
+      # Same physical 26 mm cube geometry as red_block.
+      closed_gripper_raw: 200.0
+      grasp_tcp_offset_from_object_m: -0.011
   largest_block:
     prompt: pick up the largest block
     aliases: [pick_up_the_largest_block, largest block, largest]
@@ -97,6 +117,9 @@ tasks:
     distractor_episodes: 0
     base_seed: 500000
     required_active_objects: [small_block, large_block]
+    oracle:
+      closed_gripper_raw: 211.0
+      grasp_tcp_offset_from_object_m: -0.011
   place_red_pepper_in_ring:
     prompt: place the red pepper in the ring
     aliases: [place_the_red_pepper_in_the_ring]

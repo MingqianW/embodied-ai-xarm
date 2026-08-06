@@ -25,6 +25,7 @@ class StabilitySample:
     inside_ring: bool = False
     released: bool = False
     retreat_detected: bool = False
+    gripper_contact_count: int = 0
 
 
 def _velocity(samples: Sequence[StabilitySample], fit_samples: int) -> float:
@@ -124,6 +125,20 @@ def evaluate_pick_stability(
             sample.forbidden_collision for sample in samples
         ),
         "all_samples_finite": all(sample.finite for sample in samples),
+        "verification_gripper_contact_counts": [
+            int(sample.gripper_contact_count) for sample in samples
+        ],
+        "minimum_verification_gripper_contact_count": min(
+            (int(sample.gripper_contact_count) for sample in samples),
+            default=None,
+        ),
+        "maximum_verification_gripper_contact_count": max(
+            (int(sample.gripper_contact_count) for sample in samples),
+            default=None,
+        ),
+        "final_verification_gripper_contact_count": (
+            int(samples[-1].gripper_contact_count) if samples else None
+        ),
         "verification_steps_required": config.steps,
         "verification_steps_executed": len(samples),
         "verification_duration_s": duration,
@@ -200,11 +215,46 @@ def evaluate_place_initial_grasp(
         "initial_grasp_max_relative_drift_m": (
             float(np.max(drifts)) if len(drifts) else None
         ),
+        "initial_grasp_relative_drift_m": drifts.tolist(),
+        "initial_grasp_object_positions_m": [
+            list(sample.object_position_m) for sample in samples
+        ],
+        "initial_grasp_tcp_positions_m": [
+            list(sample.tcp_position_m) for sample in samples
+        ],
+        "final_initial_grasp_pepper_position_m": (
+            list(samples[-1].object_position_m) if samples else None
+        ),
+        "final_initial_grasp_tcp_position_m": (
+            list(samples[-1].tcp_position_m) if samples else None
+        ),
+        "final_initial_grasp_pepper_to_tcp_translation_m": (
+            (
+                np.asarray(samples[-1].object_position_m, dtype=np.float64)
+                - np.asarray(samples[-1].tcp_position_m, dtype=np.float64)
+            ).tolist()
+            if samples
+            else None
+        ),
         "initial_grasp_table_contact_detected": any(
             sample.table_contact for sample in samples
         ),
         "initial_grasp_forbidden_collision_detected": any(
             sample.forbidden_collision for sample in samples
+        ),
+        "initial_grasp_gripper_contact_counts": [
+            int(sample.gripper_contact_count) for sample in samples
+        ],
+        "minimum_initial_grasp_gripper_contact_count": min(
+            (int(sample.gripper_contact_count) for sample in samples),
+            default=None,
+        ),
+        "maximum_initial_grasp_gripper_contact_count": max(
+            (int(sample.gripper_contact_count) for sample in samples),
+            default=None,
+        ),
+        "final_initial_grasp_gripper_contact_count": (
+            int(samples[-1].gripper_contact_count) if samples else None
         ),
         "initial_grasp_all_samples_finite": all(
             sample.finite for sample in samples

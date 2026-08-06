@@ -9,6 +9,7 @@ from typing import Any
 import mujoco
 import numpy as np
 
+from sim_mujoco.collision import target_gripper_contact_count
 from sim_mujoco.data_collection.conversions import (
     mujoco_gripper_target_from_raw,
     policy_action_from_mujoco_target,
@@ -564,6 +565,9 @@ class ScriptedOracleController:
                     ),
                     table_contact=_target_table_contact(collision, runtime.target_body),
                     forbidden_collision=bool(collision.get("forbidden")),
+                    gripper_contact_count=target_gripper_contact_count(
+                        collision, runtime.target_body
+                    ),
                 )
             )
             if len(self._verification_samples) == self.config.verify_steps:
@@ -979,6 +983,9 @@ class PlaceRedPepperOracleController:
                     inside_ring=bool(task_metrics.get("instant_success")),
                     released=bool(runtime.released),
                     retreat_detected=self.retreat_detected,
+                    gripper_contact_count=target_gripper_contact_count(
+                        collision, runtime.target_body
+                    ),
                 )
             )
             if len(self._verification_samples) == self.config.verify_steps:

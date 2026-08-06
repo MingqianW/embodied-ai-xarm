@@ -29,9 +29,20 @@ flowchart LR
 - `task_scenes.py` activates only required clean-scene bodies. Size-comparison
   tasks keep both blocks. Place initializes the one free pepper once from the
   TCP-relative transform.
+- `build_xarm6_pick_scene.py` preserves the calibrated camera model and gives
+  the rendered multi-lobe free pepper one convex torso contact surface. This
+  prevents loss of every finger contact as overlapping lobes rotate; the body
+  remains free under normal contact, actuator force, friction, and gravity.
+- `task_scenes.yaml` selects an explicit contact profile on that same free
+  body: `compound` for acquiring an irregular tabletop pepper in Pick and
+  `convex` for a non-redundant already-held Place reset. Neither profile adds
+  an attachment, equality constraint, body swap, or pose control.
 - `oracle_controller.py` owns separate Pick and Place state machines. Pick
   cannot complete from the legacy short success streak. Place starts at
   `MOVE_TO_PREPLACE` and includes release, retreat, and verification.
+- Each Pick plan carries explicit closed-gripper and vertical TCP-to-object
+  grasp parameters in the versioned YAML. The red-pepper `250/-0.022 m`
+  override is geometry-specific and does not alter the shared validator.
 - `stability.py` is the single implementation of Pick stability, initial Place
   grasp stability, and stable Place release. Collection and audits consume its
   metadata rather than reproducing success logic.

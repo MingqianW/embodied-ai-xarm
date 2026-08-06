@@ -124,8 +124,9 @@ class TaskSceneRuntimeTests(unittest.TestCase):
             self.assertEqual(runtime.target_body, "red_pepper")
             self.assertAlmostEqual(
                 runtime.physical_gripper_target(440.0, 0.0196),
-                0.0273,
+                0.012,
             )
+            self.assertEqual(runtime.spec["target_contact_profile"], "convex")
             observation = {
                 "observation/state": np.asarray(
                     [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 845.0],
@@ -139,6 +140,38 @@ class TaskSceneRuntimeTests(unittest.TestCase):
                 mujoco.mjtObj.mjOBJ_BODY,
                 "red_pepper",
             )
+            pepper_joint = int(context.model.body_jntadr[pepper_id])
+            self.assertEqual(
+                int(context.model.jnt_type[pepper_joint]),
+                int(mujoco.mjtJoint.mjJNT_FREE),
+            )
+            grasp_geom = mujoco.mj_name2id(
+                context.model,
+                mujoco.mjtObj.mjOBJ_GEOM,
+                "red_pepper_grasp_collision",
+            )
+            self.assertGreaterEqual(grasp_geom, 0)
+            self.assertEqual(int(context.model.geom_bodyid[grasp_geom]), pepper_id)
+            self.assertEqual(int(context.model.geom_condim[grasp_geom]), 4)
+            self.assertEqual(int(context.model.geom_contype[grasp_geom]), 1)
+            for visual_name in ("red_pepper_lobe_0", "red_pepper_stem"):
+                visual_geom = mujoco.mj_name2id(
+                    context.model,
+                    mujoco.mjtObj.mjOBJ_GEOM,
+                    visual_name,
+                )
+                self.assertEqual(int(context.model.geom_contype[visual_geom]), 0)
+                self.assertEqual(int(context.model.geom_conaffinity[visual_geom]), 0)
+            equality_names = {
+                mujoco.mj_id2name(
+                    context.model, mujoco.mjtObj.mjOBJ_EQUALITY, index
+                )
+                for index in range(context.model.neq)
+            }
+            self.assertNotIn(
+                "red_pepper",
+                " ".join(name or "" for name in equality_names),
+            )
             position_before_release = context.data.xpos[pepper_id].copy()
             self.assertFalse(runtime.release_if_requested(600.0))
             self.assertTrue(runtime.release_if_requested(700.0))
@@ -151,6 +184,25 @@ class TaskSceneRuntimeTests(unittest.TestCase):
                 0.038,
             )
             self.assertGreater(float(context.data.xpos[pepper_id, 2]), 0.05)
+        finally:
+            context.close()
+
+    def test_pick_pepper_uses_explicit_compound_contact_profile(self) -> None:
+        context, runtime, _ = self.make_scene("red_pepper")
+        try:
+            self.assertEqual(runtime.spec["target_contact_profile"], "compound")
+            for geom_name in (
+                "red_pepper_lobe_0",
+                "red_pepper_stem",
+                "red_pepper_grasp_collision",
+            ):
+                geom_id = mujoco.mj_name2id(
+                    context.model,
+                    mujoco.mjtObj.mjOBJ_GEOM,
+                    geom_name,
+                )
+                self.assertEqual(int(context.model.geom_contype[geom_id]), 1)
+                self.assertEqual(int(context.model.geom_conaffinity[geom_id]), 1)
         finally:
             context.close()
 

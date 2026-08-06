@@ -22,6 +22,8 @@ class TaskPlan:
     distractor_episodes: int
     base_seed: int
     required_active_objects: tuple[str, ...]
+    closed_gripper_raw: float | None
+    grasp_tcp_offset_from_object_m: float | None
 
 
 @dataclass(frozen=True)
@@ -44,6 +46,7 @@ class PlaceInitialGraspConfig:
     maximum_relative_drift_m: float
     maximum_grasp_region_delta_m: float
     minimum_height_above_table_m: float
+    gripper_half_width_m: float
     tcp_to_pepper_translation_m: tuple[float, float, float]
     tcp_to_pepper_quaternion_wxyz: tuple[float, float, float, float]
 
@@ -130,6 +133,7 @@ def load_pipeline_config(path: Path) -> PipelineConfig:
     plans: list[TaskPlan] = []
     for definition in TASKS:
         row = _mapping(task_rows.get(definition.task_id), definition.task_id)
+        oracle = _mapping(row.get("oracle") or {}, f"{definition.task_id}.oracle")
         plan = TaskPlan(
             task_id=definition.task_id,
             prompt=str(row.get("prompt")),
@@ -140,6 +144,16 @@ def load_pipeline_config(path: Path) -> PipelineConfig:
             base_seed=int(row.get("base_seed", -1)),
             required_active_objects=tuple(
                 str(value) for value in row.get("required_active_objects") or ()
+            ),
+            closed_gripper_raw=(
+                float(oracle["closed_gripper_raw"])
+                if "closed_gripper_raw" in oracle
+                else None
+            ),
+            grasp_tcp_offset_from_object_m=(
+                float(oracle["grasp_tcp_offset_from_object_m"])
+                if "grasp_tcp_offset_from_object_m" in oracle
+                else None
             ),
         )
         if plan.prompt != definition.prompt:
@@ -156,6 +170,22 @@ def load_pipeline_config(path: Path) -> PipelineConfig:
             raise ValueError(f"{plan.task_id} must contain only clean episodes")
         if plan.distractor_episodes != 0:
             raise ValueError(f"{plan.task_id} distractor episodes must be zero")
+        if definition.kind == "pick":
+            if (
+                plan.closed_gripper_raw is None
+                or plan.grasp_tcp_offset_from_object_m is None
+            ):
+                raise ValueError(
+                    f"{plan.task_id} requires explicit Pick oracle grasp parameters"
+                )
+            if not 50.0 <= plan.closed_gripper_raw <= 845.0:
+                raise ValueError(f"{plan.task_id} closed_gripper_raw is out of range")
+            if not -0.05 <= plan.grasp_tcp_offset_from_object_m <= 0.05:
+                raise ValueError(
+                    f"{plan.task_id} grasp_tcp_offset_from_object_m is out of range"
+                )
+        elif oracle:
+            raise ValueError(f"{plan.task_id} does not use Pick oracle parameters")
         plans.append(plan)
     if set(task_rows) != set(TASK_BY_ID):
         raise ValueError("Config must contain exactly the six canonical task IDs")
@@ -208,6 +238,7 @@ def load_pipeline_config(path: Path) -> PipelineConfig:
             minimum_height_above_table_m=float(
                 place_initial["minimum_height_above_table_m"]
             ),
+            gripper_half_width_m=float(place_initial["gripper_half_width_m"]),
             tcp_to_pepper_translation_m=tuple(
                 float(value) for value in place_initial["tcp_to_pepper_translation_m"]
             ),
@@ -272,6 +303,8 @@ def validate_pipeline_config(config: PipelineConfig) -> None:
         raise ValueError("TCP-to-pepper translation must contain three values")
     if len(config.place_initial.tcp_to_pepper_quaternion_wxyz) != 4:
         raise ValueError("TCP-to-pepper quaternion must contain four values")
+    if not 0.0 < config.place_initial.gripper_half_width_m <= 0.047:
+        raise ValueError("Place initial gripper half-width must be in (0, 0.047] m")
     prompts = [task.prompt for task in config.tasks]
     if len(set(prompts)) != 6 or any("_" in prompt for prompt in prompts):
         raise ValueError("Canonical prompts must be unique natural-language strings")
@@ -296,3 +329,23 @@ def validate_pipeline_config(config: PipelineConfig) -> None:
             raise ValueError(f"Task-scene prompt mismatch for {task.task_id}")
         if tuple(scene.get("active_bodies") or ()) != task.required_active_objects:
             raise ValueError(f"Task-scene active objects mismatch for {task.task_id}")
+    place_scene = _mapping(
+        scene_tasks.get("place_red_pepper_in_ring"),
+        "place_red_pepper_in_ring",
+    )
+    if float(place_scene.get("initial_gripper_sim_half_width", -1.0)) != (
+        config.place_initial.gripper_half_width_m
+    ):
+        raise ValueError("Place physical gripper opening differs across configs")
+    place_transform = _mapping(
+        place_scene.get("initial_tcp_to_object"),
+        "place_red_pepper_in_ring.initial_tcp_to_object",
+    )
+    if tuple(float(value) for value in place_transform.get("translation_m") or ()) != (
+        config.place_initial.tcp_to_pepper_translation_m
+    ):
+        raise ValueError("Place TCP-to-pepper translation differs across configs")
+    if scene_tasks["red_pepper"].get("target_contact_profile") != "compound":
+        raise ValueError("red_pepper Pick must use the compound contact profile")
+    if place_scene.get("target_contact_profile") != "convex":
+        raise ValueError("Place must use the convex red-pepper contact profile")

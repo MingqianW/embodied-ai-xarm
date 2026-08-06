@@ -77,6 +77,16 @@ class TestTaskRegistryAndConfig:
         assert config.total_episodes == 200
         assert all(task.distractor_episodes == 0 for task in config.tasks)
         assert config.distractor_count == 0
+        pick_plans = [
+            task
+            for task in config.tasks
+            if task.task_id != "place_red_pepper_in_ring"
+        ]
+        assert all(task.closed_gripper_raw is not None for task in pick_plans)
+        assert all(
+            task.grasp_tcp_offset_from_object_m is not None
+            for task in pick_plans
+        )
 
     def test_prompt_contract_and_alias_normalization(self) -> None:
         prompts = [task.prompt for task in TASKS]
@@ -188,6 +198,10 @@ class TestPickStability:
             "verification_duration_s",
             "stable_grasp_success",
             "stable_grasp_failure_reason",
+            "verification_gripper_contact_counts",
+            "minimum_verification_gripper_contact_count",
+            "maximum_verification_gripper_contact_count",
+            "final_verification_gripper_contact_count",
         }
         assert required <= set(result)
 
@@ -258,6 +272,16 @@ class TestPlaceValidation:
         assert result["initial_grasp_validation_steps_executed"] == 10
         assert result["initial_grasp_validation_duration_s"] == pytest.approx(1.0)
         assert result["initial_grasp_max_relative_drift_m"] == pytest.approx(0.0)
+        assert result["initial_grasp_relative_drift_m"] == pytest.approx([0.0] * 10)
+        assert len(result["initial_grasp_object_positions_m"]) == 10
+        assert len(result["initial_grasp_tcp_positions_m"]) == 10
+        assert result["final_initial_grasp_pepper_position_m"] == [0.0, 0.0, 0.15]
+        assert result["final_initial_grasp_tcp_position_m"] == [0.0, 0.0, 0.25]
+        assert result["final_initial_grasp_pepper_to_tcp_translation_m"] == [
+            0.0,
+            0.0,
+            -0.1,
+        ]
 
     @pytest.mark.parametrize(
         ("samples", "reason"),
@@ -300,7 +324,8 @@ class TestPlaceValidation:
         assert scene["target_body"] == scene["object_identity"] == "red_pepper"
         assert scene["active_bodies"] == ["red_pepper", "ring"]
         assert "held_red_pepper" not in scene["active_bodies"]
-        assert scene["initial_tcp_to_object"]["translation_m"] == [0.0, 0.0, -0.027]
+        assert scene["initial_gripper_sim_half_width"] == 0.012
+        assert scene["initial_tcp_to_object"]["translation_m"] == [0.0, 0.0, -0.030]
 
 
 class TestConversionContract:

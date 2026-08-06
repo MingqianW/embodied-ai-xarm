@@ -23,7 +23,10 @@ catalog:
     large_block: [0.500, -0.215, 0.0685]
     red_pepper: [0.492, -0.178, 0.072]
     held_red_pepper: [0.0, 0.0, 0.145]
-    ring: [0.48, 0.08, 0.052]
+    # The Place reset TCP is near y=0.045 m. Keeping the ring at y=0.15 m
+    # guarantees that even its full +/-0.02 m clean-scene randomization starts
+    # outside the 0.052 m success region around the already-held pepper.
+    ring: [0.48, 0.15, 0.052]
   # Extra objects use these non-overlapping table slots in distractor scenes.
   # The slots are shuffled deterministically per seed.
   distractor_slots:
@@ -136,6 +139,9 @@ tasks:
     prompt: pick up the red pepper
     active_bodies: [red_pepper]
     target_body: red_pepper
+    # Tabletop Pick uses the visible lobes plus the convex torso so the
+    # fingers can acquire the irregular pepper before sustained validation.
+    target_contact_profile: compound
     wrist_visible_bodies: [red_pepper]
     randomizable_bodies: [red_pepper]
     initial_arm_qpos:
@@ -158,6 +164,9 @@ tasks:
     prompt: place the red pepper in the ring
     active_bodies: [red_pepper, ring]
     target_body: red_pepper
+    # The already-held reset uses one convex torso contact surface, avoiding
+    # redundant overlapping contacts during the 1 s physical stability gate.
+    target_contact_profile: convex
     wrist_visible_bodies: [red_pepper, ring]
     randomizable_bodies: [ring]
     distractor_bodies: [object, blue_block]
@@ -169,13 +178,13 @@ tasks:
       - 0.9403786
       - -0.3792221
     initial_gripper_raw: 492.58
-    initial_gripper_sim_half_width: 0.0273
+    initial_gripper_sim_half_width: 0.012
     release_gripper_raw: 650.0
     release_min_sim_half_width: 0.038
     # One free body is initialized once from T_world_tcp @ T_tcp_pepper.
     # It remains under normal contact, friction, gravity, and actuator physics.
     initial_tcp_to_object:
-      translation_m: [0.0, 0.0, -0.027]
+      translation_m: [0.0, 0.0, -0.030]
       quaternion_wxyz: [1.0, 0.0, 0.0, 0.0]
     object_identity: red_pepper
     success:

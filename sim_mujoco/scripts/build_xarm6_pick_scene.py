@@ -198,6 +198,9 @@ def add_pepper_geoms(
             "size": "0.016 0.016 0.022",
             "mass": "0.004",
             "material": "pepper_red_material",
+            # Compile all free-pepper contacts so the Pick profile can use the
+            # lobed acquisition surface. The Place reset profile disables the
+            # overlapping contacts before stepping physics.
             "contype": "1",
             "conaffinity": "1",
             "friction": "1.3 0.02 0.002",
@@ -205,6 +208,27 @@ def add_pepper_geoms(
         if hidden_rgba is not None:
             attributes["rgba"] = hidden_rgba
         ET.SubElement(body, "geom", **attributes)
+
+    # The visible overlapping lobes reproduce the pepper silhouette but make
+    # an unreliable non-convex pinch surface: the fingers can momentarily lift
+    # a lobe and then lose every contact as the body rotates.  A single convex
+    # torso surface represents the pepper flesh for sustained normal-contact
+    # grasping.  It is neither attached to the gripper nor pose-controlled.
+    if prefix == "red_pepper":
+        torso_attributes = {
+            "name": "red_pepper_grasp_collision",
+            "type": "ellipsoid",
+            "size": "0.022 0.022 0.021",
+            "mass": "0",
+            "material": "pepper_red_material",
+            "contype": "1",
+            "conaffinity": "1",
+            "condim": "4",
+            "friction": "2.0 0.02 0.002",
+        }
+        if hidden_rgba is not None:
+            torso_attributes["rgba"] = hidden_rgba
+        ET.SubElement(body, "geom", **torso_attributes)
 
     stem_attributes = {
         "name": f"{prefix}_stem",

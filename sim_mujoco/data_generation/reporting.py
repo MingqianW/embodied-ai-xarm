@@ -113,7 +113,7 @@ def write_final_handoff(config: PipelineConfig) -> Path:
 ## Correctness definitions
 
 - Pick: enter verification only after 5 cm lift, hold the final arm/closed-gripper target for exactly 20 actions at 0.1 s, retain at least 4 cm lift, limit relative downward slip to 1 cm, remain in the grasp region, avoid table/forbidden contact and non-finite state, and finish with robust-fit downward speed no worse than 0.01 m/s.
-- Place reset: one free `red_pepper` body is initialized once with `T_world_pepper = T_world_tcp @ T_tcp_pepper`, where configured translation is `[0, 0, -0.027]` m. No weld, mocap lock, child body, per-step pose overwrite, or body swap is used.
+- Place reset: one free `red_pepper` body is initialized once with `T_world_pepper = T_world_tcp @ T_tcp_pepper`, where configured translation is `[0, 0, -0.030]` m and physical gripper half-width is `0.012` m. No weld, mocap lock, child body, per-step pose overwrite, or body swap is used.
 - Place initialization: exactly 10 excluded actions at 0.1 s validate the held pepper before recorder frame 0. Initialization frames recorded: `0` for every accepted Place episode.
 - Place success: opening/release and retreat must precede a complete 20-action, 2.0 s settled in-ring verification.
 

@@ -41,6 +41,23 @@ Initialization requires the explicit scoped replacement flag:
 sbatch /u/mw89/repos/embodied-ai-xarm/slurm/simulation_data/offline_tests.sbatch
 ```
 
+For a physical Pick-grasp regression investigation (not a dataset phase), use
+the documented compute-only diagnostic and inspect its JSON summary:
+
+```bash
+sbatch /u/mw89/repos/embodied-ai-xarm/slurm/simulation_data/pick_grasp_sweep.sbatch
+cat "$LOG_ROOT/diagnostics/pick_grasp_sweep_JOB_ID/sweep_summary.json"
+```
+
+Revalidate the canonical Place initial grasp across 20 deterministic seeds
+after changing reset poses, gripper actuation, or pepper contact geometry:
+
+```bash
+sbatch /u/mw89/repos/embodied-ai-xarm/slurm/simulation_data/place_grasp_sweep.sbatch
+sacct -j JOB_ID --format=JobID,JobName%32,State,Elapsed,ExitCode
+cat "$LOG_ROOT/diagnostics/place_grasp_sweep_JOB_ID/summary.json"
+```
+
 ## Smoke, full generation, conversion, audit
 
 Submit one phase at a time and inspect its result before the next:
