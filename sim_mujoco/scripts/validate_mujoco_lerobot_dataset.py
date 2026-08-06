@@ -22,6 +22,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from sim_mujoco.data_collection.episode_recorder import REAL_TRAINING_PROMPT
 from sim_mujoco.data_collection.lerobot_adapter import (
+    RawOracleEpisode,
     discover_successful_episodes,
     load_episode_records,
     read_json,
@@ -33,6 +34,7 @@ from sim_mujoco.paths import mujoco_dataset_root, mujoco_output_root
 DEFAULT_DATASET = mujoco_dataset_root() / "xarm_mujoco_red_block_lerobot"
 DEFAULT_RAW_INPUT = mujoco_dataset_root() / "xarm_mujoco_red_block_raw"
 DEFAULT_OUTPUT = mujoco_output_root() / "dataset_validation"
+DEFAULT_OPENPI_ASSETS = mujoco_output_root() / "openpi_smoke_assets"
 DEFAULT_REAL_SCHEMA = mujoco_output_root() / "sim_data_pipeline_audit" / "current_real_schema.json"
 DEFAULT_COMPARISON_CSV = mujoco_output_root() / "real_sim_comparison" / "distribution_comparison.csv"
 EXPECTED_FEATURES = {
@@ -246,7 +248,10 @@ def _validate_success_manifest(
         raise ValueError("Conversion manifest episode count mismatch")
     if any(row.get("success") is not True for row in rows):
         raise ValueError("Failed source episode entered conversion manifest")
-    raw_episodes = discover_successful_episodes(raw_input_dir)
+    raw_episodes = _selected_raw_episodes(
+        dataset_dir,
+        raw_input_dir,
+    )
     raw_ids = {episode.source_id for episode in raw_episodes}
     converted_ids = {str(row["source_id"]) for row in rows}
     if converted_ids != raw_ids:
@@ -259,13 +264,48 @@ def _validate_success_manifest(
     )
 
 
+def _selected_raw_episodes(
+    dataset_dir: Path,
+    raw_input_dir: Path,
+) -> list[RawOracleEpisode]:
+    conversion = read_json(
+        dataset_dir / "meta" / "mujoco_conversion_manifest.json"
+    )
+    selection = conversion.get("source_selection")
+    available = discover_successful_episodes(raw_input_dir)
+    if selection is None:
+        return available
+    if not isinstance(selection, dict):
+        raise ValueError("Conversion source_selection must be an object")
+    strategy = selection.get("strategy")
+    episode_limit = selection.get("episode_limit")
+    if strategy == "all_successful_by_episode_index":
+        if episode_limit is not None:
+            raise ValueError("All-episode selection must have a null limit")
+        return available
+    if strategy != "first_successful_by_episode_index":
+        raise ValueError(f"Unsupported source selection strategy: {strategy!r}")
+    if not isinstance(episode_limit, int) or episode_limit <= 0:
+        raise ValueError(f"Invalid source episode limit: {episode_limit!r}")
+    if len(available) < episode_limit:
+        raise ValueError(
+            f"Selection requires {episode_limit} episodes, "
+            f"but only {len(available)} are available"
+        )
+    return available[:episode_limit]
+
+
 def _validate_loaded_content(
     dataset: Any,
     *,
+    dataset_dir: Path,
     raw_input_dir: Path,
     real_schema: dict[str, Any],
 ) -> dict[str, Any]:
-    raw_episodes = discover_successful_episodes(raw_input_dir)
+    raw_episodes = _selected_raw_episodes(
+        dataset_dir,
+        raw_input_dir,
+    )
     raw_records = [
         load_episode_records(episode, validate_images=False)
         for episode in raw_episodes
@@ -378,6 +418,7 @@ def _run_openpi_batch_smoke(
     python: Path,
     dataset_dir: Path,
     repo_id: str,
+    assets_dir: Path,
     output_path: Path,
 ) -> dict[str, Any]:
     command = [
@@ -387,6 +428,8 @@ def _run_openpi_batch_smoke(
         str(dataset_dir),
         "--repo-id",
         repo_id,
+        "--assets-dir",
+        str(assets_dir),
         "--output-json",
         str(output_path),
     ]
@@ -459,6 +502,7 @@ def validate(args: argparse.Namespace) -> dict[str, Any]:
             "all frames, RGB pixels, finite values, ranges, and alignment",
             lambda: _validate_loaded_content(
                 dataset,
+                dataset_dir=dataset_dir,
                 raw_input_dir=raw_input_dir,
                 real_schema=real_schema,
             ),
@@ -488,9 +532,12 @@ def validate(args: argparse.Namespace) -> dict[str, Any]:
         openpi_result = validation.run(
             "existing OpenPI pipeline produces one transformed batch",
             lambda: _run_openpi_batch_smoke(
-                python=args.python.resolve(),
+                # Keep the venv entry point itself. Resolving this symlink
+                # selects the base interpreter and loses venv site-packages.
+                python=args.python.absolute(),
                 dataset_dir=dataset_dir,
                 repo_id=args.repo_id,
+                assets_dir=args.openpi_assets_dir.resolve(),
                 output_path=output_dir / "openpi_batch_smoke.json",
             ),
         )
@@ -580,6 +627,11 @@ def main() -> None:
         default=DEFAULT_COMPARISON_CSV,
     )
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT)
+    parser.add_argument(
+        "--openpi-assets-dir",
+        type=Path,
+        default=DEFAULT_OPENPI_ASSETS,
+    )
     parser.add_argument(
         "--python",
         type=Path,

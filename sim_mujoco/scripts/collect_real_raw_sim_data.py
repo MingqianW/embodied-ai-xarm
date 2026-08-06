@@ -17,10 +17,10 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from sim_mujoco.data_collection.oracle_controller import (
-    OracleConfig,
     PlaceOracleConfig,
     PlaceRedPepperOracleController,
     ScriptedOracleController,
+    oracle_config_for_task,
 )
 from sim_mujoco.data_collection.real_raw_recorder import (
     RealRawEpisodeRecorder,
@@ -230,7 +230,7 @@ def _controller(environment: MuJoCoEnvironment, task: str):
         )
     return ScriptedOracleController(
         environment,
-        OracleConfig(task=task, action_dt_s=0.1),
+        oracle_config_for_task(task, action_dt_s=0.1),
     )
 
 

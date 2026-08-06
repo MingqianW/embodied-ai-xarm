@@ -143,7 +143,9 @@ def run_checks(*, require_egl: bool = False) -> dict[str, Any]:
         renderer = mujoco.Renderer(model, height=64, width=64)
         renderer.update_scene(data, camera="base_camera")
         image = renderer.render()
-        renderer.close()
+        close = getattr(renderer, "close", None)
+        if close is not None:
+            close()
         valid = image.shape == (64, 64, 3) and str(image.dtype) == "uint8"
         checks.append(
             _result(

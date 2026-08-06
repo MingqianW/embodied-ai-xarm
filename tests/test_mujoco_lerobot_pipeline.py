@@ -23,6 +23,7 @@ from sim_mujoco.data_collection.lerobot_adapter import (
 from sim_mujoco.scripts.convert_mujoco_to_lerobot import convert
 from sim_mujoco.scripts.validate_mujoco_lerobot_dataset import (
     EXPECTED_FEATURES,
+    _selected_raw_episodes,
 )
 
 
@@ -144,6 +145,23 @@ class MuJoCoLeRobotAdapterTests(unittest.TestCase):
                 np.testing.assert_array_equal(left["state"], right["state"])
                 np.testing.assert_array_equal(left["actions"], right["actions"])
                 self.assertEqual(left["image"], right["image"])
+
+    def test_validation_reconstructs_recorded_episode_selection(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            collection = _raw_fixture(root)
+            dataset = root / "dataset"
+            _write_json(
+                dataset / "meta" / "mujoco_conversion_manifest.json",
+                {
+                    "source_selection": {
+                        "strategy": "first_successful_by_episode_index",
+                        "episode_limit": 1,
+                    }
+                },
+            )
+            selected = _selected_raw_episodes(dataset, collection)
+            self.assertEqual([episode.episode_index for episode in selected], [0])
 
 
 class _FakeMeta:
@@ -272,6 +290,7 @@ class MuJoCoConverterResumeTests(unittest.TestCase):
             "overwrite": False,
             "validate_only": False,
             "copy_videos": False,
+            "episode_limit": None,
             "num_workers": 1,
         }
         values.update(overrides)
@@ -319,6 +338,56 @@ class MuJoCoConverterResumeTests(unittest.TestCase):
                         output,
                         resume=True,
                         repo_id="local/different",
+                    )
+                )
+
+    def test_episode_limit_is_recorded_and_cannot_exceed_available(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            raw = _raw_fixture(root)
+            output = root / "canonical"
+
+            def fake_write(records_by_episode, **kwargs):
+                output.mkdir(parents=True, exist_ok=True)
+                return {
+                    "output_path": str(output),
+                    "repo_id": kwargs["repo_id"],
+                    "fps": 10,
+                    "starting_episodes": 0,
+                    "written_episodes": len(records_by_episode),
+                    "ending_episodes": len(records_by_episode),
+                    "written_frames": sum(map(len, records_by_episode)),
+                }
+
+            with mock.patch(
+                "sim_mujoco.scripts.convert_mujoco_to_lerobot.write_xarm_lerobot_dataset",
+                side_effect=fake_write,
+            ):
+                convert(self._args(raw, output, episode_limit=1))
+
+            manifest = json.loads(
+                (
+                    output
+                    / "meta"
+                    / "mujoco_conversion_manifest.json"
+                ).read_text(encoding="utf-8")
+            )
+            self.assertEqual(
+                manifest["source_selection"],
+                {
+                    "strategy": "first_successful_by_episode_index",
+                    "episode_limit": 1,
+                },
+            )
+            self.assertEqual(len(manifest["episodes"]), 1)
+
+            with self.assertRaisesRegex(ValueError, "only 1 are available"):
+                convert(
+                    self._args(
+                        raw,
+                        root / "too_many",
+                        episode_limit=2,
+                        validate_only=True,
                     )
                 )
 

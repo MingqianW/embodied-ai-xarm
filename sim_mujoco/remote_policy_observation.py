@@ -51,7 +51,9 @@ class SimulationContext:
     camera_config_path: Path
 
     def close(self) -> None:
-        self.renderer.close()
+        close = getattr(self.renderer, "close", None)
+        if close is not None:
+            close()
 
 
 def load_camera_config(path: Path = DEFAULT_CAMERA_CONFIG_PATH) -> dict[str, Any]:

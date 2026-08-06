@@ -18,6 +18,7 @@ if str(PROJECT_ROOT) not in sys.path:
 from fine_tune.xarm_lerobot_writer import write_xarm_lerobot_dataset
 from sim_mujoco.data_collection.lerobot_adapter import (
     CONVERSION_MANIFEST_VERSION,
+    RawOracleEpisode,
     discover_successful_episodes,
     load_episode_records,
     read_json,
@@ -57,6 +58,28 @@ def _load_conversion_manifest(path: Path) -> dict[str, Any]:
     return value
 
 
+def _select_episodes(
+    episodes: list[RawOracleEpisode],
+    episode_limit: int | None,
+) -> tuple[list[RawOracleEpisode], dict[str, Any]]:
+    if episode_limit is None:
+        return episodes, {
+            "strategy": "all_successful_by_episode_index",
+            "episode_limit": None,
+        }
+    if episode_limit <= 0:
+        raise ValueError("--episode-limit must be positive")
+    if len(episodes) < episode_limit:
+        raise ValueError(
+            f"Requested {episode_limit} successful episodes, "
+            f"but only {len(episodes)} are available"
+        )
+    return episodes[:episode_limit], {
+        "strategy": "first_successful_by_episode_index",
+        "episode_limit": episode_limit,
+    }
+
+
 def _copy_debug_videos(
     episodes,
     *,
@@ -94,9 +117,13 @@ def convert(args: argparse.Namespace) -> dict[str, Any]:
         raise ValueError("--num-workers cannot be negative")
     input_dir = args.input_dir.resolve()
     output_dir = args.output_dir.resolve()
-    episodes = discover_successful_episodes(input_dir)
-    if not episodes:
+    available_episodes = discover_successful_episodes(input_dir)
+    if not available_episodes:
         raise ValueError(f"No successful completed episodes: {input_dir}")
+    episodes, source_selection = _select_episodes(
+        available_episodes,
+        args.episode_limit,
+    )
 
     manifest_path = output_dir / MANIFEST_RELATIVE_PATH
     manifest = _load_conversion_manifest(manifest_path) if args.resume else {
@@ -120,6 +147,11 @@ def convert(args: argparse.Namespace) -> dict[str, Any]:
         if Path(str(manifest.get("input_dir", ""))).resolve() != input_dir:
             raise ValueError(
                 "Resume input directory differs from the original conversion"
+            )
+        if manifest.get("source_selection") != source_selection:
+            raise ValueError(
+                "Resume source episode selection differs from the original "
+                "conversion"
             )
     elif output_dir.exists() and any(output_dir.iterdir()) and not args.overwrite:
         raise FileExistsError(
@@ -145,7 +177,9 @@ def convert(args: argparse.Namespace) -> dict[str, Any]:
 
     raw_validation = {
         "input_dir": str(input_dir),
-        "successful_manifest_episodes": len(episodes),
+        "available_successful_manifest_episodes": len(available_episodes),
+        "selected_successful_manifest_episodes": len(episodes),
+        "source_selection": source_selection,
         "already_converted_episodes": len(episodes) - len(pending),
         "pending_episodes": len(pending),
         "pending_frames": sum(len(records) for records in records_by_episode),
@@ -210,6 +244,8 @@ def convert(args: argparse.Namespace) -> dict[str, Any]:
         "task": "red_block",
         "prompt": "pick up the red block",
         "success_only": True,
+        "source_selection": source_selection,
+        "available_successful_manifest_episodes": len(available_episodes),
         "converted_source_ids": [
             row["source_id"]
             for row in [*previous_episode_rows, *new_episode_rows]
@@ -253,6 +289,15 @@ def main() -> None:
     parser.add_argument("--overwrite", action="store_true")
     parser.add_argument("--validate-only", action="store_true")
     parser.add_argument("--copy-videos", action="store_true")
+    parser.add_argument(
+        "--episode-limit",
+        type=int,
+        default=None,
+        help=(
+            "Convert only the first N successful episodes in deterministic "
+            "episode-index order."
+        ),
+    )
     parser.add_argument("--num-workers", type=int, default=4)
     args = parser.parse_args()
     convert(args)

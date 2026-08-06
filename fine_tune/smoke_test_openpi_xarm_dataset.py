@@ -6,15 +6,16 @@ import argparse
 import dataclasses
 import json
 import os
-import sys
 from pathlib import Path
+import sys
 from typing import Any
 
 import numpy as np
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-OPENPI_ROOT = PROJECT_ROOT / "third_party" / "openpi"
+OPENPI_ROOT = Path(
+    os.environ.get("OPENPI_ROOT", PROJECT_ROOT / "third_party" / "openpi")
+).resolve()
 OPENPI_SOURCE = OPENPI_ROOT / "src"
 
 
@@ -35,6 +36,16 @@ def _shape_dtype(value: Any) -> dict[str, Any]:
         "dtype": str(array.dtype),
         "finite": bool(np.isfinite(array).all()),
     }
+
+
+def _expected_image_shape(batch_size: int, framework: str) -> list[int]:
+    if framework == "pytorch":
+        # Observation.from_dict normalizes PyTorch uint8 images and converts
+        # BHWC to the BCHW layout consumed by the PyTorch model.
+        return [batch_size, 3, 224, 224]
+    if framework == "jax":
+        return [batch_size, 224, 224, 3]
+    raise ValueError(f"Unsupported framework: {framework}")
 
 
 def smoke(args: argparse.Namespace) -> dict[str, Any]:
@@ -125,12 +136,13 @@ def smoke(args: argparse.Namespace) -> dict[str, Any]:
         num_train_steps=1,
         wandb_enabled=False,
     )
+    framework = "pytorch"
     loader = data_loader.create_data_loader(
         train_config,
         shuffle=False,
         num_batches=1,
         skip_norm_stats=True,
-        framework="pytorch",
+        framework=framework,
     )
     observation, actions = next(iter(loader))
     image_shapes = {
@@ -143,6 +155,7 @@ def smoke(args: argparse.Namespace) -> dict[str, Any]:
         "loader_repo_id": loader_repo_id,
         "dataset_dir": str(dataset_dir),
         "openpi_source": str(OPENPI_SOURCE),
+        "framework": framework,
         "model_type": str(model_config.model_type),
         "model_action_dim": model_config.action_dim,
         "model_action_horizon": model_config.action_horizon,
@@ -165,7 +178,7 @@ def smoke(args: argparse.Namespace) -> dict[str, Any]:
     }
     if set(observation.images) != expected_images:
         raise ValueError(f"Unexpected image keys: {set(observation.images)}")
-    expected_image_shape = [args.batch_size, 224, 224, 3]
+    expected_image_shape = _expected_image_shape(args.batch_size, framework)
     if any(
         value["shape"] != expected_image_shape
         for value in image_shapes.values()

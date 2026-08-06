@@ -4,6 +4,7 @@ import argparse
 import json
 import math
 import sys
+from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
@@ -14,8 +15,8 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from policy_runtime.recording import VideoRecorder
 from sim_mujoco.data_collection.oracle_controller import (
-    OracleConfig,
     ScriptedOracleController,
+    oracle_config_for_task,
 )
 from sim_mujoco.data_collection.task_success import (
     accepted_oracle_episode,
@@ -35,11 +36,20 @@ def run_one_episode(
     seed: int,
     output_dir: Path,
     record_video: bool,
+    closed_gripper_raw: float | None,
+    grasp_tcp_offset_from_object_m: float | None,
 ) -> dict[str, Any]:
     environment.reset(seed=seed)
     controller = ScriptedOracleController(
         environment,
-        OracleConfig(action_dt_s=0.1),
+        oracle_config_for_task(
+            environment.task,
+            action_dt_s=0.1,
+            closed_gripper_raw=closed_gripper_raw,
+            grasp_tcp_offset_from_object_m=(
+                grasp_tcp_offset_from_object_m
+            ),
+        ),
     )
     recorder = (
         VideoRecorder(output_dir=output_dir, fps=10)
@@ -47,6 +57,8 @@ def run_one_episode(
         else None
     )
     task_metrics = environment.task_runtime.metrics()
+    max_lift_height_m = float(task_metrics.get("lift_height_m") or 0.0)
+    max_success_streak = int(task_metrics.get("success_streak") or 0)
     try:
         if recorder is not None:
             recorder.write(environment.recording_frames())
@@ -57,6 +69,14 @@ def run_one_episode(
             environment.apply_action(action)
             environment.step_physics(controller.config.action_dt_s)
             task_metrics = update_task_success(environment)
+            max_lift_height_m = max(
+                max_lift_height_m,
+                float(task_metrics.get("lift_height_m") or 0.0),
+            )
+            max_success_streak = max(
+                max_success_streak,
+                int(task_metrics.get("success_streak") or 0),
+            )
             collision = environment.safety_diagnostics()["collision"]
             controller.notify_post_step(
                 task_metrics=task_metrics,
@@ -83,8 +103,11 @@ def run_one_episode(
         "action_steps": controller.action_steps,
         "simulation_time_s": float(environment.context.data.time),
         "task_metrics": task_metrics,
+        "max_lift_height_m": max_lift_height_m,
+        "max_success_streak": max_success_streak,
         "transitions": controller.transition_log(),
         "plan": controller.plan.to_json(),
+        "oracle_config": asdict(controller.config),
     }
     if recorder is not None:
         result["video"] = recorder.metadata()
@@ -105,11 +128,11 @@ def main() -> None:
     parser.add_argument("--object-yaw-range-deg", type=float, default=0.0)
     parser.add_argument("--joint-noise", type=float, default=0.0)
     parser.add_argument("--record-video", action="store_true")
+    parser.add_argument("--closed-gripper-raw", type=float)
+    parser.add_argument("--grasp-tcp-offset-from-object-m", type=float)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT)
     args = parser.parse_args()
 
-    if args.task != "red_block":
-        raise SystemExit("The initial scripted oracle supports only red_block")
     if args.episodes < 1:
         raise SystemExit("--episodes must be positive")
 
@@ -131,6 +154,10 @@ def main() -> None:
                 seed=seed,
                 output_dir=episode_dir,
                 record_video=args.record_video,
+                closed_gripper_raw=args.closed_gripper_raw,
+                grasp_tcp_offset_from_object_m=(
+                    args.grasp_tcp_offset_from_object_m
+                ),
             )
             results.append(result)
             print(
@@ -152,6 +179,16 @@ def main() -> None:
         "object_xy_range": args.object_xy_range,
         "object_yaw_range_deg": args.object_yaw_range_deg,
         "joint_noise": args.joint_noise,
+        "closed_gripper_raw": args.closed_gripper_raw,
+        "grasp_tcp_offset_from_object_m": (
+            args.grasp_tcp_offset_from_object_m
+        ),
+        "max_lift_height_m": max(
+            float(result["max_lift_height_m"]) for result in results
+        ),
+        "max_success_streak": max(
+            int(result["max_success_streak"]) for result in results
+        ),
     }
     (args.output_dir / "summary.json").write_text(
         json.dumps(summary, indent=2, ensure_ascii=False) + "\n",
