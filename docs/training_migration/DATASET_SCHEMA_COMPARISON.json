@@ -1,0 +1,369 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-07-29T13:35:33-05:00",
+  "comparison_status": "blocked_missing_mujoco_dataset_root",
+  "real_dataset": {
+    "configured_repo_id": "local/xarm_pi05_20260703",
+    "expected_external_repo_id": "MingqianW/xarm_pi05_20260703",
+    "external_repo_id_verified": false,
+    "path": "/work/nvme/bfmk/mw89/datasets/lerobot/local/xarm_pi05_20260703",
+    "codebase_version": "v2.1",
+    "robot_type": "xarm6",
+    "episodes": 198,
+    "frames": 22618,
+    "fps": 10,
+    "splits": {
+      "train": "0:198"
+    },
+    "tasks": [
+      {
+        "task_index": 0,
+        "prompt": "pick up the largest block",
+        "episodes": 25,
+        "frames": 3201
+      },
+      {
+        "task_index": 1,
+        "prompt": "pick up the blue block",
+        "episodes": 24,
+        "frames": 3275
+      },
+      {
+        "task_index": 2,
+        "prompt": "pick up the red block",
+        "episodes": 25,
+        "frames": 3394
+      },
+      {
+        "task_index": 3,
+        "prompt": "pick up the red pepper",
+        "episodes": 50,
+        "frames": 4610
+      },
+      {
+        "task_index": 4,
+        "prompt": "pick up the smallest block",
+        "episodes": 24,
+        "frames": 3506
+      },
+      {
+        "task_index": 5,
+        "prompt": "place the red pepper in the ring",
+        "episodes": 50,
+        "frames": 4632
+      }
+    ],
+    "features": {
+      "image": {
+        "logical_dtype": "image",
+        "decoded_dtype": "uint8",
+        "shape": [
+          480,
+          640,
+          3
+        ],
+        "storage": "Parquet struct with embedded image bytes and path"
+      },
+      "wrist_image": {
+        "logical_dtype": "image",
+        "decoded_dtype": "uint8",
+        "shape": [
+          480,
+          640,
+          3
+        ],
+        "storage": "Parquet struct with embedded image bytes and path"
+      },
+      "state": {
+        "dtype": "float32",
+        "shape": [
+          7
+        ],
+        "order": [
+          "joint_1_rad",
+          "joint_2_rad",
+          "joint_3_rad",
+          "joint_4_rad",
+          "joint_5_rad",
+          "joint_6_rad",
+          "gripper_mm"
+        ]
+      },
+      "actions": {
+        "dtype": "float32",
+        "shape": [
+          7
+        ],
+        "order": [
+          "joint_1_rad",
+          "joint_2_rad",
+          "joint_3_rad",
+          "joint_4_rad",
+          "joint_5_rad",
+          "joint_6_rad",
+          "gripper_mm"
+        ],
+        "raw_semantics": "next-frame absolute joint and gripper target; terminal raw row omitted",
+        "openpi_semantics": "joints 0:6 converted to delta relative to state; gripper remains absolute"
+      },
+      "timestamp": {
+        "dtype": "float32",
+        "shape": [
+          1
+        ]
+      },
+      "frame_index": {
+        "dtype": "int64",
+        "shape": [
+          1
+        ],
+        "semantics": "resets to zero in each episode"
+      },
+      "episode_index": {
+        "dtype": "int64",
+        "shape": [
+          1
+        ],
+        "range": [
+          0,
+          197
+        ]
+      },
+      "index": {
+        "dtype": "int64",
+        "shape": [
+          1
+        ],
+        "semantics": "global frame index"
+      },
+      "task_index": {
+        "dtype": "int64",
+        "shape": [
+          1
+        ]
+      }
+    },
+    "gripper_observed_approximate_range_mm": [
+      211,
+      843
+    ],
+    "validation": {
+      "canonical_metadata_present": true,
+      "parquet_row_total_matches_metadata": true,
+      "episode_file_count": 198,
+      "videos": 0
+    }
+  },
+  "mujoco_discovery": {
+    "requested_root": "/work/nvme/bfmk/mw89/mujoco_datasets",
+    "root_exists": false,
+    "candidates_found": 0,
+    "candidates": [],
+    "bounded_search": "No MuJoCo-named or simulation LeRobot dataset candidate was found within the approved work root at maximum depth 4.",
+    "actual_validation_possible": false
+  },
+  "mujoco_converter_contract_not_dataset_evidence": {
+    "source": "/u/mw89/repos/embodied-ai-xarm/sim_mujoco/scripts/convert_mujoco_to_lerobot.py",
+    "default_repo_id": "MingqianW/xarm_mujoco_red_block_v1",
+    "push_to_hub_default": false,
+    "codebase_version_intended": "v2.1",
+    "fps_intended": 10,
+    "task_prompt_intended": "pick up the red block",
+    "image_keys_intended": [
+      "image",
+      "wrist_image"
+    ],
+    "image_shape_intended": [
+      480,
+      640,
+      3
+    ],
+    "decoded_image_dtype_intended": "uint8",
+    "state_shape_intended": [
+      7
+    ],
+    "action_shape_intended": [
+      7
+    ],
+    "state_action_order_intended": [
+      "joint_1_rad",
+      "joint_2_rad",
+      "joint_3_rad",
+      "joint_4_rad",
+      "joint_5_rad",
+      "joint_6_rad",
+      "gripper_mm"
+    ],
+    "raw_action_semantics_intended": "absolute target toward the next state at 0.1 second cadence",
+    "filtering_intended": "manifest-approved, completed, successful episodes only; converter rejects non-success episodes",
+    "failed_oracle_episodes_excluded_verified": false,
+    "same_openpi_pipeline_compatibility_verified": false,
+    "reason_unverified": "No converted MuJoCo dataset or validator output exists at the requested location."
+  },
+  "exact_comparison": {
+    "image_keys": {
+      "real": [
+        "image",
+        "wrist_image"
+      ],
+      "mujoco_actual": null,
+      "intended_match": true,
+      "verified_match": false
+    },
+    "image_dimensions_and_dtype": {
+      "real": "two uint8 RGB images, 480x640x3",
+      "mujoco_actual": null,
+      "intended": "two uint8 RGB images, 480x640x3",
+      "verified_match": false
+    },
+    "state_dimension_and_order": {
+      "real": "7: six joint radians then gripper millimeters",
+      "mujoco_actual": null,
+      "intended": "7: six joint radians then gripper millimeters",
+      "verified_match": false
+    },
+    "action_dimension_and_order": {
+      "real": "7: six joint radians then gripper millimeters",
+      "mujoco_actual": null,
+      "intended": "7: six joint radians then gripper millimeters",
+      "verified_match": false
+    },
+    "absolute_delta_semantics": {
+      "real": "raw absolute next target; OpenPI deltas joints only",
+      "mujoco_actual": null,
+      "intended": "raw absolute next target; OpenPI deltas joints only",
+      "verified_match": false
+    },
+    "gripper_range": {
+      "real_observed_approximate_mm": [
+        211,
+        843
+      ],
+      "real_checkpoint_q01_q99_mm": [
+        217.952,
+        841.9888000000001
+      ],
+      "mujoco_actual": null,
+      "verified_match": false
+    },
+    "fps": {
+      "real": 10,
+      "mujoco_actual": null,
+      "intended": 10,
+      "verified_match": false
+    },
+    "task_prompt": {
+      "real_matching_task": "pick up the red block",
+      "mujoco_actual": null,
+      "intended": "pick up the red block",
+      "verified_match": false
+    },
+    "codebase_version": {
+      "real": "v2.1",
+      "mujoco_actual": null,
+      "intended": "v2.1",
+      "verified_match": false
+    },
+    "episode_and_frame_indexing": {
+      "real": "episode_index contiguous 0..197; frame_index resets per episode; index is global",
+      "mujoco_actual": null,
+      "intended": "same shared writer convention",
+      "verified_match": false
+    }
+  },
+  "normalization": {
+    "checkpoint_and_real": {
+      "source": "checkpoint normalization asset, identical to repository pi05_xarm asset",
+      "state": {
+        "mean": [
+          -0.35361939668655396,
+          0.37210506200790405,
+          -1.0160808563232422,
+          0.017926953732967377,
+          0.624176025390625,
+          -0.3843402564525604,
+          620.5032348632812
+        ],
+        "std": [
+          0.11096365749835968,
+          0.15845075249671936,
+          0.09949322044849396,
+          0.0003181558276992291,
+          0.18898282945156097,
+          0.23837631940841675,
+          227.0454864501953
+        ],
+        "q01": [
+          -0.5848433474108576,
+          0.04294212778508663,
+          -1.3133520493030548,
+          0.0170805080242455,
+          0.18720816621035338,
+          -0.9283605288505554,
+          217.952
+        ],
+        "q99": [
+          -0.07699020175859328,
+          0.6821920223280787,
+          -0.7473790888786316,
+          0.01933759811781347,
+          0.9658498420402407,
+          0.2408577623844148,
+          841.9888000000001
+        ]
+      },
+      "actions_after_openpi_joint_delta_transform": {
+        "mean": [
+          0.0002267620002385229,
+          0.0035739343147724867,
+          -0.0008552387589588761,
+          2.1599722899168228e-08,
+          -0.0016277662944048643,
+          -0.001171253970824182,
+          606.3271484375
+        ],
+        "std": [
+          0.01895340345799923,
+          0.062370799481868744,
+          0.016635164618492126,
+          5.5750846513547e-05,
+          0.08111590147018433,
+          0.03887343406677246,
+          230.36878967285156
+        ],
+        "q01": [
+          -0.05147864316701889,
+          -0.2290618670463562,
+          -0.0748545743227005,
+          -0.00013214396834373477,
+          -0.23541500427722928,
+          -0.15332217941284176,
+          217.952
+        ],
+        "q99": [
+          0.08675254423618317,
+          0.17514493131637576,
+          0.05356330478191376,
+          0.0001268000528216361,
+          0.32357854208946235,
+          0.11723557701110843,
+          841.9888000000001
+        ]
+      }
+    },
+    "mujoco": null,
+    "combined": null,
+    "computation_started": false,
+    "recommendation": "Keep the checkpoint's real-data q01/q99 statistics unchanged for true continuation. First validate the MuJoCo distribution against these bounds. Replacing normalization during an optimizer/EMA resume would change the model's input/output parameterization and is unsafe. Combined quantiles require an explicitly approved computation over the actual combined stream and cannot be derived reliably from per-dataset summary quantiles."
+  },
+  "blocking_checks_when_dataset_appears": [
+    "Confirm actual candidate path and repo_id",
+    "Validate metadata totals and split ranges",
+    "Confirm successful-only filtering from source manifest and validator output",
+    "Compare decoded image dtype, dimensions, color order, and camera-key mapping",
+    "Compare state/action units, exact order, temporal alignment, and gripper convention",
+    "Check task prompt equality and indexing invariants",
+    "Compare state and transformed-action distributions with checkpoint q01/q99",
+    "Run one lightweight metadata load, then prepare a compute-node OpenPI batch validation"
+  ]
+}

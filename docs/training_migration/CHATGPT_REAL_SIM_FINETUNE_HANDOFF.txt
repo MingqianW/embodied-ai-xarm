@@ -1,0 +1,174 @@
+OPENPI PI0.5 XARM REAL+SIM CONTINUATION HANDOFF
+Generated: 2026-07-29T13:35:33-05:00
+Status: READINESS AUDIT ONLY; DO NOT START TRAINING
+
+TARGET
+Resume the xArm pi0.5 run from manager directory 30000 for exactly 20000 more
+optimizer updates, aiming for final manager directory 50000. Mix the original
+real LeRobot data with the converted MuJoCo LeRobot data.
+
+OPENPI REVISION AND WORKTREE
+Path: /u/mw89/repos/openpi
+Branch: main
+Commit: 15a9616a00943ada6c20a0f158e3adb39df2ccac
+Remote: https://github.com/Physical-Intelligence/openpi.git
+Modified: src/openpi/training/config.py
+Untracked: checkpoints, slurm/
+Do not discard or overwrite these pre-existing local changes.
+
+CURRENT TRAIN CONFIG
+Name: pi05_xarm
+Entry point: uv run scripts/train.py pi05_xarm --exp-name <run-name>
+Model: pi0.5, action_dim=32, horizon=10, discrete_state_input=false
+Data: LeRobotXArmDataConfig(repo_id=local/xarm_pi05_20260703)
+Prompt: dataset task
+Batch: 16
+Seed/workers: 42/2
+Optimizer: AdamW(b1=.9,b2=.95,eps=1e-8,wd=1e-10,clip=1.0)
+EMA: .999
+LR: warmup 1000, peak 2.5e-5, cosine decay 30000, floor 2.5e-6
+Current num_train_steps: 30001
+Current save interval: 10000
+Current resume: false
+Current W&B: enabled
+
+CHECKPOINT
+Path:
+/work/nvme/bfmk/mw89/openpi_checkpoints/pi05_xarm/xarm_pi05_20260703_run1/30000
+
+Contents:
+- Orbax EMA/inference params item: 51 leaves
+- raw train_state params: 51 leaves
+- Adam optimizer state: 106 leaves including mu, nu, count
+- scalar train_state step
+- normalization asset for local/xarm_pi05_20260703
+- no standalone serialized training config
+
+TRUE RESUME
+Yes, conditionally. Restore through the checkpoint manager with a compatible
+model, AdamW transform, and EMA convention. This restores raw params, optimizer
+state/count, EMA params, and step. It does not restore dataloader position.
+
+WEIGHT-ONLY WARM START
+CheckpointWeightLoader on params restores EMA/inference weights only. It does
+not restore optimizer, raw/EMA lineage, or step and is not a true resume.
+
+STEP-NUMBER BLOCKER
+Code updates before saving under the loop index, so manager directory 30000 is
+expected to contain train_state.step=30001. Verify this by restore on a Slurm
+compute node. If confirmed, use num_train_steps=50001:
+  loop indices 30001..50000 = exactly 20000 updates
+  final manager directory = 50000
+  final state.step = 50001
+Do not assume num_train_steps=50000; that would likely produce only 19999 new
+updates and stop at directory 49999.
+
+REAL DATASET
+Configured repo_id: local/xarm_pi05_20260703
+Expected external ID: MingqianW/xarm_pi05_20260703 (not verified/contacted)
+Actual path:
+/work/nvme/bfmk/mw89/datasets/lerobot/local/xarm_pi05_20260703
+LeRobot version: v2.1
+Episodes/frames/tasks: 198 / 22618 / 6
+FPS/split: 10 / train 0:198
+Images: image and wrist_image, uint8 RGB, 480x640x3
+State/action: float32[7], six joint radians then gripper millimeters
+Raw actions: next-frame absolute target; OpenPI deltas joints 0:6 and keeps
+gripper absolute.
+Indexing: episodes 0..197, frame index resets per episode, global index.
+Tasks: largest block, blue block, red block, red pepper, smallest block, and
+place red pepper in ring.
+
+MUJOCO DATASET
+Expected root:
+/work/nvme/bfmk/mw89/mujoco_datasets
+Status: ROOT ABSENT; zero candidates found in bounded approved-scope search.
+Therefore actual episode/frame counts, FPS, schema, prompt, validation, norm
+stats, failed-oracle exclusion, and OpenPI compatibility are unresolved.
+
+Converter-only intended contract (not dataset evidence):
+- default repo_id MingqianW/xarm_mujoco_red_block_v1
+- prompt "pick up the red block"
+- LeRobot v2.1, 10 Hz
+- same two 480x640 RGB views and 7-D joint+gripper vectors
+- accepts manifest-approved completed successes and rejects non-success
+Actual failed-oracle exclusion must still be proven from manifest and validator
+output.
+
+EXACT SCHEMA COMPARISON
+Real is verified. MuJoCo actual is unavailable. The converter intends a match
+for image keys/shape/dtype, 7-D order/units, absolute raw target semantics,
+10-Hz FPS, red-block prompt, v2.1 format, and episode/frame indexing. No match
+may be declared until the converted dataset is found and validated.
+See DATASET_SCHEMA_COMPARISON.json.
+
+NORMALIZATION
+Checkpoint norm asset matches the real xArm repository asset. It uses q01/q99
+after joint-action delta conversion, with gripper absolute.
+Recommendation: keep checkpoint real-data stats unchanged for true resume.
+First measure sim out-of-bound rates. Do not swap normalization while restoring
+optimizer/EMA state. Combined quantiles require a later approved computation
+over the actual weighted stream; none was started.
+
+MIXING SUPPORT
+Current LeRobot loader accepts one repo_id and has no multiple-dataset,
+weighted-sampling, concatenation-config, or task-balancing support. Its initial
+shuffle is seeded, but iterator/RNG position is not restored. RLDS weighted
+mixing exists elsewhere and is not applicable.
+Required later change: focused deterministic multi-LeRobot weighted sampler.
+Prefer weighted sampling; never physically duplicate episodes.
+
+RECOMMENDED RATIOS
+Goal A, preserve real performance: real:sim = 80:20 by sampled examples.
+Goal B, MuJoCo specialist: real:sim = 25:75, retaining at least 20-25% real.
+Ratios are provisional until actual sim diversity and quality are known.
+
+RECOMMENDED CONTINUATION LR/SAVING
+True resume: restore optimizer and EMA; do not restart warmup.
+Preservation run: keep existing schedule at its 2.5e-6 floor.
+Optional specialist experiment later: explicit offset decay 2.5e-6 to 1e-6
+over 20000 updates, but current code lacks this facility.
+After step verification: num_train_steps=50001.
+Recommended save interval: 5000, yielding dirs 35000/40000/45000/50000.
+No native eval interval exists; use separate approved evaluations.
+
+PROPOSED RUN
+Name: xarm_pi05_real80_sim20_continue_30000_to_50000_v1
+Output:
+/work/nvme/bfmk/mw89/openpi_checkpoints/pi05_xarm/xarm_pi05_real80_sim20_continue_30000_to_50000_v1
+Directory not created.
+
+PROPOSED SLURM RESOURCES
+Account/partition: bfmk-dtai-gh / ghx4
+Nodes/tasks: 1 / 1
+GPU: 1 x NVIDIA GH200 120GB
+CPU/memory/time: 16 / 220G / 12:00:00
+Exclusive: no
+No sbatch created and no job submitted.
+
+AUTH/CACHES
+HF authentication was confirmed without printing identity or token.
+W&B is installed and configured locally, but external sync is not approved.
+Disable it or use an explicitly approved offline mode.
+Route future caches/logs to explicit /work/nvme/bfmk/mw89 paths; do not reuse
+the current HOME-based environment helper unchanged.
+
+UNRESOLVED BLOCKERS
+1. MuJoCo dataset root is absent.
+2. Actual sim schema, quality, failed filtering, statistics, and loadability
+   are unknown.
+3. Weighted multi-LeRobot sampler is absent.
+4. Stored checkpoint step needs compute-node verification.
+5. Restore source and output directory are coupled in current checkpoint code.
+6. Checkpoint has no standalone serialized config.
+7. No native evaluation interval.
+8. Existing sbatch/env helper violates current storage/overwrite conventions.
+9. Dedicated work quota and personal HOME quota are unverified.
+10. External W&B synchronization is not authorized.
+
+NEXT SAFE ACTION
+Locate or produce the converted MuJoCo dataset and its manifest/validator
+report under an approved work path, then repeat the bounded schema/distribution
+checks. After that, separately review changes for weighted sampling and
+source-separated resume. Do not edit config, create sbatch, compute norm stats,
+or start training until those blockers are resolved and approved.

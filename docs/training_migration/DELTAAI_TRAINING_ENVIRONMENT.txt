@@ -1,0 +1,110 @@
+OpenPI pi0.5 xArm continuation: DeltaAI environment snapshot
+Generated: 2026-07-29T13:35:33-05:00
+Audit mode: read-only
+
+EXECUTION CONTEXT
+Host: gh-login03.delta.ncsa.illinois.edu
+Node classification: shared login node
+Working directory: /u/mw89
+SLURM_JOB_ID: unset
+SLURM_NODELIST: unset
+Architecture: aarch64
+No JAX import, GPU initialization, training, evaluation, or heavy processing ran.
+
+SLURM
+Verified account: bfmk-dtai-gh
+Allocation balance displayed at audit: 622 hours
+Production partition: ghx4
+Production max wall time: 2-00:00:00
+Interactive partition: ghx4-interactive
+Interactive max wall time: 02:00:00
+Node accelerators: 4 x NVIDIA GH200 120GB
+Node CPUs: 288
+Node memory: 488000 MB
+No job was submitted, cancelled, or modified.
+
+PROPOSED LATER CONTINUATION REQUEST
+Account: bfmk-dtai-gh
+Partition: ghx4
+Nodes: 1
+Tasks: 1
+GPUs: 1 x GH200
+CPUs per task: 16
+Memory: 220G
+Wall time: 12:00:00
+Exclusive: no
+Status: proposal only; no sbatch file created
+
+STORAGE
+Persistent work root: /work/nvme/bfmk/mw89
+Filesystem capacity: 2.0T
+Used: 534G
+Available: 1.5T
+Percent used: 27%
+Inode usage: 2%
+Dedicated work allocation quota: not verified
+Personal HOME quota: not verified
+
+Suggested explicit future cache roots:
+/work/nvme/bfmk/mw89/caches/huggingface
+/work/nvme/bfmk/mw89/caches/hf_xet
+/work/nvme/bfmk/mw89/caches/uv
+/work/nvme/bfmk/mw89/caches/torch
+/work/nvme/bfmk/mw89/caches/wandb
+
+These suggested directories were not created. Existing
+/u/mw89/scripts/openpi_env.sh routes cache/data/checkpoint/log state into HOME
+and should not be reused unchanged.
+
+OPENPI ENVIRONMENT
+Repository: /u/mw89/repos/openpi
+Virtual environment: /u/mw89/repos/openpi/.venv
+Python: CPython 3.11
+uv CLI: 0.11.28
+
+Installed package metadata:
+jax==0.5.3
+jaxlib==0.5.3
+flax==0.10.2
+orbax-checkpoint==0.11.13
+optax==0.2.4
+numpy==1.26.4
+lerobot==0.1.0
+datasets==3.6.0
+torch==2.7.1
+wandb==0.19.11
+tyro==0.9.22
+
+Package versions were read from metadata; accelerator initialization was not
+performed. A compute-node checkpoint restore and one-batch smoke validation
+remain required.
+
+AUTHENTICATION STATE
+Credential contents were not read or printed.
+Hugging Face token file: present, mode 0600
+Hugging Face authenticated whoami: succeeded
+Hugging Face identity printed: no
+W&B package/CLI: available, version 0.19.11
+W&B local API key configured: yes, value redacted
+W&B external synchronization authorized: no
+Recommendation: disable W&B or use a separately approved offline workflow.
+
+KNOWN OUTPUT/CHECKPOINT PATHS
+Source checkpoint:
+/work/nvme/bfmk/mw89/openpi_checkpoints/pi05_xarm/xarm_pi05_20260703_run1/30000
+
+Proposed output, not created:
+/work/nvme/bfmk/mw89/openpi_checkpoints/pi05_xarm/xarm_pi05_real80_sim20_continue_30000_to_50000_v1
+
+DATA PATHS
+Verified real dataset:
+/work/nvme/bfmk/mw89/datasets/lerobot/local/xarm_pi05_20260703
+
+Expected MuJoCo root:
+/work/nvme/bfmk/mw89/mujoco_datasets
+Status: absent at audit time
+
+READ-ONLY SCHEDULER NOTE
+A final Slurm accounting spot check with an ambiguous historical numeric query
+matched an unrelated array job. It is intentionally excluded from evidence
+about the prior OpenPI run.

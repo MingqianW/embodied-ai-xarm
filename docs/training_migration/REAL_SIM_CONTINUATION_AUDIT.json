@@ -1,0 +1,291 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-07-29T13:35:33-05:00",
+  "audit_scope": "OpenPI pi0.5 xArm real-plus-MuJoCo continuation readiness",
+  "audit_mode": "read_only",
+  "target": {
+    "source_checkpoint_directory": 30000,
+    "additional_optimizer_updates": 20000,
+    "intended_final_checkpoint_directory": 50000,
+    "training_started": false
+  },
+  "execution_context": {
+    "host": "gh-login03.delta.ncsa.illinois.edu",
+    "node_type": "login",
+    "slurm_job_id": null,
+    "working_directory": "/u/mw89"
+  },
+  "repositories": {
+    "openpi": {
+      "path": "/u/mw89/repos/openpi",
+      "branch": "main",
+      "commit": "15a9616a00943ada6c20a0f158e3adb39df2ccac",
+      "commit_subject": "update output objects to support batching (#975)",
+      "remote_redacted": "https://github.com/Physical-Intelligence/openpi.git",
+      "working_tree": {
+        "clean": false,
+        "modified": [
+          "src/openpi/training/config.py"
+        ],
+        "untracked": [
+          "checkpoints",
+          "slurm/"
+        ]
+      },
+      "local_change_summary": "Adds LeRobotXArmDataConfig and pi05_xarm-related training configurations. These are pre-existing user changes and were not modified.",
+      "agents_md": false,
+      "project_status_md": false
+    },
+    "embodied_ai_xarm": {
+      "path": "/u/mw89/repos/embodied-ai-xarm",
+      "branch": "main",
+      "commit": "bcb0a66",
+      "working_tree_before_reports": "clean",
+      "agents_md": false,
+      "project_status_md": false,
+      "report_only_changes": [
+        "docs/training_migration/REAL_SIM_CONTINUATION_AUDIT.md",
+        "docs/training_migration/REAL_SIM_CONTINUATION_AUDIT.json",
+        "docs/training_migration/DATASET_SCHEMA_COMPARISON.json",
+        "docs/training_migration/CHECKPOINT_RESUME_AUDIT.json",
+        "docs/training_migration/DELTAAI_TRAINING_ENVIRONMENT.txt",
+        "docs/training_migration/CHATGPT_REAL_SIM_FINETUNE_HANDOFF.txt"
+      ]
+    }
+  },
+  "active_training_config": {
+    "name": "pi05_xarm",
+    "entrypoint": "uv run scripts/train.py pi05_xarm --exp-name <run-name>",
+    "cli": "Tyro",
+    "model": {
+      "family": "pi0.5",
+      "pi05": true,
+      "action_dim": 32,
+      "action_horizon": 10,
+      "discrete_state_input": false
+    },
+    "data": {
+      "type": "LeRobotXArmDataConfig",
+      "repo_id": "local/xarm_pi05_20260703",
+      "prompt_from_task": true
+    },
+    "weight_loader": "base pi0.5 weights",
+    "batch_size": 16,
+    "seed": 42,
+    "num_workers": 2,
+    "num_train_steps": 30001,
+    "save_interval": 10000,
+    "log_interval": 100,
+    "keep_period": 5000,
+    "ema_decay": 0.999,
+    "resume": false,
+    "wandb_enabled": true,
+    "optimizer": {
+      "type": "AdamW",
+      "b1": 0.9,
+      "b2": 0.95,
+      "eps": 1e-08,
+      "weight_decay": 1e-10,
+      "global_norm_clip": 1.0
+    },
+    "learning_rate": {
+      "type": "cosine_decay",
+      "warmup_steps": 1000,
+      "peak_lr": 2.5e-05,
+      "decay_steps": 30000,
+      "decay_lr": 2.5e-06,
+      "source": "TrainConfig default because the xArm override is commented out"
+    },
+    "checkpoint_base_dir_default": "./checkpoints",
+    "assets_base_dir_default": "./assets"
+  },
+  "environment": {
+    "python_environment": "/u/mw89/repos/openpi/.venv",
+    "python": "CPython 3.11",
+    "architecture": "aarch64",
+    "uv_cli": "0.11.28",
+    "packages": {
+      "jax": "0.5.3",
+      "jaxlib": "0.5.3",
+      "flax": "0.10.2",
+      "orbax-checkpoint": "0.11.13",
+      "optax": "0.2.4",
+      "numpy": "1.26.4",
+      "lerobot": "0.1.0",
+      "datasets": "3.6.0",
+      "torch": "2.7.1",
+      "wandb": "0.19.11",
+      "tyro": "0.9.22"
+    },
+    "login_node_jax_import_performed": false,
+    "existing_environment_helper_risk": "/u/mw89/scripts/openpi_env.sh routes datasets, checkpoints, logs, caches, and W&B state into HOME and should not be reused unchanged."
+  },
+  "checkpoint": {
+    "path": "/work/nvme/bfmk/mw89/openpi_checkpoints/pi05_xarm/xarm_pi05_20260703_run1/30000",
+    "model_parameters": true,
+    "raw_training_parameters": true,
+    "optimizer_state": true,
+    "ema_parameters": true,
+    "global_step_leaf": true,
+    "normalization_assets": true,
+    "standalone_training_config": false,
+    "true_resume_possible": true,
+    "stored_step_expected": 30001,
+    "stored_step_verified": false,
+    "details_report": "CHECKPOINT_RESUME_AUDIT.json"
+  },
+  "datasets": {
+    "real": {
+      "configured_repo_id": "local/xarm_pi05_20260703",
+      "expected_external_repo_id": "MingqianW/xarm_pi05_20260703",
+      "path": "/work/nvme/bfmk/mw89/datasets/lerobot/local/xarm_pi05_20260703",
+      "episodes": 198,
+      "frames": 22618,
+      "tasks": 6,
+      "fps": 10,
+      "split": {
+        "train": "0:198"
+      },
+      "codebase_version": "v2.1",
+      "schema_report": "DATASET_SCHEMA_COMPARISON.json"
+    },
+    "mujoco": {
+      "requested_root": "/work/nvme/bfmk/mw89/mujoco_datasets",
+      "root_exists": false,
+      "candidate_count": 0,
+      "actual_metadata": null,
+      "default_converter_repo_id": "MingqianW/xarm_mujoco_red_block_v1",
+      "converter_intended_prompt": "pick up the red block",
+      "actual_failed_oracle_exclusion_verified": false,
+      "actual_openpi_compatibility_verified": false
+    }
+  },
+  "normalization": {
+    "checkpoint_asset_matches_real_repository_asset": true,
+    "mujoco_statistics_available": false,
+    "combined_statistics_available": false,
+    "statistics_computation_started": false,
+    "safest_strategy": "Keep checkpoint real-data q01/q99 statistics unchanged for true resume. Validate simulation values against those bounds before training. Do not replace normalization while restoring optimizer and EMA state.",
+    "combined_statistics_note": "Combined quantiles cannot be reliably reconstructed from per-dataset summaries; a later approved computation over the actual weighted data stream would be required."
+  },
+  "dataloader": {
+    "lerobot_multiple_datasets_supported": false,
+    "lerobot_weighted_sampling_supported": false,
+    "lerobot_concatenation_supported": false,
+    "lerobot_task_balancing_supported": false,
+    "single_dataset_shuffle_seeded": true,
+    "exact_shuffle_position_restored_on_resume": false,
+    "rlds_weighted_mixing_exists_but_not_applicable": true,
+    "preferred_future_mechanism": "Add a focused multi-LeRobot weighted sampler using a deterministic seed and sampling by examples, without physically duplicating episodes."
+  },
+  "sampling_recommendations": {
+    "preserve_real_performance": {
+      "real": 0.8,
+      "simulation": 0.2,
+      "rationale": "Conservative adaptation while preserving exposure to all six real tasks.",
+      "adjustment_gate": "Increase simulation share only after schema, semantic, distribution, and baseline evaluations pass."
+    },
+    "mujoco_specialist": {
+      "real": 0.25,
+      "simulation": 0.75,
+      "acceptable_real_floor": 0.2,
+      "rationale": "Makes simulation dominant while retaining a real-data anchor against catastrophic forgetting."
+    }
+  },
+  "continuation_semantics": {
+    "restore_optimizer": true,
+    "restore_ema": true,
+    "restart_warmup": false,
+    "recommended_preservation_lr": "Retain the existing schedule, which is at its 2.5e-6 floor after step 30000; continue at that floor for the additional updates.",
+    "optional_specialist_lr": "A later explicit step-offset decay from 2.5e-6 toward 1e-6 over 20000 updates could be evaluated, but current config has no offset schedule and no change was implemented.",
+    "requested_additional_updates": 20000,
+    "recommended_num_train_steps_if_stored_step_is_30001": 50001,
+    "intended_final_manager_directory": 50000,
+    "recommended_save_interval": 5000,
+    "expected_save_directories": [
+      35000,
+      40000,
+      45000,
+      50000
+    ],
+    "native_eval_interval_available": false,
+    "evaluation_recommendation": "Use a separate approved evaluation workflow at the source baseline and the 35000, 40000, 45000, and 50000 checkpoint directories."
+  },
+  "deltaai": {
+    "account": "bfmk-dtai-gh",
+    "account_verified": true,
+    "balance_hours_at_audit": 622,
+    "partition": "ghx4",
+    "partition_max_walltime": "2-00:00:00",
+    "interactive_partition": "ghx4-interactive",
+    "interactive_max_walltime": "02:00:00",
+    "gpu_type": "NVIDIA GH200 120GB",
+    "gpus_per_node": 4,
+    "cpus_per_node": 288,
+    "memory_mb_per_node": 488000,
+    "work_storage": {
+      "filesystem_size": "2.0T",
+      "used": "534G",
+      "available": "1.5T",
+      "percent_used": "27%",
+      "inode_percent_used": "2%",
+      "allocation_quota_verified": false
+    },
+    "proposed_resources": {
+      "account": "bfmk-dtai-gh",
+      "partition": "ghx4",
+      "nodes": 1,
+      "tasks": 1,
+      "gpus": 1,
+      "cpus_per_task": 16,
+      "memory": "220G",
+      "walltime": "12:00:00",
+      "exclusive": false
+    }
+  },
+  "authentication": {
+    "credential_contents_read": false,
+    "hugging_face": {
+      "token_file_present": true,
+      "token_file_mode": "0600",
+      "authenticated_whoami": true,
+      "identity_printed": false
+    },
+    "wandb": {
+      "package_available": true,
+      "version": "0.19.11",
+      "local_api_key_configured": true,
+      "api_key_printed": false,
+      "external_sync_permitted_by_this_audit": false,
+      "continuation_recommendation": "Disable W&B or use a separately approved offline workflow."
+    }
+  },
+  "proposed_run": {
+    "name": "xarm_pi05_real80_sim20_continue_30000_to_50000_v1",
+    "output_directory": "/work/nvme/bfmk/mw89/openpi_checkpoints/pi05_xarm/xarm_pi05_real80_sim20_continue_30000_to_50000_v1",
+    "directory_created": false,
+    "sbatch_created": false
+  },
+  "blockers": [
+    "The requested MuJoCo dataset root does not exist; no candidate metadata, validation result, failed-episode filtering, schema, or statistics can be verified.",
+    "Current LeRobot data path supports one repo_id and lacks weighted multi-dataset sampling.",
+    "The checkpoint stored scalar step must be verified on a compute node to resolve the off-by-one continuation setting.",
+    "Current checkpoint code couples the restore source and output directory, preventing a clean new versioned output root without a later approved code change or approved checkpoint copy.",
+    "No standalone training config is serialized in the checkpoint; architecture, optimizer, and EMA compatibility must be reconstructed.",
+    "There is no native evaluation interval in the JAX training loop.",
+    "The existing Slurm script and environment helper route state into HOME and include unsafe reuse behavior; they must not be reused unchanged.",
+    "Personal HOME quota and a dedicated work allocation quota were not verified.",
+    "External W&B synchronization is not authorized."
+  ],
+  "prohibited_actions_confirmed_not_performed": [
+    "training",
+    "checkpoint mutation",
+    "dataset mutation",
+    "normalization-statistic computation",
+    "training-config edit",
+    "sbatch creation",
+    "job submission",
+    "remote repository mutation",
+    "upload"
+  ]
+}

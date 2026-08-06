@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-07-29T13:35:33-05:00",
+  "audit_mode": "read_only",
+  "checkpoint": {
+    "path": "/work/nvme/bfmk/mw89/openpi_checkpoints/pi05_xarm/xarm_pi05_20260703_run1/30000",
+    "manager_step_directory": 30000,
+    "run_root_entries": [
+      "10000/",
+      "20000/",
+      "30000/",
+      "wandb_id.txt"
+    ],
+    "wandb_id_contents_read": false,
+    "logical_structure": {
+      "_CHECKPOINT_METADATA": "Orbax item-handler metadata",
+      "assets/local/xarm_pi05_20260703/norm_stats.json": "normalization assets",
+      "params": [
+        "_METADATA",
+        "_sharding",
+        "array_metadatas/process_0",
+        "d/",
+        "manifest.ocdbt",
+        "ocdbt.process_0/manifest.ocdbt",
+        "ocdbt.process_0/d/"
+      ],
+      "train_state": [
+        "_METADATA",
+        "_sharding",
+        "array_metadatas/process_0",
+        "d/",
+        "manifest.ocdbt",
+        "ocdbt.process_0/manifest.ocdbt",
+        "ocdbt.process_0/d/"
+      ]
+    }
+  },
+  "components": {
+    "model_parameters": {
+      "present": true,
+      "details": "params has 51 parameter leaves and is the EMA inference tree when ema_decay is configured"
+    },
+    "raw_training_parameters": {
+      "present": true,
+      "details": "train_state metadata contains 51 raw parameter leaves"
+    },
+    "optimizer_state": {
+      "present": true,
+      "details": "train_state metadata contains 106 optimizer-state leaves, including Adam mu, nu, and count"
+    },
+    "ema_state": {
+      "present": true,
+      "details": "EMA parameters are split into the params checkpoint item; train_state.ema_params is intentionally serialized as None and reconstructed during restore"
+    },
+    "global_step": {
+      "present": true,
+      "details": "train_state contains a scalar step leaf",
+      "value_verified": false,
+      "expected_value": 30001,
+      "verification_requirement": "Restore on a Slurm compute node with the matching OpenPI environment; no JAX accelerator initialization was performed on the login node"
+    },
+    "training_config": {
+      "present": false,
+      "details": "model_def, optimizer transform, and EMA decay are reconstructed from the current config rather than serialized as a standalone training configuration"
+    },
+    "normalization_assets": {
+      "present": true,
+      "path": "assets/local/xarm_pi05_20260703/norm_stats.json",
+      "matches_repository_asset": true
+    }
+  },
+  "resume_assessment": {
+    "true_resume_possible": true,
+    "conditions": [
+      "Use the same model architecture and parameter tree",
+      "Reconstruct a compatible AdamW optimizer transformation and state structure",
+      "Use the same EMA convention",
+      "Restore train_state and the separate params item through the Orbax manager",
+      "Verify the stored scalar step before launching the continuation"
+    ],
+    "restored_for_true_resume": [
+      "raw model parameters",
+      "optimizer moments and counter",
+      "EMA parameters",
+      "global step"
+    ],
+    "not_restored": [
+      "dataloader iterator position",
+      "exact shuffled-sample position",
+      "standalone serialized training config",
+      "external experiment-tracker state unless separately resumed"
+    ],
+    "weight_only_warm_start": {
+      "mechanism": "CheckpointWeightLoader pointed at the params item",
+      "restores": [
+        "EMA/inference model weights"
+      ],
+      "does_not_restore": [
+        "raw training parameters as a distinct tree",
+        "optimizer state",
+        "EMA lineage",
+        "global step",
+        "dataloader state"
+      ],
+      "classification": "not a true resume"
+    },
+    "source_output_coupling_blocker": "Current training code uses one checkpoint manager path for both restore and output. A new versioned continuation output directory therefore requires a later approved code change adding a separate resume source, or an approved checkpoint copy. A HOME-to-WORK symlink is not an acceptable workaround.",
+    "off_by_one_semantics": {
+      "observed_code_behavior": "The loop updates train_state and then saves using the loop-index step as the manager directory name.",
+      "expected_source_state": "manager directory 30000 contains train_state.step 30001",
+      "exact_20000_update_target": "If the expected value is verified, configure num_train_steps=50001 so loop indices 30001 through 50000 perform exactly 20000 updates and create manager directory 50000.",
+      "incorrect_candidate": "num_train_steps=50000 would perform 19999 additional updates and finish at manager directory 49999.",
+      "status": "must be verified before configuration is edited"
+    }
+  },
+  "mutations_performed": {
+    "checkpoint": false,
+    "dataset": false,
+    "training_config": false,
+    "training_started": false
+  }
+}
