@@ -14,15 +14,15 @@ base_camera:
 wrist_camera:
   parent_body: gripper_base
   position:
-  - 0.0674069555
-  - 0.0057714126
-  - 0.0865342728
+  - 0.07
+  - 0.006
+  - 0.087
   target:
-  - 0.0018739416
-  - -0.0168701195
-  - 0.3221249095
-  roll_deg: -96.09
-  fovy_deg: 90.3695
+  - 0.002
+  - -0.001
+  - 0.307
+  roll_deg: -92.7
+  fovy_deg: 108.7
 gripper_mapping:
   raw_closed: 50.0
   raw_open: 845.0
@@ -50,3 +50,4 @@ metadata:
   calibration_sample_count: 12
   optimization_sample_count: 6
   manual_adjustment_utc: '2026-07-24T16:16:11.717481+00:00'
+  wrist_manual_adjustment_utc: '2026-08-06T08:34:57.085397+00:00'
