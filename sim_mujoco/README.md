@@ -29,6 +29,32 @@ Run commands from the repository root:
 cd "D:\2026 summer project\embodied-ai-xarm"
 ```
 
+## Manual Pick-Up Teleoperation
+
+The xArm6 scene uses the UFACTORY xArm four-bar gripper architecture from the
+MuJoCo Menagerie xArm7 model: paired driver hinges, follower fingers, inner
+spring links, a split tendon, and closed-loop linkage constraints. It retains a
+single gripper command and the existing raw xArm gripper state convention.
+
+Start the interactive scene below, then click the MuJoCo viewer and use the
+keyboard to move one joint at a time. The default scene contains the red block;
+use `--task blue_block` or another task key to choose a different object.
+
+```powershell
+& "D:\miniconda\envs\mujoco-pi\python.exe" `
+  ".\sim_mujoco\scripts\teleoperate_pick.py" `
+  --task red_block
+```
+
+Controls: arrow keys move the TCP in the world XY plane, `Page Up/Page Down`
+move it along world Z, `O/C` opens/closes the gripper, `H` holds the current
+position, `X` resets the task, and `Esc` quits. Adjust motion increments with
+`--cartesian-step-mm` and `--gripper-step-mm` when needed.
+
+Teleoperation uses only MuJoCo contact dynamics: objects are never attached to
+the TCP or made non-colliding after contact.
+
+
 ## Observation Semantics
 
 The OpenPI observation is:

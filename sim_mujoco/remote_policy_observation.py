@@ -34,8 +34,8 @@ DEFAULT_MODEL_PATH = active_model_path()
 DEFAULT_CAMERA_CONFIG_PATH = camera_config_path()
 
 ARM_JOINT_NAMES = tuple(f"joint{i}" for i in range(1, 7))
-GRIPPER_LEFT_JOINT = "left_finger_slide"
-GRIPPER_RIGHT_JOINT = "right_finger_slide"
+GRIPPER_LEFT_JOINT = "left_driver_joint"
+GRIPPER_RIGHT_JOINT = "right_driver_joint"
 BASE_CAMERA = "base_camera"
 WRIST_CAMERA = "wrist_camera"
 DEFAULT_PROMPT = "pick up the object"

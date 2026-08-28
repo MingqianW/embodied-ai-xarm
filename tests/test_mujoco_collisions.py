@@ -60,6 +60,21 @@ class CollisionModelTests(unittest.TestCase):
         finally:
             context.close()
 
+    def test_four_bar_fingertip_pads_are_collidable(self) -> None:
+        context = load_simulation()
+        try:
+            for geom_name in (
+                "left_finger_pad_1",
+                "left_finger_pad_2",
+                "right_finger_pad_1",
+                "right_finger_pad_2",
+            ):
+                geom_id = object_id(context.model, mujoco.mjtObj.mjOBJ_GEOM, geom_name)
+                self.assertEqual(int(context.model.geom_contype[geom_id]), 1, geom_name)
+                self.assertEqual(int(context.model.geom_conaffinity[geom_id]), 1, geom_name)
+        finally:
+            context.close()
+
     def test_every_task_starts_without_forbidden_collision(self) -> None:
         for task in task_names():
             context = load_simulation()

@@ -14,6 +14,7 @@ import yaml
 from openpi_client import image_tools
 from PIL import Image, ImageDraw
 from sim_mujoco.gripper_mapping import raw_gripper_to_sim_slide
+from sim_mujoco.remote_policy_observation import GRIPPER_LEFT_JOINT, GRIPPER_RIGHT_JOINT
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -302,8 +303,8 @@ class CalibrationRenderer:
         for index, value in enumerate(sample["joint_positions_rad"], start=1):
             set_joint_qpos(self.model, self.data, f"joint{index}", float(value))
         gripper = raw_gripper_to_sim(float(sample["gripper_mm"]), self.config)
-        set_joint_qpos(self.model, self.data, "left_finger_slide", gripper)
-        set_joint_qpos(self.model, self.data, "right_finger_slide", gripper)
+        set_joint_qpos(self.model, self.data, GRIPPER_LEFT_JOINT, gripper)
+        set_joint_qpos(self.model, self.data, GRIPPER_RIGHT_JOINT, gripper)
         if parameters is not None:
             set_camera_parameters(self.model, camera_name, parameters)
         mujoco.mj_forward(self.model, self.data)

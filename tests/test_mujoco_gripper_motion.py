@@ -17,7 +17,7 @@ class GripperMotionTests(unittest.TestCase):
         context = load_simulation()
         try:
             initialize_scene(context.model, context.data, settle_steps=0)
-            context.data.ctrl[6] = 0.0
+            context.data.ctrl[6] = 0.005
             for _ in range(500):
                 mujoco.mj_step(context.model, context.data)
             closed = joint_qpos(
@@ -26,7 +26,7 @@ class GripperMotionTests(unittest.TestCase):
                 GRIPPER_LEFT_JOINT,
             )
 
-            context.data.ctrl[6] = 0.04
+            context.data.ctrl[6] = 0.80
             for _ in range(500):
                 mujoco.mj_step(context.model, context.data)
             reopened = joint_qpos(
@@ -35,8 +35,8 @@ class GripperMotionTests(unittest.TestCase):
                 GRIPPER_LEFT_JOINT,
             )
 
-            self.assertLess(closed, 0.005)
-            self.assertGreater(reopened, 0.035)
+            self.assertLess(closed, 0.02)
+            self.assertGreater(reopened, 0.70)
         finally:
             context.close()
 

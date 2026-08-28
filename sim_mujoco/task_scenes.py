@@ -16,6 +16,8 @@ from sim_mujoco.remote_policy_observation import (
     DEFAULT_CAMERA_CONFIG_PATH,
     arm_joint_limits,
     gripper_raw_to_sim,
+    GRIPPER_LEFT_JOINT,
+    GRIPPER_RIGHT_JOINT,
 )
 
 
@@ -386,7 +388,7 @@ def configure_task_scene(
                 gripper_raw_to_sim(gripper_raw, load_gripper_config()),
             )
         )
-        for joint_name in ("left_finger_slide", "right_finger_slide"):
+        for joint_name in (GRIPPER_LEFT_JOINT, GRIPPER_RIGHT_JOINT):
             joint_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, joint_name)
             data.qpos[int(model.jnt_qposadr[joint_id])] = gripper_sim
         data.ctrl[6] = gripper_sim

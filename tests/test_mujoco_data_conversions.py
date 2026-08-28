@@ -14,6 +14,7 @@ from sim_mujoco.data_collection.conversions import (
 )
 from sim_mujoco.remote_policy_observation import (
     DEFAULT_MODEL_PATH,
+    GRIPPER_LEFT_JOINT,
     initialize_scene,
 )
 
@@ -52,11 +53,11 @@ class MuJoCoDataConversionTests(unittest.TestCase):
         recovered = policy_action_from_mujoco_target(target)
         np.testing.assert_allclose(recovered, action, rtol=0.0, atol=2e-5)
 
-    def test_gripper_state_reads_the_left_slide_joint(self) -> None:
+    def test_gripper_state_reads_the_left_driver_joint(self) -> None:
         left_joint = mujoco.mj_name2id(
             self.model,
             mujoco.mjtObj.mjOBJ_JOINT,
-            "left_finger_slide",
+            GRIPPER_LEFT_JOINT,
         )
         self.data.qpos[self.model.jnt_qposadr[left_joint]] = (
             mujoco_gripper_target_from_raw(300.0)
