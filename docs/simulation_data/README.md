@@ -8,7 +8,7 @@ The camera source of truth is
 calibration values.
 
 The versioned collection plan is
-`sim_mujoco/config/data_generation/clean_multitask_stable_v3.yaml`. It requests
+`configs/data/sim/generation/clean_multitask_stable_v3.yaml`. It requests
 200 accepted episodes, six canonical prompts, and zero distractor episodes.
 
 ## Quick start
@@ -18,8 +18,8 @@ Run lightweight config inspection on a login node:
 ```bash
 cd /u/mw89/repos/embodied-ai-xarm
 /u/mw89/repos/openpi/.venv/bin/python \
-  -m sim_mujoco.data_generation.cli inspect \
-  --config sim_mujoco/config/data_generation/clean_multitask_stable_v3.yaml
+  -m data.sim.generation.cli inspect \
+  --config configs/data/sim/generation/clean_multitask_stable_v3.yaml
 ```
 
 Run physics, rendering, collection, conversion, and full decoding through the
@@ -30,10 +30,10 @@ full generation, conversion, and final audit.
 Stable CLI interfaces are:
 
 ```bash
-python -m sim_mujoco.data_generation.cli generate --config CONFIG --output RAW --overwrite
-python -m sim_mujoco.data_generation.cli convert --config CONFIG --raw RAW --output CONVERTED --overwrite
-python -m sim_mujoco.data_generation.cli audit --config CONFIG --raw RAW --converted CONVERTED --report-dir LOG
-python -m sim_mujoco.data_generation.cli inspect --config CONFIG
+python -m data.sim.generation.cli generate --config CONFIG --output RAW --overwrite
+python -m data.sim.generation.cli convert --config CONFIG --raw RAW --output CONVERTED --overwrite
+python -m data.sim.generation.cli audit --config CONFIG --raw RAW --converted CONVERTED --report-dir LOG
+python -m data.sim.generation.cli inspect --config CONFIG
 ```
 
 `--overwrite` is always explicit. The safety layer accepts only the four exact

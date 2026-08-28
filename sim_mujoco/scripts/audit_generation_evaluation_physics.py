@@ -22,7 +22,7 @@ if str(PROJECT_ROOT) not in sys.path:
 import mujoco  # noqa: E402
 import numpy as np  # noqa: E402
 
-from sim_mujoco.data_generation.config import load_pipeline_config  # noqa: E402
+from data.sim.generation.config import load_pipeline_config  # noqa: E402
 from sim_mujoco.formal_evaluation.config import load_protocol  # noqa: E402
 from simulation.resources import model_path  # noqa: E402
 from simulation.observation.cameras import apply_camera_calibration  # noqa: E402
@@ -33,7 +33,7 @@ from simulation.scene import configure_task_scene  # noqa: E402
 
 DEFAULT_GENERATION_CONFIG = (
     PROJECT_ROOT
-    / "sim_mujoco/config/data_generation/clean_multitask_stable_v4_10x_real.yaml"
+    / "configs/data/sim/generation/clean_multitask_stable_v4_10x_real.yaml"
 )
 DEFAULT_EVALUATION_PROTOCOL = (
     PROJECT_ROOT / "sim_mujoco/config/formal_xarm_pi05_eval_v2.json"

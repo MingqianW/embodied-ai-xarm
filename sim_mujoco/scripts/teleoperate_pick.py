@@ -17,7 +17,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from sim_mujoco.data_collection.ik_solver import solve_site_pose
+from data.sim.generation.ik import solve_site_pose
 from simulation.environment import MuJoCoEnvironment
 from simulation.robot.model import ARM_JOINT_NAMES
 from simulation.robot.model import LEFT_GRIPPER_DRIVER_JOINT_NAME

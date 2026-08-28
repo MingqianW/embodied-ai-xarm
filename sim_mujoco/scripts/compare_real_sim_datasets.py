@@ -21,9 +21,9 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from fine_tune.xarm_lerobot_writer import XARM_STATE_COLUMNS
-from sim_mujoco.data_collection.episode_recorder import REAL_TRAINING_PROMPT
-from sim_mujoco.data_collection.lerobot_adapter import (
+from data.common.schema import XARM_STATE_COLUMNS
+from data.sim.generation.legacy.episode_recorder import REAL_TRAINING_PROMPT
+from data.sim.generation.legacy.lerobot_adapter import (
     discover_successful_episodes,
     load_episode_records,
 )

@@ -3,7 +3,7 @@ OpenPI config snippet for xArm LeRobot fine-tuning.
 
 Copy the class and config entry into Physical-Intelligence/openpi's
 src/openpi/training/config.py, then replace `local/xarm_pi05_data`
-with the repo id used by fine_tune/convert_xarm_raw_to_lerobot.py.
+with the repo id used by data.real.conversion.convert_xarm_raw_to_lerobot.
 """
 
 # Add these imports in openpi/src/openpi/training/config.py if they are not present:

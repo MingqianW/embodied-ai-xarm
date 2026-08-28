@@ -14,11 +14,11 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from policy_runtime.recording import VideoRecorder  # noqa: E402
-from sim_mujoco.data_collection.oracle_controller import (  # noqa: E402
+from data.sim.generation.oracle import (  # noqa: E402
     ScriptedOracleController,
     oracle_config_for_task,
 )
-from sim_mujoco.data_collection.task_success import (  # noqa: E402
+from data.sim.generation.acceptance import (  # noqa: E402
     accepted_oracle_episode,
     simulation_is_finite,
     update_task_success,

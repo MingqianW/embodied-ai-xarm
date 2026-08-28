@@ -2,6 +2,12 @@
 
 This file summarizes the basic commands used for xArm pick-up data collection.
 
+> **External collector:** `collect_async_gripper_optimized.py` and its xArm /
+> RealSense hardware adapters are not tracked in this repository. The tracked
+> offline boundary starts at `data.real.collection`, which parses the
+> collector's `meta.json`, `robot_log.csv`, and camera files. Do not interpret
+> the command below as a repository-owned or offline-testable collector.
+
 ## 1. Start the Teach Pendant
 
 Run the uFactory Studio client:

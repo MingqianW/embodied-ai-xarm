@@ -24,11 +24,11 @@ if str(PROJECT_ROOT) not in sys.path:
 import mujoco  # noqa: E402
 import numpy as np  # noqa: E402
 
-from sim_mujoco.data_collection.conversions import (  # noqa: E402
+from data.sim.generation.state_conversion import (  # noqa: E402
     policy_state_from_mujoco,
 )
-from sim_mujoco.data_collection.ik_solver import solve_site_pose  # noqa: E402
-from sim_mujoco.data_collection.oracle_controller import (  # noqa: E402
+from data.sim.generation.ik import solve_site_pose  # noqa: E402
+from data.sim.generation.oracle import (  # noqa: E402
     PlaceOracleConfig,
     PlaceOracleStage,
     PlaceRedPepperOracleController,

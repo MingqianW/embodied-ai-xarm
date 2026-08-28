@@ -15,10 +15,10 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from sim_mujoco.data_generation.collection import (  # noqa: E402
+from data.sim.generation.collection import (  # noqa: E402
     _validate_place_initial_grasp,
 )
-from sim_mujoco.data_generation.config import load_pipeline_config  # noqa: E402
+from data.sim.generation.config import load_pipeline_config  # noqa: E402
 from simulation.environment import MuJoCoEnvironment  # noqa: E402
 
 
@@ -28,7 +28,7 @@ def main() -> None:
         "--config",
         type=Path,
         default=Path(
-            "sim_mujoco/config/data_generation/clean_multitask_stable_v3.yaml"
+            "configs/data/sim/generation/clean_multitask_stable_v3.yaml"
         ),
     )
     parser.add_argument("--seed", type=int, default=600000)

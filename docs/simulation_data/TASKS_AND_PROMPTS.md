@@ -27,7 +27,7 @@ Prompts never vary by seed, retry, or scene variant.
 Historical real data includes underscore prompts and, in later datasets,
 natural-language prompts. Do not mutate those datasets. For joint real/simulation
 training, normalize task text through
-`sim_mujoco.data_generation.registry.resolve_task_id` and then
+`data.common.task_identity.resolve_task_id` and then
 `canonical_prompt`. Tests assert that historical aliases and simulation IDs
 resolve to the same string.
 

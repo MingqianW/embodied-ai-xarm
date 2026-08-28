@@ -568,7 +568,7 @@ def write_report(results: dict[str, Any], path: Path) -> None:
         "",
         "- `run_pi_xarm.py:28-35, 367-398`: state order and deg-to-rad conversion.",
         "- `run_pi_xarm.py:289-352`: absolute-radian action execution.",
-        "- `fine_tune/convert_xarm_raw_to_lerobot.py:31-38, 98-99, 430-436`:",
+        "- `data/real/conversion/convert_xarm_raw_to_lerobot.py`:",
         "  unchanged state and next-state absolute actions.",
         "- `fine_tune/openpi_xarm_config.py:24-65`: state/action contract and",
         "  delta/absolute OpenPI transforms.",

@@ -148,7 +148,7 @@ def save_raw_trajectory(records, *, prompt, raw_root=RAW_DATA_ROOT):
             "realsense_1_file": "wrist camera",
         },
         "notes": [
-            "robot_log.csv is compatible with fine_tune/convert_xarm_raw_to_lerobot.py",
+            "robot_log.csv is compatible with data.real.conversion.convert_xarm_raw_to_lerobot",
             "policy_action_chunks.npy stores the generated action chunk for each observed frame",
         ],
     }

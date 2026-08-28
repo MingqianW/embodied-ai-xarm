@@ -21,8 +21,8 @@ Validate the config without rendering:
 
 ```bash
 /u/mw89/repos/openpi/.venv/bin/python \
-  -m sim_mujoco.data_generation.cli inspect \
-  --config sim_mujoco/config/data_generation/clean_multitask_stable_v3.yaml
+  -m data.sim.generation.cli inspect \
+  --config configs/data/sim/generation/clean_multitask_stable_v3.yaml
 ```
 
 The four exact roots are fixed in the YAML. Do not substitute a parent, sibling,
@@ -34,8 +34,8 @@ Initialization requires the explicit scoped replacement flag:
 
 ```bash
 /u/mw89/repos/openpi/.venv/bin/python \
-  -m sim_mujoco.data_generation.cli inspect \
-  --config sim_mujoco/config/data_generation/clean_multitask_stable_v3.yaml \
+  -m data.sim.generation.cli inspect \
+  --config configs/data/sim/generation/clean_multitask_stable_v3.yaml \
   --initialize-log-root --overwrite
 
 sbatch /u/mw89/repos/embodied-ai-xarm/slurm/simulation_data/offline_tests.sbatch

@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from sim_mujoco.data_generation.registry import TASKS
+from data.common.task_identity import TASKS
 from simulation.resources import camera_config_path
 from simulation.resources import model_path
 from simulation.resources import task_config_path

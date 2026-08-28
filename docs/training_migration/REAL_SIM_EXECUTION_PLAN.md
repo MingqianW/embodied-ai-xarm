@@ -35,7 +35,7 @@ Files to create:
 
 Existing MuJoCo collection, conversion, strict validation, comparison, policy
 runtime, and evaluation code will be reused. The shared
-`fine_tune/xarm_lerobot_writer.py` remains the only LeRobot writer.
+`data/common/lerobot_writer.py` remains the only xArm LeRobot writer.
 
 ## Mixed-loader design
 

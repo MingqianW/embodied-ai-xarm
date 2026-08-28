@@ -5,7 +5,7 @@ set -euo pipefail
 REPOSITORY=/u/mw89/repos/embodied-ai-xarm
 OPENPI_ROOT=/u/mw89/repos/openpi
 PYTHON=/u/mw89/repos/openpi/.venv/bin/python
-CONFIG=/u/mw89/repos/embodied-ai-xarm/sim_mujoco/config/data_generation/clean_multitask_stable_v4_10x_real.yaml
+CONFIG=/u/mw89/repos/embodied-ai-xarm/configs/data/sim/generation/clean_multitask_stable_v4_10x_real.yaml
 RAW_OUTPUT=/work/nvme/bfmk/mw89/mujoco_datasets/raw/xarm_mujoco_clean_multitask_stable_v4_10x_real
 CONVERTED_OUTPUT=/work/nvme/bfmk/mw89/mujoco_datasets/local/xarm_mujoco_clean_multitask_stable_v4_10x_real
 SMOKE_OUTPUT=/work/nvme/bfmk/mw89/mujoco_datasets/smoke/xarm_mujoco_clean_multitask_stable_v4_10x_real
@@ -54,7 +54,7 @@ record_phase_status() {
   local failure=$2
   local -a arguments
   arguments=(
-    -m sim_mujoco.data_generation.cli status
+    -m data.sim.generation.cli status
     --config "$CONFIG"
     --phase "$PHASE"
     --job-id "$SLURM_JOB_ID"

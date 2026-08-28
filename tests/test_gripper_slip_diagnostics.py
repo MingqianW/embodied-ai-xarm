@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 import mujoco
 
-from sim_mujoco.data_collection.oracle_controller import OracleStage
+from data.sim.generation.oracle import OracleStage
 
 from sim_mujoco.gripper_slip_diagnostics import (
     inverse_quantile_normalize,

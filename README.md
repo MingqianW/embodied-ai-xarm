@@ -40,7 +40,7 @@ Raw demonstrations, converted datasets, local environments, calibration
 renders, and machine-specific path configuration are intentionally excluded
 from Git. Fine-tuning scripts default to
 `fine_tune/data/xarm_pi05_data/raw`; pass `--raw-root` or create an ignored
-`fine_tune/xarm_data_config.json` to use another location.
+`configs/data/real/xarm_data_config.json` to use another location.
 
 See `docs/step1_data_collection.md`, `docs/step2_openpi_finetuning.md`,
 `simulation/calibration/README.md`, and

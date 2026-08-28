@@ -49,7 +49,11 @@ fine_tune/third_party/
 .env.*
 
 # Generated datasets, checkpoints, recordings, and logs
-/data/
+# `data/` is the canonical source package. Ignore only runtime products beneath it.
+/data/**/datasets/
+/data/**/outputs/
+/data/**/recordings/
+/data/**/logs/
 /datasets/
 /checkpoints/
 /videos/

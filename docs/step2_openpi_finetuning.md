@@ -75,7 +75,7 @@ For the raw folder layout under `fine_tune/data/xarm_pi05_data/raw`, keep all pa
 ```bash
 export HF_LEROBOT_HOME="${HF_LEROBOT_HOME:-$HOME/lerobot_cache}"
 
-python fine_tune/convert_xarm_raw_to_lerobot.py \
+python -m data.real.conversion.convert_xarm_raw_to_lerobot \
   --raw-root "fine_tune/data/xarm_pi05_data/raw" \
   --output-dir "converted/xarm_pi05_light" \
   --repo-id local/xarm_pi05_data \

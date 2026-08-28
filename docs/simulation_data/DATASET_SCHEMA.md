@@ -54,7 +54,7 @@ task counts, zero distractors, validation metadata, and mandatory totals pass.
 
 ## Converted layout
 
-The converter uses `fine_tune/xarm_lerobot_writer.py`, producing canonical
+The converter uses `data/common/lerobot_writer.py`, producing canonical
 LeRobot v2.1 metadata (`meta/info.json`, `meta/tasks.jsonl`,
 `meta/episodes.jsonl`), per-episode Parquet shards with embedded base/wrist RGB,
 statistics assets, and `meta/mujoco_multitask_metadata.json`. Task indices follow
