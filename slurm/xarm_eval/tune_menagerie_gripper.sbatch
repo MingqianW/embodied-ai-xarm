@@ -52,8 +52,8 @@ module list 2>&1 || true
 FILES=(
   simulation/robot/control.py
   sim_mujoco/data_collection/oracle_controller.py
-  sim_mujoco/formal_evaluation/episode_runner.py
-  sim_mujoco/scripts/run_remote_policy_closed_loop.py
+  evaluation/sim/episode_runner.py
+  evaluation/sim/legacy/run_remote_policy_closed_loop.py
   sim_mujoco/scripts/run_grip_force_vs_width.py
   sim_mujoco/scripts/analyze_grip_force_vs_width.py
   sim_mujoco/scripts/run_scripted_gripper_slip_experiments.py

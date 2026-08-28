@@ -33,7 +33,7 @@ for _ in $(seq 1 120); do
 done
 test "$READY" = true
 cd /u/mw89/repos/embodied-ai-xarm
-/u/mw89/repos/openpi/.venv/bin/python sim_mujoco/scripts/evaluate_remote_policy_automatic.py --policy-label final_50000 --episodes 20 --seed-start 50000 --host 127.0.0.1 --port 8000 --max-policy-steps 80 --output-dir /work/nvme/bfmk/mw89/mujoco_outputs/policy_evaluation/final_50000 --video-every 5 --resume
+/u/mw89/repos/openpi/.venv/bin/python evaluation/sim/legacy/evaluate_remote_policy_automatic.py --policy-label final_50000 --episodes 20 --seed-start 50000 --host 127.0.0.1 --port 8000 --max-policy-steps 80 --output-dir /work/nvme/bfmk/mw89/mujoco_outputs/policy_evaluation/final_50000 --video-every 5 --resume
 kill "$SERVER_PID"
 wait "$SERVER_PID" 2>/dev/null || true
 trap - EXIT

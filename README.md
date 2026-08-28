@@ -11,8 +11,10 @@ fine-tuning OpenPI policies, and reproducing the task in MuJoCo or Isaac Sim.
 - `sim_mujoco/`: xArm 6 scene generation, camera calibration, and tests.
 - `sim_isaac/`: local Isaac Sim asset preparation, scene/cameras, policy
   runners, evaluation, and diagnostics.
+- `evaluation/`: shared contracts, formal MuJoCo evaluation, and the explicit
+  safety/review boundary for the existing real-robot runtime.
 - `policy_runtime/`: simulator-independent OpenPI observations, transport,
-  action safety, logs, recording, and evaluation.
+  action safety, logs, and recording primitives.
 - `third_party/openpi/`: OpenPI Git submodule.
 - `third_party/xarm_ros2/`: vendored xArm ROS 2 descriptions and meshes.
 

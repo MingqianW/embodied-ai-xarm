@@ -4,13 +4,13 @@ from pathlib import Path
 
 import pytest
 
-from sim_mujoco.formal_evaluation.human_review import build_manifest
-from sim_mujoco.formal_evaluation.outputs import read_json
-from sim_mujoco.formal_evaluation.outputs import write_json
-from sim_mujoco.formal_evaluation.representative_videos import index_json_path
-from sim_mujoco.formal_evaluation.representative_videos import load_representative_index
-from sim_mujoco.formal_evaluation.representative_videos import retain_video_bundle
-from sim_mujoco.formal_evaluation.representative_videos import validate_category_video_coverage
+from evaluation.sim.human_review import build_manifest
+from evaluation.sim.outputs import read_json
+from evaluation.sim.outputs import write_json
+from evaluation.sim.representative_videos import index_json_path
+from evaluation.sim.representative_videos import load_representative_index
+from evaluation.sim.representative_videos import retain_video_bundle
+from evaluation.sim.representative_videos import validate_category_video_coverage
 
 
 def _result(*, model: str, task: str, seed: int, category: str) -> dict[str, object]:

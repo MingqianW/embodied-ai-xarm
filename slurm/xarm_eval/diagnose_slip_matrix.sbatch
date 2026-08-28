@@ -18,8 +18,8 @@ set -euo pipefail
 OPENPI_ROOT=/u/mw89/repos/openpi
 EMBODIED_AI_ROOT=/u/mw89/repos/embodied-ai-xarm
 PYTHON=${OPENPI_ROOT}/.venv/bin/python
-MODEL_SPEC=${MODEL_SPEC:-${EMBODIED_AI_ROOT}/sim_mujoco/config/formal_models/B.json}
-PROTOCOL=${PROTOCOL:-${EMBODIED_AI_ROOT}/sim_mujoco/config/formal_xarm_pi05_eval_v1.json}
+MODEL_SPEC=${MODEL_SPEC:-${EMBODIED_AI_ROOT}/configs/evaluation/sim/models/B.json}
+PROTOCOL=${PROTOCOL:-${EMBODIED_AI_ROOT}/configs/evaluation/sim/protocols/formal_xarm_pi05_eval_v1.json}
 TASK=${TASK:-red_block}
 XARM_SLIP_SEEDS_TEXT=${XARM_SLIP_SEEDS:-50000 50001 50002}
 read -r -a POLICY_SEEDS <<< "${XARM_SLIP_SEEDS_TEXT}"

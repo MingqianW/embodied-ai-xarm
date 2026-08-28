@@ -6,23 +6,24 @@ from types import SimpleNamespace
 
 import numpy as np
 import pytest
-from sim_mujoco.formal_evaluation.config import load_protocol
-from sim_mujoco.formal_evaluation.episode_runner import record_executed_target_clipping
-from sim_mujoco.formal_evaluation.episode_runner import validate_formal_action_chunk
-from sim_mujoco.formal_evaluation.failure_diagnosis import diagnose_episode_failure
-from sim_mujoco.formal_evaluation.models import ModelSpec
-from sim_mujoco.formal_evaluation.models import validate_abc_comparison_specs
-from sim_mujoco.formal_evaluation.models import validate_model_spec
-from sim_mujoco.formal_evaluation.outputs import EPISODE_SCHEMA_VERSION
-from sim_mujoco.formal_evaluation.outputs import LEGACY_EPISODE_SCHEMA_VERSION
-from sim_mujoco.formal_evaluation.outputs import initialize_output
-from sim_mujoco.formal_evaluation.outputs import upgrade_result_with_failure_diagnosis
-from sim_mujoco.formal_evaluation.outputs import validate_episode_result
-from sim_mujoco.formal_evaluation.rng import policy_rng_seed
-from sim_mujoco.formal_evaluation.success import PickSuccess
-from sim_mujoco.formal_evaluation.success import PlacementSuccess
-from sim_mujoco.formal_evaluation.summary import build_video_index
-from sim_mujoco.formal_evaluation.summary import summarize_results
+from evaluation.sim.config import load_protocol
+from evaluation.sim.episode_runner import record_executed_target_clipping
+from evaluation.sim.episode_runner import validate_formal_action_chunk
+from evaluation.sim.failure_diagnosis import diagnose_episode_failure
+from evaluation.common.models import ModelSpec
+from evaluation.common.models import validate_abc_comparison_specs
+from evaluation.common.models import validate_model_spec
+from evaluation.sim.outputs import EPISODE_SCHEMA_VERSION
+from evaluation.sim.outputs import LEGACY_EPISODE_SCHEMA_VERSION
+from evaluation.sim.outputs import initialize_output
+from evaluation.sim.outputs import upgrade_result_with_failure_diagnosis
+from evaluation.sim.outputs import validate_episode_result
+from evaluation.sim.rng import policy_rng_seed
+from evaluation.sim.result_contract import as_common_result
+from evaluation.sim.success import PickSuccess
+from evaluation.sim.success import PlacementSuccess
+from evaluation.sim.summary import build_video_index
+from evaluation.sim.summary import summarize_results
 
 
 @pytest.fixture(scope="module")
@@ -32,6 +33,7 @@ def protocol():
 
 def _provenance() -> dict[str, object]:
     return {
+        "backend": "sim",
         "evaluation_protocol_version": "xarm-pi05-formal-evaluation-v1",
         "protocol_sha256": "protocol",
         "model_spec_sha256": "model",
@@ -52,6 +54,7 @@ def _result(*, success: bool, valid: bool, task: str = "red_block") -> dict[str,
     )
     return {
         "schema_version": EPISODE_SCHEMA_VERSION,
+        "backend": "sim",
         "evaluation_protocol_version": "xarm-pi05-formal-evaluation-v1",
         "timestamp_utc": "2026-08-07T00:00:00+00:00",
         "model": {
@@ -86,6 +89,21 @@ def _result(*, success: bool, valid: bool, task: str = "red_block") -> dict[str,
     }
 
 
+def test_formal_result_has_backend_explicit_common_contract() -> None:
+    result = as_common_result(_result(success=True, valid=True))
+    assert result.run.backend == "sim"
+    assert result.episode.task.task_id == "red_block"
+    assert result.outcome == "success"
+
+
+def test_pre_phase4_formal_result_without_backend_remains_compatible() -> None:
+    document = _result(success=False, valid=True)
+    document.pop("backend")
+    document["provenance"].pop("backend")
+    validate_episode_result(document)
+    assert as_common_result(document).run.backend == "sim"
+
+
 def test_protocol_has_exact_formal_control_and_prompts(protocol) -> None:
     assert (protocol.execute_chunk_steps, protocol.policy_action_horizon, protocol.max_policy_steps) == (5, 10, 50)
     assert protocol.video_policy == "category_representative"
@@ -103,7 +121,7 @@ def test_protocol_has_exact_formal_control_and_prompts(protocol) -> None:
 
 
 def test_smoke_protocol_preserves_control_semantics_with_two_seeds() -> None:
-    path = Path(__file__).resolve().parents[1] / "sim_mujoco" / "config" / "formal_xarm_pi05_eval_smoke_v2.json"
+    path = Path(__file__).resolve().parents[1] / "configs/evaluation/sim/protocols/formal_xarm_pi05_eval_smoke_v2.json"
     smoke = load_protocol(path)
     assert smoke.seed_count == 2
     assert (smoke.execute_chunk_steps, smoke.policy_action_horizon, smoke.max_policy_steps) == (5, 10, 50)
@@ -112,7 +130,7 @@ def test_smoke_protocol_preserves_control_semantics_with_two_seeds() -> None:
 
 
 def test_all_video_protocol_is_explicit_and_has_an_isolated_output_root(protocol) -> None:
-    path = Path(__file__).resolve().parents[1] / "sim_mujoco" / "config" / "formal_xarm_pi05_eval_video_all_v2.json"
+    path = Path(__file__).resolve().parents[1] / "configs/evaluation/sim/protocols/formal_xarm_pi05_eval_video_all_v2.json"
     all_video = load_protocol(path)
     assert all_video.video_policy == "all"
     assert all_video.representatives_per_category == 1
@@ -120,14 +138,14 @@ def test_all_video_protocol_is_explicit_and_has_an_isolated_output_root(protocol
 
 
 def test_legacy_v1_protocol_remains_loadable_without_post_success_hold() -> None:
-    path = Path(__file__).resolve().parents[1] / "sim_mujoco" / "config" / "formal_xarm_pi05_eval_v1.json"
+    path = Path(__file__).resolve().parents[1] / "configs/evaluation/sim/protocols/formal_xarm_pi05_eval_v1.json"
     legacy = load_protocol(path)
     assert legacy.pick_post_success_hold_checks == 0
     assert legacy.pick_max_post_success_drop_m == 0.0
 
 
 def test_abc_specs_use_explicit_15000_checkpoints_and_expected_norm_assets() -> None:
-    specs = Path(__file__).resolve().parents[1] / "sim_mujoco" / "config" / "formal_models"
+    specs = Path(__file__).resolve().parents[1] / "configs/evaluation/sim/models"
     values = {name: json.loads((specs / f"{name}.json").read_text(encoding="utf-8")) for name in ("A", "B", "C")}
     assert {value["manager_step"] for value in values.values()} == {15000}
     assert values["A"]["norm_asset_id"] == "xarm_pi05_real_v3sim_1x"
@@ -304,7 +322,7 @@ def test_schema_and_summary_report_invalid_denominator() -> None:
 
 
 def test_formal_pipeline_has_no_legacy_29999_selection() -> None:
-    source = Path(__file__).resolve().parents[1] / "sim_mujoco" / "scripts" / "evaluate_xarm_policy.py"
+    source = Path(__file__).resolve().parents[1] / "evaluation" / "sim" / "cli.py"
     assert "29999" not in source.read_text(encoding="utf-8")
 
 

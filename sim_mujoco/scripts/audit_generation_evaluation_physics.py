@@ -23,7 +23,7 @@ import mujoco  # noqa: E402
 import numpy as np  # noqa: E402
 
 from data.sim.generation.config import load_pipeline_config  # noqa: E402
-from sim_mujoco.formal_evaluation.config import load_protocol  # noqa: E402
+from evaluation.sim.config import load_protocol  # noqa: E402
 from simulation.resources import model_path  # noqa: E402
 from simulation.observation.cameras import apply_camera_calibration  # noqa: E402
 from simulation.runtime import initialize_scene  # noqa: E402
@@ -36,7 +36,7 @@ DEFAULT_GENERATION_CONFIG = (
     / "configs/data/sim/generation/clean_multitask_stable_v4_10x_real.yaml"
 )
 DEFAULT_EVALUATION_PROTOCOL = (
-    PROJECT_ROOT / "sim_mujoco/config/formal_xarm_pi05_eval_v2.json"
+    PROJECT_ROOT / "configs/evaluation/sim/protocols/formal_xarm_pi05_eval_v2.json"
 )
 FINGER_BODIES = ("left_finger", "right_finger")
 OBJECT_BODIES = ("object", "blue_block", "small_block", "large_block", "red_pepper")
@@ -341,6 +341,14 @@ def audit(generation_config_path: Path, evaluation_protocol_path: Path, tasks: l
     evaluation_timestep = float(
         reference_task["evaluation"]["compiled_physics"]["global"]["timestep_s"]
     )
+    generation_model_sha = _sha256(generation_model_path)
+    evaluation_model_sha = _sha256(evaluation.robot_xml_path)
+    generation_steps_per_control = int(
+        round((1.0 / generation.action_hz) / generation_timestep)
+    )
+    evaluation_steps_per_control = int(
+        round(evaluation.control_duration_s / evaluation_timestep)
+    )
 
     return {
         "schema_version": "xarm_generation_evaluation_physics_audit_v1",
@@ -354,8 +362,8 @@ def audit(generation_config_path: Path, evaluation_protocol_path: Path, tasks: l
             "evaluation_protocol": str(evaluation_protocol_path.expanduser().resolve()),
             "generation_model_path": str(generation_model_path),
             "evaluation_model_path": str(evaluation.robot_xml_path),
-            "generation_model_sha256": _sha256(generation_model_path),
-            "evaluation_model_sha256": _sha256(evaluation.robot_xml_path),
+            "generation_model_sha256": generation_model_sha,
+            "evaluation_model_sha256": evaluation_model_sha,
             "generation_camera_config": str(generation.camera_config),
             "evaluation_camera_config": str(evaluation.camera_config_path),
             "generation_task_config": str(generation.task_scene_config),
@@ -364,15 +372,11 @@ def audit(generation_config_path: Path, evaluation_protocol_path: Path, tasks: l
         "control_cadence": {
             "generation": {
                 "control_duration_s": 1.0 / generation.action_hz,
-                "mj_step_calls_per_control": int(
-                    round((1.0 / generation.action_hz) / generation_timestep)
-                ),
+                "mj_step_calls_per_control": generation_steps_per_control,
             },
             "evaluation": {
                 "control_duration_s": evaluation.control_duration_s,
-                "mj_step_calls_per_control": int(
-                    round(evaluation.control_duration_s / evaluation_timestep)
-                ),
+                "mj_step_calls_per_control": evaluation_steps_per_control,
                 "executed_chunk_steps": evaluation.execute_chunk_steps,
             },
         },
@@ -391,6 +395,9 @@ def audit(generation_config_path: Path, evaluation_protocol_path: Path, tasks: l
         "compiled_physics_exact_match_all_tasks": not all_physics_differences,
         "compiled_physics_difference_count": len(all_physics_differences),
         "compiled_physics_differences": all_physics_differences,
+        "model_sha_equal": generation_model_sha == evaluation_model_sha,
+        "generation_steps_per_control": generation_steps_per_control,
+        "evaluation_steps_per_control": evaluation_steps_per_control,
         "tasks": task_rows,
     }
 

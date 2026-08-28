@@ -45,17 +45,17 @@ nvidia-smi
   sim_mujoco/scripts/prepare_friction_policy_variant.py \
   sim_mujoco/scripts/analyze_friction_ablation.py \
   sim_mujoco/scripts/diagnose_xarm_slip.py \
-  sim_mujoco/formal_evaluation/slip_trace.py
+  evaluation/sim/slip_trace.py
 "${PYTHON}" -m ruff format --check \
   sim_mujoco/scripts/prepare_friction_policy_variant.py \
   sim_mujoco/scripts/analyze_friction_ablation.py \
   sim_mujoco/scripts/diagnose_xarm_slip.py \
-  sim_mujoco/formal_evaluation/slip_trace.py
+  evaluation/sim/slip_trace.py
 "${PYTHON}" -m ruff check \
   sim_mujoco/scripts/prepare_friction_policy_variant.py \
   sim_mujoco/scripts/analyze_friction_ablation.py \
   sim_mujoco/scripts/diagnose_xarm_slip.py \
-  sim_mujoco/formal_evaluation/slip_trace.py
+  evaluation/sim/slip_trace.py
 "${PYTHON}" sim_mujoco/scripts/prepare_friction_policy_variant.py --validate-only
 "${PYTHON}" sim_mujoco/scripts/prepare_friction_policy_variant.py \
   --output-dir "${VARIANT_ROOT}" \
@@ -68,7 +68,7 @@ export XARM_MUJOCO_MODEL_PATH="${RUNTIME_MODEL}"
 export XARM_CAMERA_CONFIG_PATH="${CAMERA_CONFIG}"
 export OUTPUT_ROOT
 export PROTOCOL="${RUNTIME_PROTOCOL}"
-export MODEL_SPEC=${REPOSITORY}/sim_mujoco/config/formal_models/B.json
+export MODEL_SPEC=${REPOSITORY}/configs/evaluation/sim/models/B.json
 export TASK=red_block
 export SEED=50000
 export EXECUTE_CHUNK_STEPS=5

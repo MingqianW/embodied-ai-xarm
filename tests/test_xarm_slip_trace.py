@@ -6,14 +6,14 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from sim_mujoco.formal_evaluation import slip_trace
-from sim_mujoco.formal_evaluation.slip_trace import POST_SUCCESS_SECONDS_ENV
-from sim_mujoco.formal_evaluation.slip_trace import DIAGNOSTIC_LATCH_RAW_ENV
-from sim_mujoco.formal_evaluation.slip_trace import SLIP_TRACE_ENV
-from sim_mujoco.formal_evaluation.slip_trace import SLIP_TRACE_FIELDS
-from sim_mujoco.formal_evaluation.slip_trace import SlipTraceRecorder
-from sim_mujoco.formal_evaluation.slip_trace import SlipTraceSettings
-from sim_mujoco.formal_evaluation.slip_trace import relative_slip_metrics
+from evaluation.sim import slip_trace
+from evaluation.sim.slip_trace import POST_SUCCESS_SECONDS_ENV
+from evaluation.sim.slip_trace import DIAGNOSTIC_LATCH_RAW_ENV
+from evaluation.sim.slip_trace import SLIP_TRACE_ENV
+from evaluation.sim.slip_trace import SLIP_TRACE_FIELDS
+from evaluation.sim.slip_trace import SlipTraceRecorder
+from evaluation.sim.slip_trace import SlipTraceSettings
+from evaluation.sim.slip_trace import relative_slip_metrics
 from sim_mujoco.scripts.analyze_xarm_slip_trace import _contact_intervals
 from sim_mujoco.scripts.analyze_xarm_slip_trace import _reference_summary
 

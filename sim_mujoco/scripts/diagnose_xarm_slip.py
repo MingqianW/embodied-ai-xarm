@@ -22,24 +22,24 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from policy_runtime.remote_policy_client import RemotePolicyClient  # noqa: E402
 from policy_runtime.remote_policy_client import RemotePolicyConfig  # noqa: E402
-from sim_mujoco.formal_evaluation.config import FORMAL_PROTOCOL_VERSION  # noqa: E402
-from sim_mujoco.formal_evaluation.config import (  # noqa: E402
+from evaluation.sim.config import FORMAL_PROTOCOL_VERSION  # noqa: E402
+from evaluation.sim.config import (  # noqa: E402
     FORMAL_STABLE_HOLD_PROTOCOL_VERSION,
 )
-from sim_mujoco.formal_evaluation.config import load_protocol  # noqa: E402
-from sim_mujoco.formal_evaluation.episode_runner import EpisodeRequest  # noqa: E402
-from sim_mujoco.formal_evaluation.episode_runner import run_formal_episode  # noqa: E402
-from sim_mujoco.formal_evaluation.models import load_model_spec  # noqa: E402
-from sim_mujoco.formal_evaluation.models import validate_training_config_asset  # noqa: E402
-from sim_mujoco.formal_evaluation.outputs import episode_output_root  # noqa: E402
-from sim_mujoco.formal_evaluation.outputs import initialize_output  # noqa: E402
-from sim_mujoco.formal_evaluation.outputs import write_json  # noqa: E402
-from sim_mujoco.formal_evaluation.provenance import build_provenance  # noqa: E402
-from sim_mujoco.formal_evaluation.provenance import file_hash  # noqa: E402
-from sim_mujoco.formal_evaluation.provenance import server_provenance  # noqa: E402
-from sim_mujoco.formal_evaluation.slip_trace import POST_SUCCESS_SECONDS_ENV  # noqa: E402
-from sim_mujoco.formal_evaluation.slip_trace import DIAGNOSTIC_LATCH_RAW_ENV  # noqa: E402
-from sim_mujoco.formal_evaluation.slip_trace import SLIP_TRACE_ENV  # noqa: E402
+from evaluation.sim.config import load_protocol  # noqa: E402
+from evaluation.sim.episode_runner import EpisodeRequest  # noqa: E402
+from evaluation.sim.episode_runner import run_formal_episode  # noqa: E402
+from evaluation.common.models import load_model_spec  # noqa: E402
+from evaluation.common.models import validate_training_config_asset  # noqa: E402
+from evaluation.sim.outputs import episode_output_root  # noqa: E402
+from evaluation.sim.outputs import initialize_output  # noqa: E402
+from evaluation.sim.outputs import write_json  # noqa: E402
+from evaluation.sim.provenance import build_provenance  # noqa: E402
+from evaluation.sim.provenance import file_hash  # noqa: E402
+from evaluation.sim.provenance import server_provenance  # noqa: E402
+from evaluation.sim.slip_trace import POST_SUCCESS_SECONDS_ENV  # noqa: E402
+from evaluation.sim.slip_trace import DIAGNOSTIC_LATCH_RAW_ENV  # noqa: E402
+from evaluation.sim.slip_trace import SLIP_TRACE_ENV  # noqa: E402
 
 
 def _parser() -> argparse.ArgumentParser:

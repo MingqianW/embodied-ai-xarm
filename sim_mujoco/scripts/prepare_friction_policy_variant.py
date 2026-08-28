@@ -34,7 +34,9 @@ CAMERA_CONFIG = (
     PROJECT_ROOT
     / "sim_mujoco/config/diagnostics/legacy_split_pad_camera_calibration.yaml"
 )
-SOURCE_PROTOCOL = PROJECT_ROOT / "sim_mujoco/config/formal_xarm_pi05_eval_v2.json"
+SOURCE_PROTOCOL = (
+    PROJECT_ROOT / "configs/evaluation/sim/protocols/formal_xarm_pi05_eval_v2.json"
+)
 
 
 def _sha256_bytes(value: bytes) -> str:

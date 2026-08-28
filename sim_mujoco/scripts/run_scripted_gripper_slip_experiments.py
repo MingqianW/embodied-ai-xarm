@@ -37,7 +37,7 @@ from sim_mujoco.gripper_slip_diagnostics import (  # noqa: E402
     CommandContext,
     PhysicsTraceRecorder,
 )
-from sim_mujoco.remote_policy_evaluation import VideoRecorder  # noqa: E402
+from evaluation.sim.legacy.remote_policy_evaluation import VideoRecorder  # noqa: E402
 from simulation.scene import resolve_task  # noqa: E402
 
 

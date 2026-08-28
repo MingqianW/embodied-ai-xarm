@@ -3,18 +3,18 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from sim_mujoco.formal_evaluation.human_review import build_manifest
-from sim_mujoco.formal_evaluation.human_review import load_decisions
-from sim_mujoco.formal_evaluation.human_review import save_decision
-from sim_mujoco.formal_evaluation.human_review import summarize_review_rows
-from sim_mujoco.formal_evaluation.human_review import unblind_manifest
-from sim_mujoco.formal_evaluation.human_review import write_manifest
-from sim_mujoco.formal_evaluation.outputs import read_json
-from sim_mujoco.formal_evaluation.outputs import write_json
-from sim_mujoco.formal_evaluation.representative_videos import REPRESENTATIVE_INDEX_VERSION
-from sim_mujoco.formal_evaluation.representative_videos import SELECTION_POLICY
-from sim_mujoco.formal_evaluation.representative_videos import index_json_path
-from sim_mujoco.scripts.review_xarm_human_videos import ReviewApplication
+from evaluation.sim.human_review import build_manifest
+from evaluation.sim.human_review import load_decisions
+from evaluation.sim.human_review import save_decision
+from evaluation.sim.human_review import summarize_review_rows
+from evaluation.sim.human_review import unblind_manifest
+from evaluation.sim.human_review import write_manifest
+from evaluation.sim.outputs import read_json
+from evaluation.sim.outputs import write_json
+from evaluation.sim.representative_videos import REPRESENTATIVE_INDEX_VERSION
+from evaluation.sim.representative_videos import SELECTION_POLICY
+from evaluation.sim.representative_videos import index_json_path
+from evaluation.sim.tools.review_human_videos import ReviewApplication
 
 
 def _result(*, model: str, task: str, seed: int, success: bool, video: Path | None) -> dict[str, object]:

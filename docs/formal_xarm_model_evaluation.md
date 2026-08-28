@@ -1,13 +1,13 @@
 # Formal xArm π0.5 MuJoCo evaluation
 
-`sim_mujoco/scripts/evaluate_xarm_policy.py` is the only formal entry point for
+`python -m evaluation.sim.cli` is the only formal entry point for
 the new A/B/C π0.5 comparison. It is protocol-driven, requires an explicit
 model specification, and writes provenance-checked isolated outputs.
 
 ## Protocol
 
 The active immutable protocol is
-`sim_mujoco/config/formal_xarm_pi05_eval_v2.json`:
+`configs/evaluation/sim/protocols/formal_xarm_pi05_eval_v2.json`:
 
 - six canonical prompts: red pepper, blue block, red block, smallest block,
   largest block, and red-pepper placement in the ring;
@@ -31,9 +31,9 @@ truth is used only for reset, scoring, and diagnostics.
 
 The model specifications are explicit JSON files:
 
-- `sim_mujoco/config/formal_models/A.json`
-- `sim_mujoco/config/formal_models/B.json`
-- `sim_mujoco/config/formal_models/C.json`
+- `configs/evaluation/sim/models/A.json`
+- `configs/evaluation/sim/models/B.json`
+- `configs/evaluation/sim/models/C.json`
 
 Each names the training config, checkpoint root, manager step `15000`, and
 embedded norm asset. A uses `xarm_pi05_real_v3sim_1x`; B and C both use
@@ -141,7 +141,7 @@ Validate coverage after a category-representative evaluation:
 ```bash
 cd /u/mw89/repos/embodied-ai-xarm
 /u/mw89/repos/openpi/.venv/bin/python \
-  sim_mujoco/scripts/validate_xarm_category_video_coverage.py \
+  evaluation/sim/tools/validate_category_video_coverage.py \
   --evaluation-root /work/nvme/bfmk/mw89/mujoco_outputs/policy_evaluation/pi05_abc_15000_six_task_stable_hold_v2
 ```
 
@@ -152,7 +152,7 @@ Historical v1 result files can be reclassified without simulation and without
 modifying them:
 
 ```bash
-python sim_mujoco/scripts/reclassify_xarm_evaluation_failures.py \
+python evaluation/sim/tools/reclassify_failures.py \
   --root /work/nvme/bfmk/mw89/mujoco_outputs/policy_evaluation/pi05_abc_15000_smoke_v1
 ```
 
@@ -169,7 +169,7 @@ Human review is an independent artifact layer. It never changes automated
 
    ```bash
    cd /u/mw89/repos/embodied-ai-xarm
-   /u/mw89/repos/openpi/.venv/bin/python sim_mujoco/scripts/build_xarm_human_review_manifest.py \
+   /u/mw89/repos/openpi/.venv/bin/python evaluation/sim/tools/build_human_review_manifest.py \
      --evaluation-root /work/nvme/bfmk/mw89/mujoco_outputs/policy_evaluation/pi05_abc_15000_six_task_stable_hold_v2 \
      --review-seed 20260808 \
      --mode full
@@ -186,7 +186,7 @@ Human review is an independent artifact layer. It never changes automated
    by its API.
 
    ```bash
-   /u/mw89/repos/openpi/.venv/bin/python sim_mujoco/scripts/review_xarm_human_videos.py \
+   /u/mw89/repos/openpi/.venv/bin/python evaluation/sim/tools/review_human_videos.py \
      --review-root /work/nvme/bfmk/mw89/mujoco_outputs/policy_evaluation/pi05_abc_15000_six_task_stable_hold_v2/human_review/full_seed_20260808
    ```
 
@@ -201,7 +201,7 @@ Human review is an independent artifact layer. It never changes automated
 3. After all reviewable items are decided, unblind and summarize:
 
    ```bash
-   /u/mw89/repos/openpi/.venv/bin/python sim_mujoco/scripts/summarize_xarm_human_review.py \
+   /u/mw89/repos/openpi/.venv/bin/python evaluation/sim/tools/summarize_human_review.py \
      --review-root /work/nvme/bfmk/mw89/mujoco_outputs/policy_evaluation/pi05_abc_15000_six_task_stable_hold_v2/human_review/full_seed_20260808
    ```
 
@@ -242,9 +242,9 @@ Use this login-safe check after the manager checkpoint exists:
 
 ```bash
 cd /u/mw89/repos/embodied-ai-xarm
-/u/mw89/repos/openpi/.venv/bin/python sim_mujoco/scripts/evaluate_xarm_policy.py \
-  --model-spec sim_mujoco/config/formal_models/A.json \
-  --protocol sim_mujoco/config/formal_xarm_pi05_eval_v2.json \
+/u/mw89/repos/openpi/.venv/bin/python -m evaluation.sim.cli \
+  --model-spec configs/evaluation/sim/models/A.json \
+  --protocol configs/evaluation/sim/protocols/formal_xarm_pi05_eval_v2.json \
   --output-root /work/nvme/bfmk/mw89/mujoco_outputs/policy_evaluation/pi05_abc_15000_six_task_stable_hold_v2 \
   --openpi-root /u/mw89/repos/openpi \
   --dry-run
@@ -255,10 +255,10 @@ Norm BC in B/C:
 
 ```bash
 cd /u/mw89/repos/embodied-ai-xarm
-/u/mw89/repos/openpi/.venv/bin/python sim_mujoco/scripts/validate_xarm_abc_evaluation.py \
-  --model-spec sim_mujoco/config/formal_models/A.json \
-  --model-spec sim_mujoco/config/formal_models/B.json \
-  --model-spec sim_mujoco/config/formal_models/C.json \
+/u/mw89/repos/openpi/.venv/bin/python evaluation/sim/tools/validate_abc_evaluation.py \
+  --model-spec configs/evaluation/sim/models/A.json \
+  --model-spec configs/evaluation/sim/models/B.json \
+  --model-spec configs/evaluation/sim/models/C.json \
   --openpi-root /u/mw89/repos/openpi
 ```
 
@@ -279,9 +279,9 @@ after the static checks pass:
 
 ```bash
 mkdir -p /work/nvme/bfmk/mw89/logs/openpi_real_sim
-MODEL_SPEC=/u/mw89/repos/embodied-ai-xarm/sim_mujoco/config/formal_models/A.json \
+MODEL_SPEC=/u/mw89/repos/embodied-ai-xarm/configs/evaluation/sim/models/A.json \
 OUTPUT_ROOT=/work/nvme/bfmk/mw89/mujoco_outputs/policy_evaluation/pi05_abc_15000_smoke_stable_hold_v2 \
-PROTOCOL=/u/mw89/repos/embodied-ai-xarm/sim_mujoco/config/formal_xarm_pi05_eval_smoke_v2.json \
+PROTOCOL=/u/mw89/repos/embodied-ai-xarm/configs/evaluation/sim/protocols/formal_xarm_pi05_eval_smoke_v2.json \
 sbatch /u/mw89/repos/openpi/slurm/xarm_eval/evaluate_model.sbatch
 ```
 
@@ -292,9 +292,9 @@ and its separate output root. It preserves every episode video rather than
 category representatives:
 
 ```bash
-MODEL_SPEC=/u/mw89/repos/embodied-ai-xarm/sim_mujoco/config/formal_models/A.json \
+MODEL_SPEC=/u/mw89/repos/embodied-ai-xarm/configs/evaluation/sim/models/A.json \
 OUTPUT_ROOT=/work/nvme/bfmk/mw89/mujoco_outputs/policy_evaluation/pi05_abc_15000_six_task_stable_hold_all_videos_v2 \
-PROTOCOL=/u/mw89/repos/embodied-ai-xarm/sim_mujoco/config/formal_xarm_pi05_eval_video_all_v2.json \
+PROTOCOL=/u/mw89/repos/embodied-ai-xarm/configs/evaluation/sim/protocols/formal_xarm_pi05_eval_video_all_v2.json \
 sbatch /u/mw89/repos/openpi/slurm/xarm_eval/evaluate_model.sbatch
 ```
 
@@ -310,8 +310,8 @@ Do not resume or combine those outputs with v2.
 - `slurm/pi05_xarm_abc_six_task_eval.sbatch`
 - `slurm/pi05_xarm_abc_six_task_smoke.sbatch`
 - `slurm/pi05_xarm_abc_six_task_smoke_v2.sbatch`
-- `sim_mujoco/scripts/evaluate_remote_policy_automatic.py`
-- `sim_mujoco/scripts/run_remote_policy_closed_loop.py`
+- `evaluation/sim/legacy/evaluate_remote_policy_automatic.py`
+- `evaluation/sim/legacy/run_remote_policy_closed_loop.py`
 - historical `summarize_xarm_abc*_evaluation.py` scripts
 
 They are retained for reproducibility of historical results. They include old

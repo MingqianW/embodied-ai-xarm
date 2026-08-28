@@ -57,7 +57,7 @@ starts an identity-checked localhost OpenPI server.
 ```bash
 cd /u/mw89/repos/embodied-ai-xarm
 OUTPUT_ROOT=/work/nvme/bfmk/mw89/mujoco_outputs/policy_evaluation/slip_diagnostics/B_red_block_seed50000_c5 \
-MODEL_SPEC=/u/mw89/repos/embodied-ai-xarm/sim_mujoco/config/formal_models/B.json \
+MODEL_SPEC=/u/mw89/repos/embodied-ai-xarm/configs/evaluation/sim/models/B.json \
 TASK=red_block \
 SEED=50000 \
 EXECUTE_CHUNK_STEPS=5 \

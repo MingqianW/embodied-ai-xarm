@@ -49,7 +49,7 @@ FILES=(
   sim_mujoco/scripts/analyze_friction_search.py
   sim_mujoco/scripts/prepare_friction_policy_variant.py
   sim_mujoco/scripts/diagnose_xarm_slip.py
-  sim_mujoco/formal_evaluation/slip_trace.py
+  evaluation/sim/slip_trace.py
   tests/test_friction_ablation.py
 )
 "${PYTHON}" -m compileall -q "${FILES[@]}"
@@ -82,7 +82,7 @@ VARIANT_MANIFEST=${VARIANT_ROOT}/variant_manifest.json
 export XARM_MUJOCO_MODEL_PATH="${RUNTIME_MODEL}"
 export OUTPUT_ROOT
 export PROTOCOL="${RUNTIME_PROTOCOL}"
-export MODEL_SPEC=${REPOSITORY}/sim_mujoco/config/formal_models/B.json
+export MODEL_SPEC=${REPOSITORY}/configs/evaluation/sim/models/B.json
 export TASK=red_block
 export SEED=50000
 export EXECUTE_CHUNK_STEPS=5

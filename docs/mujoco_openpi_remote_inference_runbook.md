@@ -97,13 +97,13 @@ sim_mujoco/scripts/test_remote_policy_mujoco.py
 Dry-loop validation:
 
 ```text
-sim_mujoco/scripts/run_remote_policy_dry_loop.py
+tools/evaluation_sim/run_remote_policy_dry_loop.py
 ```
 
 Safe closed-loop runner:
 
 ```text
-sim_mujoco/scripts/run_remote_policy_closed_loop.py
+evaluation/sim/legacy/run_remote_policy_closed_loop.py
 ```
 
 Offline/unit tests:
@@ -631,7 +631,7 @@ graphical forwarding mechanism is configured.
 Headless smoke command:
 
 ```bash
-python sim_mujoco/scripts/run_remote_policy_closed_loop.py \
+python evaluation/sim/legacy/run_remote_policy_closed_loop.py \
   --headless \
   --max-policy-steps 3 \
   --execute-chunk-steps 1 \
@@ -779,7 +779,7 @@ On a Codespace or headless Linux environment:
 ```bash
 export MUJOCO_GL=egl
 
-python sim_mujoco/scripts/run_remote_policy_closed_loop.py \
+python evaluation/sim/legacy/run_remote_policy_closed_loop.py \
   --host 127.0.0.1 \
   --port 18000 \
   --prompt "pick up the object" \

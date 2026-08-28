@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from sim_mujoco.scripts.run_remote_policy_closed_loop import (
+from evaluation.sim.legacy.run_remote_policy_closed_loop import (
     MAX_EXECUTE_CHUNK_STEPS,
     validate_execute_chunk_steps,
 )
