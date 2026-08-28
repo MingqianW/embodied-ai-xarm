@@ -327,7 +327,7 @@ class TestPlaceValidation:
         assert scene["target_body"] == scene["object_identity"] == "red_pepper"
         assert scene["active_bodies"] == ["red_pepper", "ring"]
         assert "held_red_pepper" not in scene["active_bodies"]
-        assert scene["initial_gripper_sim_half_width"] == 0.012
+        assert scene["initial_gripper_raw"] == 492.58
         assert scene["initial_tcp_to_object"]["translation_m"] == [0.0, 0.0, -0.030]
 
 

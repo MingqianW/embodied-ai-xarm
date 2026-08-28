@@ -6,7 +6,8 @@ import mujoco
 import numpy as np
 
 from policy_runtime.image_preprocessing import preprocess_policy_image
-from sim_mujoco.remote_policy_observation import gripper_sim_to_raw, load_camera_config
+from sim_mujoco.gripper_mapping import menagerie_state_to_raw_gripper
+from sim_mujoco.remote_policy_observation import load_camera_config
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -123,13 +124,11 @@ def main() -> None:
         dtype=np.float32,
     )
 
-    gripper_half_width = joint_qpos(
+    gripper_raw = menagerie_state_to_raw_gripper(
         model,
         data,
-        "left_finger_slide",
+        load_camera_config(),
     )
-
-    gripper_raw = gripper_sim_to_raw(gripper_half_width, load_camera_config())
 
     state = np.concatenate(
         [

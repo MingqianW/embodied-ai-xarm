@@ -178,9 +178,8 @@ tasks:
       - 0.9403786
       - -0.3792221
     initial_gripper_raw: 492.58
-    initial_gripper_sim_half_width: 0.012
     release_gripper_raw: 650.0
-    release_min_sim_half_width: 0.038
+    release_min_gripper_raw: 652.0
     # One free body is initialized once from T_world_tcp @ T_tcp_pepper.
     # It remains under normal contact, friction, gravity, and actuator physics.
     initial_tcp_to_object:

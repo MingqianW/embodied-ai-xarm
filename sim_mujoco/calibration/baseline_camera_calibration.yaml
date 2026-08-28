@@ -6,7 +6,7 @@ base_camera:
   roll_deg: 0.0
   fovy_deg: 52.0
 wrist_camera:
-  parent_body: gripper_base
+  parent_body: xarm_gripper_base_link
   position: [0.06, 0.0, 0.075]
   target: [0.0, 0.0, 0.32]
   roll_deg: 0.0
@@ -17,9 +17,6 @@ gripper_mapping:
   model: xarm_four_bar
   driver_max_position: 850.0
   driver_units_per_radian: 1000.0
-  sim_pad_inner_offset_m: 0.0025
-  sim_slide_min_m: 0.006
-  sim_slide_max_m: 0.047
 render:
   native_width: 640
   native_height: 480

@@ -19,13 +19,13 @@ from sim_mujoco.paths import (
 from sim_mujoco.joint_mapping import mujoco_qpos_to_raw_arm_state
 from policy_runtime.image_preprocessing import (
     ImagePreprocessingConfig,
-    image_diagnostics,
     preprocess_policy_image,
 )
 from policy_runtime.observation_builder import validate_policy_observation
 from sim_mujoco.gripper_mapping import (
+    gripper_state_to_raw,
+    raw_gripper_to_menagerie_ctrl,
     raw_gripper_to_sim_slide,
-    sim_slide_to_raw_gripper,
 )
 
 PROJECT_ROOT = repository_root()
@@ -34,8 +34,8 @@ DEFAULT_MODEL_PATH = active_model_path()
 DEFAULT_CAMERA_CONFIG_PATH = camera_config_path()
 
 ARM_JOINT_NAMES = tuple(f"joint{i}" for i in range(1, 7))
-GRIPPER_LEFT_JOINT = "left_finger_slide"
-GRIPPER_RIGHT_JOINT = "right_finger_slide"
+GRIPPER_LEFT_JOINT = "left_driver_joint"
+GRIPPER_RIGHT_JOINT = "right_driver_joint"
 BASE_CAMERA = "base_camera"
 WRIST_CAMERA = "wrist_camera"
 DEFAULT_PROMPT = "pick up the object"
@@ -64,7 +64,9 @@ def load_camera_config(path: Path = DEFAULT_CAMERA_CONFIG_PATH) -> dict[str, Any
     return value
 
 
-def camera_axes(position: list[float], target: list[float], roll_deg: float = 0.0) -> np.ndarray:
+def camera_axes(
+    position: list[float], target: list[float], roll_deg: float = 0.0
+) -> np.ndarray:
     position_array = np.asarray(position, dtype=np.float64)
     target_array = np.asarray(target, dtype=np.float64)
     forward = target_array - position_array
@@ -94,7 +96,9 @@ def matrix_to_quaternion(matrix: np.ndarray) -> np.ndarray:
     return quat
 
 
-def set_camera_parameters(model: mujoco.MjModel, camera_name: str, parameters: dict[str, Any]) -> None:
+def set_camera_parameters(
+    model: mujoco.MjModel, camera_name: str, parameters: dict[str, Any]
+) -> None:
     camera_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_CAMERA, camera_name)
     if camera_id < 0:
         raise RuntimeError(f"Camera not found: {camera_name}")
@@ -162,22 +166,24 @@ def joint_qpos(model: mujoco.MjModel, data: mujoco.MjData, joint_name: str) -> f
     return float(data.qpos[model.jnt_qposadr[joint_id]])
 
 
-def gripper_sim_to_raw(half_width: float, config: dict[str, Any]) -> float:
-    return sim_slide_to_raw_gripper(half_width, config)
+def gripper_raw_to_ctrl(raw_value: float, config: dict[str, Any]) -> float:
+    if "sim_slide_min_m" in config.get("gripper_mapping", {}):
+        return raw_gripper_to_sim_slide(raw_value, config)
+    return raw_gripper_to_menagerie_ctrl(raw_value, config)
 
 
-def gripper_raw_to_sim(raw_value: float, config: dict[str, Any]) -> float:
-    return raw_gripper_to_sim_slide(raw_value, config)
-
-
-def get_robot_state(model: mujoco.MjModel, data: mujoco.MjData, config: dict[str, Any]) -> np.ndarray:
+def get_robot_state(
+    model: mujoco.MjModel, data: mujoco.MjData, config: dict[str, Any]
+) -> np.ndarray:
     mujoco_arm_qpos = np.asarray(
         [joint_qpos(model, data, joint_name) for joint_name in ARM_JOINT_NAMES],
         dtype=np.float64,
     )
     arm_state = mujoco_qpos_to_raw_arm_state(mujoco_arm_qpos).astype(np.float32)
-    gripper_raw = gripper_sim_to_raw(joint_qpos(model, data, GRIPPER_LEFT_JOINT), config)
-    return np.concatenate([arm_state, np.asarray([gripper_raw], dtype=np.float32)]).astype(np.float32)
+    gripper_raw = gripper_state_to_raw(model, data, config)
+    return np.concatenate(
+        [arm_state, np.asarray([gripper_raw], dtype=np.float32)]
+    ).astype(np.float32)
 
 
 def render_native_rgb(

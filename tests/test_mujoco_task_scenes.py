@@ -64,8 +64,7 @@ class TaskSceneRuntimeTests(unittest.TestCase):
                 self.assertTrue(np.isfinite(runtime.metrics()["target_position"]).all())
                 self.assertTrue(
                     all(
-                        item["visible"]
-                        for item in initial["wrist_visibility"].values()
+                        item["visible"] for item in initial["wrist_visibility"].values()
                     )
                 )
             finally:
@@ -123,8 +122,8 @@ class TaskSceneRuntimeTests(unittest.TestCase):
             self.assertFalse(runtime.released)
             self.assertEqual(runtime.target_body, "red_pepper")
             self.assertAlmostEqual(
-                runtime.physical_gripper_target(440.0, 0.0196),
-                0.012,
+                runtime.physical_gripper_raw_target(440.0),
+                492.58,
             )
             self.assertEqual(runtime.spec["target_contact_profile"], "convex")
             observation = {
@@ -163,9 +162,7 @@ class TaskSceneRuntimeTests(unittest.TestCase):
                 self.assertEqual(int(context.model.geom_contype[visual_geom]), 0)
                 self.assertEqual(int(context.model.geom_conaffinity[visual_geom]), 0)
             equality_names = {
-                mujoco.mj_id2name(
-                    context.model, mujoco.mjtObj.mjOBJ_EQUALITY, index
-                )
+                mujoco.mj_id2name(context.model, mujoco.mjtObj.mjOBJ_EQUALITY, index)
                 for index in range(context.model.neq)
             }
             self.assertNotIn(
@@ -180,8 +177,8 @@ class TaskSceneRuntimeTests(unittest.TestCase):
                 context.data.xpos[pepper_id], position_before_release
             )
             self.assertAlmostEqual(
-                runtime.physical_gripper_target(700.0, 0.0327),
-                0.038,
+                runtime.physical_gripper_raw_target(700.0),
+                700.0,
             )
             self.assertGreater(float(context.data.xpos[pepper_id, 2]), 0.05)
         finally:

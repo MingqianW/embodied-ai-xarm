@@ -7,6 +7,7 @@ import mujoco
 import numpy as np
 
 from sim_mujoco.collision import collision_diagnostics
+from sim_mujoco.gripper_mapping import is_menagerie_gripper
 from policy_runtime.image_preprocessing import ImagePreprocessingConfig
 from policy_runtime.observation_builder import build_policy_observation
 from policy_runtime.schemas import PolicyObservation
@@ -18,7 +19,7 @@ from sim_mujoco.remote_policy_observation import (
     arm_actuator_ctrl_limits,
     arm_joint_limits,
     get_robot_state,
-    gripper_raw_to_sim,
+    gripper_raw_to_ctrl,
     initialize_scene,
     load_simulation,
     policy_image,
@@ -100,6 +101,7 @@ class MuJoCoEnvironment:
             scene_variant=self.scene_variant,
             settle_steps=self.settle_steps,
             config_path=self.task_scene_config_path,
+            gripper_config=self.context.config,
         )
         self._last_step_started_s = float(self.context.data.time)
         self._last_step_duration_s = 0.0
@@ -124,7 +126,10 @@ class MuJoCoEnvironment:
             base_preprocessing=self._preprocessing(),
             wrist_preprocessing=self._preprocessing(),
             timestamp_s=float(self.context.data.time),
-            frame_ids={"base": f"{self.context.data.time:.9f}", "wrist": f"{self.context.data.time:.9f}"},
+            frame_ids={
+                "base": f"{self.context.data.time:.9f}",
+                "wrist": f"{self.context.data.time:.9f}",
+            },
             metadata={"simulator": "mujoco", "task": self.task},
         )
         return observation
@@ -132,16 +137,27 @@ class MuJoCoEnvironment:
     def apply_action(self, action: np.ndarray) -> None:
         value = np.asarray(action, dtype=np.float32)
         if value.shape != (7,) or not np.isfinite(value).all():
-            raise ValueError(f"Canonical action must be finite with shape (7,), got {value.shape}")
-        arm_limits = self.joint_limits
-        self.context.data.ctrl[:6] = np.clip(value[:6], arm_limits[:, 0], arm_limits[:, 1])
-        gripper_target = gripper_raw_to_sim(float(value[6]), self.context.config)
-        if self.task_runtime is not None:
-            self.task_runtime.release_if_requested(float(value[6]))
-            gripper_target = self.task_runtime.physical_gripper_target(
-                float(value[6]),
-                gripper_target,
+            raise ValueError(
+                f"Canonical action must be finite with shape (7,), got {value.shape}"
             )
+        arm_limits = self.joint_limits
+        self.context.data.ctrl[:6] = np.clip(
+            value[:6], arm_limits[:, 0], arm_limits[:, 1]
+        )
+        gripper_raw = float(value[6])
+        if self.task_runtime is not None:
+            self.task_runtime.release_if_requested(gripper_raw)
+        gripper_target = gripper_raw_to_ctrl(gripper_raw, self.context.config)
+        if self.task_runtime is not None:
+            if is_menagerie_gripper(self.context.model):
+                gripper_raw = self.task_runtime.physical_gripper_raw_target(gripper_raw)
+                gripper_target = gripper_raw_to_ctrl(gripper_raw, self.context.config)
+            else:
+                gripper_target = self.task_runtime.physical_gripper_target(
+                    gripper_raw,
+                    gripper_target,
+                    self.context.config,
+                )
         gripper_limits = self.context.model.actuator_ctrlrange[6]
         self.context.data.ctrl[6] = float(
             np.clip(gripper_target, gripper_limits[0], gripper_limits[1])
@@ -158,15 +174,21 @@ class MuJoCoEnvironment:
         self._last_step_duration_s = float(self.context.data.time) - start
 
     def hold_position(self) -> None:
-        state = get_robot_state(self.context.model, self.context.data, self.context.config)
+        state = get_robot_state(
+            self.context.model, self.context.data, self.context.config
+        )
         self.context.data.ctrl[:6] = state[:6]
-        self.context.data.ctrl[6] = gripper_raw_to_sim(float(state[6]), self.context.config)
+        self.context.data.ctrl[6] = gripper_raw_to_ctrl(
+            float(state[6]), self.context.config
+        )
 
     def _max_contact_force(self) -> float:
         maximum = 0.0
         force = np.zeros(6, dtype=np.float64)
         for contact_index in range(self.context.data.ncon):
-            mujoco.mj_contactForce(self.context.model, self.context.data, contact_index, force)
+            mujoco.mj_contactForce(
+                self.context.model, self.context.data, contact_index, force
+            )
             maximum = max(maximum, float(np.linalg.norm(force[:3])))
         return maximum
 
@@ -184,12 +206,19 @@ class MuJoCoEnvironment:
             np.all(state[:6] >= limits[:, 0] - 1e-4)
             and np.all(state[:6] <= limits[:, 1] + 1e-4)
         )
-        time_advanced = self._last_step_duration_s == 0.0 or float(data.time) > self._last_step_started_s
-        collision_safe = not collision_diagnostics(self.context.model, data)["forbidden"]
+        time_advanced = (
+            self._last_step_duration_s == 0.0
+            or float(data.time) > self._last_step_started_s
+        )
+        collision_safe = not collision_diagnostics(self.context.model, data)[
+            "forbidden"
+        ]
         return bool(finite and joints_valid and time_advanced and collision_safe)
 
     def safety_diagnostics(self) -> dict[str, Any]:
-        state = get_robot_state(self.context.model, self.context.data, self.context.config)
+        state = get_robot_state(
+            self.context.model, self.context.data, self.context.config
+        )
         tracking_error = np.abs(
             np.asarray(self.context.data.ctrl[:6], dtype=np.float64)
             - np.asarray(state[:6], dtype=np.float64)

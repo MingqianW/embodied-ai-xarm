@@ -67,11 +67,19 @@ def simulation_root(environ: Mapping[str, str] | None = None) -> Path:
 
 
 def active_model_path(environ: Mapping[str, str] | None = None) -> Path:
-    return simulation_root(environ) / "assets" / "xarm6" / "xarm6_pick_scene.xml"
+    return _path_from_env(
+        "XARM_MUJOCO_MODEL_PATH",
+        simulation_root(environ) / "assets" / "xarm6" / "xarm6_pick_scene.xml",
+        environ=environ,
+    )
 
 
 def camera_config_path(environ: Mapping[str, str] | None = None) -> Path:
-    return simulation_root(environ) / "config" / "camera_calibration.yaml"
+    return _path_from_env(
+        "XARM_CAMERA_CONFIG_PATH",
+        simulation_root(environ) / "config" / "camera_calibration.yaml",
+        environ=environ,
+    )
 
 
 def task_config_path(environ: Mapping[str, str] | None = None) -> Path:

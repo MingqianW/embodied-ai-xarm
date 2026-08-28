@@ -46,7 +46,7 @@ class PlaceInitialGraspConfig:
     maximum_relative_drift_m: float
     maximum_grasp_region_delta_m: float
     minimum_height_above_table_m: float
-    gripper_half_width_m: float
+    gripper_raw: float
     tcp_to_pepper_translation_m: tuple[float, float, float]
     tcp_to_pepper_quaternion_wxyz: tuple[float, float, float, float]
 
@@ -195,7 +195,9 @@ def load_pipeline_config(path: Path) -> PipelineConfig:
         schema_version=int(data.get("schema_version", -1)),
         dataset_version=str(data.get("dataset_version", "")),
         overwrite_existing_outputs=bool(data.get("overwrite_existing_outputs", False)),
-        camera_config=_absolute_path(data.get("camera_config"), "camera_config", relative_to=base),
+        camera_config=_absolute_path(
+            data.get("camera_config"), "camera_config", relative_to=base
+        ),
         task_scene_config=_absolute_path(
             data.get("task_scene_config"), "task_scene_config", relative_to=base
         ),
@@ -238,13 +240,12 @@ def load_pipeline_config(path: Path) -> PipelineConfig:
             minimum_height_above_table_m=float(
                 place_initial["minimum_height_above_table_m"]
             ),
-            gripper_half_width_m=float(place_initial["gripper_half_width_m"]),
+            gripper_raw=float(place_initial["gripper_raw"]),
             tcp_to_pepper_translation_m=tuple(
                 float(value) for value in place_initial["tcp_to_pepper_translation_m"]
             ),
             tcp_to_pepper_quaternion_wxyz=tuple(
-                float(value)
-                for value in place_initial["tcp_to_pepper_quaternion_wxyz"]
+                float(value) for value in place_initial["tcp_to_pepper_quaternion_wxyz"]
             ),
         ),
         place=PlaceVerificationConfig(
@@ -260,7 +261,9 @@ def load_pipeline_config(path: Path) -> PipelineConfig:
             converted=_absolute_path(
                 outputs.get("converted"), "outputs.converted", relative_to=base
             ),
-            smoke=_absolute_path(outputs.get("smoke"), "outputs.smoke", relative_to=base),
+            smoke=_absolute_path(
+                outputs.get("smoke"), "outputs.smoke", relative_to=base
+            ),
             log=_absolute_path(outputs.get("log"), "outputs.log", relative_to=base),
         ),
     )
@@ -273,13 +276,9 @@ def validate_pipeline_config(config: PipelineConfig) -> None:
     if config.schema_version != 1 or not config.dataset_version:
         raise ValueError("Unsupported or missing pipeline schema/dataset version")
     if {task.task_id: task.episodes for task in config.tasks} != plan_counts:
-        raise ValueError(
-            f"Task episode counts do not match {config.dataset_version}"
-        )
+        raise ValueError(f"Task episode counts do not match {config.dataset_version}")
     if config.total_episodes != sum(plan_counts.values()):
-        raise ValueError(
-            f"Collection total does not match {config.dataset_version}"
-        )
+        raise ValueError(f"Collection total does not match {config.dataset_version}")
     if config.action_hz != 10 or config.scene_variant != "clean":
         raise ValueError("This version requires 10 Hz clean-scene collection")
     if config.distractor_count != 0:
@@ -300,8 +299,8 @@ def validate_pipeline_config(config: PipelineConfig) -> None:
         raise ValueError("TCP-to-pepper translation must contain three values")
     if len(config.place_initial.tcp_to_pepper_quaternion_wxyz) != 4:
         raise ValueError("TCP-to-pepper quaternion must contain four values")
-    if not 0.0 < config.place_initial.gripper_half_width_m <= 0.047:
-        raise ValueError("Place initial gripper half-width must be in (0, 0.047] m")
+    if not 50.0 <= config.place_initial.gripper_raw <= 845.0:
+        raise ValueError("Place initial gripper raw command must be in [50, 845]")
     prompts = [task.prompt for task in config.tasks]
     if len(set(prompts)) != 6 or any("_" in prompt for prompt in prompts):
         raise ValueError("Canonical prompts must be unique natural-language strings")
@@ -313,9 +312,7 @@ def validate_pipeline_config(config: PipelineConfig) -> None:
         raise ValueError("Every Pick prompt must begin with 'pick up '")
     if not config.camera_config.is_file() or not config.task_scene_config.is_file():
         raise FileNotFoundError("Camera and task-scene configuration files must exist")
-    if set(vars(config.outputs).values()) != expected_roots(
-        config.dataset_version
-    ):
+    if set(vars(config.outputs).values()) != expected_roots(config.dataset_version):
         raise ValueError(
             "Configured outputs must be the four exact roots for the dataset version"
         )
@@ -334,10 +331,10 @@ def validate_pipeline_config(config: PipelineConfig) -> None:
         scene_tasks.get("place_red_pepper_in_ring"),
         "place_red_pepper_in_ring",
     )
-    if float(place_scene.get("initial_gripper_sim_half_width", -1.0)) != (
-        config.place_initial.gripper_half_width_m
+    if float(place_scene.get("initial_gripper_raw", -1.0)) != (
+        config.place_initial.gripper_raw
     ):
-        raise ValueError("Place physical gripper opening differs across configs")
+        raise ValueError("Place gripper raw command differs across configs")
     place_transform = _mapping(
         place_scene.get("initial_tcp_to_object"),
         "place_red_pepper_in_ring.initial_tcp_to_object",

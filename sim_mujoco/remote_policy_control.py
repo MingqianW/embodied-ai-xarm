@@ -7,14 +7,16 @@ import mujoco
 import numpy as np
 
 from sim_mujoco.joint_mapping import raw_arm_state_to_mujoco_qpos
-from policy_runtime.action_decoder import validate_policy_actions as _validate_policy_actions
+from policy_runtime.action_decoder import (
+    validate_policy_actions as _validate_policy_actions,
+)
 from policy_runtime.safety import clamp_absolute_joint_target, clamp_scalar
 from sim_mujoco.remote_policy_observation import (
     arm_actuator_ctrl_limits,
     arm_joint_limits,
     get_robot_state,
     gripper_actuator_ctrl_limits,
-    gripper_raw_to_sim,
+    gripper_raw_to_ctrl,
 )
 
 
@@ -22,6 +24,8 @@ ACTION_SHAPE = (10, 7)
 GRIPPER_RAW_MIN = 50.0
 GRIPPER_RAW_MAX = 845.0
 DEFAULT_MAX_JOINT_STEP = 0.05
+DEFAULT_GRIPPER_CLOSING_RATE_RAW_PER_S = 244.0
+DEFAULT_GRIPPER_OPENING_RATE_RAW_PER_S = 220.0
 
 
 @dataclass
@@ -33,7 +37,7 @@ class SafeControlTarget:
     arm_target_mujoco: np.ndarray
     gripper_raw: float
     gripper_raw_clamped: float
-    gripper_sim_target: float
+    gripper_ctrl_target: float
     ctrl_target: np.ndarray
     joint_delta_raw: np.ndarray
     joint_delta_clamped: np.ndarray
@@ -49,7 +53,7 @@ class SafeControlTarget:
             "arm_target_mujoco": self.arm_target_mujoco.tolist(),
             "gripper_raw": self.gripper_raw,
             "gripper_raw_clamped": self.gripper_raw_clamped,
-            "gripper_sim_target": self.gripper_sim_target,
+            "gripper_ctrl_target": self.gripper_ctrl_target,
             "ctrl_target": self.ctrl_target.tolist(),
             "joint_delta_raw": self.joint_delta_raw.tolist(),
             "joint_delta_clamped": self.joint_delta_clamped.tolist(),
@@ -93,8 +97,50 @@ def clamp_gripper_raw(raw_value: float) -> tuple[float, list[str]]:
     )
 
 
-def convert_gripper_raw_to_sim_target(raw_value: float, config: dict[str, Any]) -> float:
-    return float(gripper_raw_to_sim(float(raw_value), config))
+def rate_limit_gripper_raw(
+    requested_raw: float,
+    current_raw: float,
+    *,
+    control_dt_s: float,
+    closing_rate_raw_per_s: float = DEFAULT_GRIPPER_CLOSING_RATE_RAW_PER_S,
+    opening_rate_raw_per_s: float = DEFAULT_GRIPPER_OPENING_RATE_RAW_PER_S,
+) -> tuple[float, list[str]]:
+    """Limit one policy-facing gripper-state target using real-IL rates.
+
+    Project raw values increase while opening, so closing and opening require
+    different signed bounds. This is a behavioral state-target limit; it does
+    not reinterpret the IL label as an independently measured motor command.
+    """
+
+    values = (
+        requested_raw,
+        current_raw,
+        control_dt_s,
+        closing_rate_raw_per_s,
+        opening_rate_raw_per_s,
+    )
+    if not all(np.isfinite(value) for value in values):
+        raise ValueError("Gripper rate-limit inputs must be finite")
+    if control_dt_s <= 0.0:
+        raise ValueError("control_dt_s must be positive")
+    if closing_rate_raw_per_s <= 0.0 or opening_rate_raw_per_s <= 0.0:
+        raise ValueError("Gripper opening and closing rates must be positive")
+
+    low = current_raw - closing_rate_raw_per_s * control_dt_s
+    high = current_raw + opening_rate_raw_per_s * control_dt_s
+    limited = float(np.clip(requested_raw, low, high))
+    messages: list[str] = []
+    if not np.isclose(requested_raw, limited, rtol=0.0, atol=1e-8):
+        direction = "closing" if requested_raw < current_raw else "opening"
+        messages.append(
+            f"gripper_raw {direction}-rate-limited from "
+            f"{requested_raw:.6f} to {limited:.6f}"
+        )
+    return limited, messages
+
+
+def convert_gripper_raw_to_ctrl(raw_value: float, config: dict[str, Any]) -> float:
+    return float(gripper_raw_to_ctrl(float(raw_value), config))
 
 
 def compute_safe_control_target(
@@ -104,6 +150,9 @@ def compute_safe_control_target(
     first_action: np.ndarray,
     *,
     max_joint_step: float = DEFAULT_MAX_JOINT_STEP,
+    control_dt_s: float | None = None,
+    gripper_closing_rate_raw_per_s: float = (DEFAULT_GRIPPER_CLOSING_RATE_RAW_PER_S),
+    gripper_opening_rate_raw_per_s: float = (DEFAULT_GRIPPER_OPENING_RATE_RAW_PER_S),
 ) -> SafeControlTarget:
     action = np.asarray(first_action, dtype=np.float32).reshape(7)
     if not np.isfinite(action).all():
@@ -118,20 +167,35 @@ def compute_safe_control_target(
         arm_actuator_ctrl_limits(model),
         max_joint_step=max_joint_step,
     )
-    gripper_clamped, gripper_messages = clamp_gripper_raw(float(action[6]))
-    gripper_sim = convert_gripper_raw_to_sim_target(gripper_clamped, config)
+    gripper_bounded, gripper_messages = clamp_gripper_raw(float(action[6]))
+    gripper_clamped = gripper_bounded
+    rate_messages: list[str] = []
+    if control_dt_s is not None:
+        gripper_clamped, rate_messages = rate_limit_gripper_raw(
+            gripper_bounded,
+            float(current_state[6]),
+            control_dt_s=control_dt_s,
+            closing_rate_raw_per_s=gripper_closing_rate_raw_per_s,
+            opening_rate_raw_per_s=gripper_opening_rate_raw_per_s,
+        )
+    gripper_ctrl = convert_gripper_raw_to_ctrl(gripper_clamped, config)
     low, high = gripper_actuator_ctrl_limits(model)
-    gripper_sim_limited = float(np.clip(gripper_sim, low, high))
+    gripper_ctrl_limited = float(np.clip(gripper_ctrl, low, high))
     arm_mujoco = raw_arm_state_to_mujoco_qpos(arm_clamped).astype(np.float32)
     limit_messages = []
-    if not np.isclose(gripper_sim, gripper_sim_limited, rtol=0.0, atol=1e-8):
+    if not np.isclose(gripper_ctrl, gripper_ctrl_limited, rtol=0.0, atol=1e-8):
         limit_messages.append(
-            f"gripper sim target actuator-clamped from {gripper_sim:.6f} to {gripper_sim_limited:.6f}"
+            f"gripper ctrl target actuator-clamped from {gripper_ctrl:.6f} to {gripper_ctrl_limited:.6f}"
         )
     ctrl_target = np.concatenate(
-        [arm_mujoco, np.asarray([gripper_sim_limited], dtype=np.float32)]
+        [arm_mujoco, np.asarray([gripper_ctrl_limited], dtype=np.float32)]
     ).astype(np.float32)
-    messages = [*arm_messages, *gripper_messages, *limit_messages]
+    messages = [
+        *arm_messages,
+        *gripper_messages,
+        *rate_messages,
+        *limit_messages,
+    ]
     return SafeControlTarget(
         raw_action=action,
         current_state=current_state,
@@ -140,7 +204,7 @@ def compute_safe_control_target(
         arm_target_mujoco=arm_mujoco,
         gripper_raw=float(action[6]),
         gripper_raw_clamped=gripper_clamped,
-        gripper_sim_target=gripper_sim_limited,
+        gripper_ctrl_target=gripper_ctrl_limited,
         ctrl_target=ctrl_target,
         joint_delta_raw=(arm_raw - current_state[:6]).astype(np.float32),
         joint_delta_clamped=(arm_clamped - current_state[:6]).astype(np.float32),
@@ -151,7 +215,9 @@ def compute_safe_control_target(
 
 def apply_safe_control_target(data: mujoco.MjData, target: SafeControlTarget) -> None:
     if target.ctrl_target.shape != (7,):
-        raise ValueError(f"Control target must have shape (7,), got {target.ctrl_target.shape}")
+        raise ValueError(
+            f"Control target must have shape (7,), got {target.ctrl_target.shape}"
+        )
     if not np.isfinite(target.ctrl_target).all():
         raise ValueError("Control target contains NaN or Inf")
     data.ctrl[:7] = target.ctrl_target

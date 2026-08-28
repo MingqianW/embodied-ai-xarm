@@ -69,7 +69,7 @@ def main() -> None:
                         context.model.geom_rgba[geom_id, 3] = 0.25
                     if (
                         geom_name.endswith("_collision")
-                        or "fingertip_pad" in geom_name
+                        or "finger_pad_" in geom_name
                     ):
                         context.model.geom_group[geom_id] = 0
                         context.model.geom_rgba[geom_id] = [0.1, 0.9, 0.2, 0.55]

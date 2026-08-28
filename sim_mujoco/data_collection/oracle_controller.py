@@ -26,6 +26,10 @@ from sim_mujoco.data_generation.stability import (
     evaluate_place_stability,
 )
 from sim_mujoco.environment import MuJoCoEnvironment
+from sim_mujoco.remote_policy_control import (
+    DEFAULT_GRIPPER_CLOSING_RATE_RAW_PER_S,
+    DEFAULT_GRIPPER_OPENING_RATE_RAW_PER_S,
+)
 
 
 class OracleStage(str, enum.Enum):
@@ -50,7 +54,8 @@ class OracleConfig:
     closed_gripper_raw: float = 211.0
     max_joint_step_rad: float = 0.025
     lift_max_joint_step_rad: float = 0.015
-    max_gripper_step_raw: float = 25.0
+    gripper_closing_rate_raw_per_s: float = DEFAULT_GRIPPER_CLOSING_RATE_RAW_PER_S
+    gripper_opening_rate_raw_per_s: float = DEFAULT_GRIPPER_OPENING_RATE_RAW_PER_S
     pregrasp_clearance_from_object_m: float = 0.087
     grasp_tcp_offset_from_object_m: float = -0.011
     lift_clearance_from_object_m: float = 0.107
@@ -74,8 +79,10 @@ class OracleConfig:
             raise ValueError("max_joint_step_rad must be positive")
         if self.lift_max_joint_step_rad <= 0.0:
             raise ValueError("lift_max_joint_step_rad must be positive")
-        if self.max_gripper_step_raw <= 0.0:
-            raise ValueError("max_gripper_step_raw must be positive")
+        if self.gripper_closing_rate_raw_per_s <= 0.0:
+            raise ValueError("gripper_closing_rate_raw_per_s must be positive")
+        if self.gripper_opening_rate_raw_per_s <= 0.0:
+            raise ValueError("gripper_opening_rate_raw_per_s must be positive")
         if self.hold_steps < 1 or self.verify_steps < 1:
             raise ValueError("hold_steps and verify_steps must be positive")
         if self.max_action_steps < 1:
@@ -105,17 +112,13 @@ def oracle_config_for_task(
         values.update(
             {
                 "closed_gripper_raw": RED_PEPPER_CLOSED_GRIPPER_RAW,
-                "grasp_tcp_offset_from_object_m": (
-                    RED_PEPPER_GRASP_TCP_OFFSET_M
-                ),
+                "grasp_tcp_offset_from_object_m": (RED_PEPPER_GRASP_TCP_OFFSET_M),
             }
         )
     if closed_gripper_raw is not None:
         values["closed_gripper_raw"] = float(closed_gripper_raw)
     if grasp_tcp_offset_from_object_m is not None:
-        values["grasp_tcp_offset_from_object_m"] = float(
-            grasp_tcp_offset_from_object_m
-        )
+        values["grasp_tcp_offset_from_object_m"] = float(grasp_tcp_offset_from_object_m)
     return OracleConfig(**values)
 
 
@@ -182,10 +185,7 @@ def _interpolate_gripper(
     max_step_raw: float,
 ) -> list[float]:
     steps = max(1, int(np.ceil(abs(target - start) / max_step_raw)))
-    return [
-        float(value)
-        for value in np.linspace(start, target, steps + 1)[1:]
-    ]
+    return [float(value) for value in np.linspace(start, target, steps + 1)[1:]]
 
 
 def _policy_action(arm_qpos: np.ndarray, gripper_raw: float) -> np.ndarray:
@@ -215,18 +215,10 @@ def _named_position(
     return np.asarray(values[object_id], dtype=np.float64).copy()
 
 
-def _target_table_contact(
-    collision: dict[str, Any], target_body: str
-) -> bool:
+def _target_table_contact(collision: dict[str, Any], target_body: str) -> bool:
     return any(
-        (
-            contact.get("body1") == target_body
-            or contact.get("body2") == target_body
-        )
-        and (
-            contact.get("geom1") == "table"
-            or contact.get("geom2") == "table"
-        )
+        (contact.get("body1") == target_body or contact.get("body2") == target_body)
+        and (contact.get("geom1") == "table" or contact.get("geom2") == "table")
         for contact in collision.get("contacts") or ()
     )
 
@@ -308,20 +300,21 @@ class ScriptedOracleController:
             raise RuntimeError(f"Oracle target body not found: {runtime.target_body}")
 
         object_position = np.asarray(data.xpos[body_id], dtype=np.float64).copy()
-        tcp_rotation = np.asarray(
-            data.site_xmat[site_id],
-            dtype=np.float64,
-        ).reshape(3, 3).copy()
-        initial_arm = policy_state_from_mujoco(model, data)[:6].astype(
-            np.float64
+        tcp_rotation = (
+            np.asarray(
+                data.site_xmat[site_id],
+                dtype=np.float64,
+            )
+            .reshape(3, 3)
+            .copy()
         )
+        initial_arm = policy_state_from_mujoco(model, data)[:6].astype(np.float64)
         target_xy = object_position[:2]
         pregrasp_position = np.asarray(
             [
                 target_xy[0],
                 target_xy[1],
-                object_position[2]
-                + self.config.pregrasp_clearance_from_object_m,
+                object_position[2] + self.config.pregrasp_clearance_from_object_m,
             ],
             dtype=np.float64,
         )
@@ -329,8 +322,7 @@ class ScriptedOracleController:
             [
                 target_xy[0],
                 target_xy[1],
-                object_position[2]
-                + self.config.grasp_tcp_offset_from_object_m,
+                object_position[2] + self.config.grasp_tcp_offset_from_object_m,
             ],
             dtype=np.float64,
         )
@@ -338,8 +330,7 @@ class ScriptedOracleController:
             [
                 target_xy[0],
                 target_xy[1],
-                object_position[2]
-                + self.config.lift_clearance_from_object_m,
+                object_position[2] + self.config.lift_clearance_from_object_m,
             ],
             dtype=np.float64,
         )
@@ -412,7 +403,7 @@ class ScriptedOracleController:
         open_values = _interpolate_gripper(
             initial_gripper,
             cfg.open_gripper_raw,
-            max_step_raw=cfg.max_gripper_step_raw,
+            max_step_raw=cfg.gripper_opening_rate_raw_per_s * cfg.action_dt_s,
         )
         pregrasp_arms = _interpolate_arm(
             self.plan.initial_arm_qpos,
@@ -427,7 +418,7 @@ class ScriptedOracleController:
         close_values = _interpolate_gripper(
             cfg.open_gripper_raw,
             cfg.closed_gripper_raw,
-            max_step_raw=cfg.max_gripper_step_raw,
+            max_step_raw=cfg.gripper_closing_rate_raw_per_s * cfg.action_dt_s,
         )
         lift_arms = _interpolate_arm(
             self.plan.grasp.joint_qpos,
@@ -441,12 +432,10 @@ class ScriptedOracleController:
                 for value in open_values
             ],
             OracleStage.MOVE_TO_PREGRASP: [
-                _policy_action(arm, cfg.open_gripper_raw)
-                for arm in pregrasp_arms
+                _policy_action(arm, cfg.open_gripper_raw) for arm in pregrasp_arms
             ],
             OracleStage.DESCEND: [
-                _policy_action(arm, cfg.open_gripper_raw)
-                for arm in descend_arms
+                _policy_action(arm, cfg.open_gripper_raw) for arm in descend_arms
             ],
             OracleStage.CLOSE_GRIPPER: [
                 _policy_action(self.plan.grasp.joint_qpos, value)
@@ -460,8 +449,7 @@ class ScriptedOracleController:
                 for _ in range(cfg.hold_steps)
             ],
             OracleStage.LIFT: [
-                _policy_action(arm, cfg.closed_gripper_raw)
-                for arm in lift_arms
+                _policy_action(arm, cfg.closed_gripper_raw) for arm in lift_arms
             ],
             OracleStage.VERIFY: [
                 _policy_action(
@@ -476,6 +464,17 @@ class ScriptedOracleController:
     def terminal(self) -> bool:
         return self.stage in {OracleStage.COMPLETE, OracleStage.FAILED}
 
+    @property
+    def stage_actions_remaining(self) -> int:
+        """Number of not-yet-returned commands in the current oracle stage."""
+
+        if self.terminal:
+            return 0
+        return max(
+            0,
+            len(self._stage_actions[self.stage]) - self._stage_action_index,
+        )
+
     def _transition(self, to_stage: OracleStage, reason: str) -> None:
         previous = self.stage
         self.stage = to_stage
@@ -483,9 +482,7 @@ class ScriptedOracleController:
         self.transitions.append(
             StageTransition(
                 action_step=self.action_steps,
-                simulation_time_s=float(
-                    self.environment.context.data.time
-                ),
+                simulation_time_s=float(self.environment.context.data.time),
                 from_stage=previous.value,
                 to_stage=to_stage.value,
                 reason=reason,
@@ -597,16 +594,15 @@ class ScriptedOracleController:
                 if self._stability_result["stable_grasp_success"]:
                     self._transition(OracleStage.COMPLETE, "stable_grasp_verified")
                 else:
-                    self._fail(str(self._stability_result["stable_grasp_failure_reason"]))
+                    self._fail(
+                        str(self._stability_result["stable_grasp_failure_reason"])
+                    )
             return
         if not simulation_finite:
             self._fail("simulation_non_finite")
             return
         if collision.get("forbidden"):
-            reason = str(
-                collision.get("termination_reason")
-                or "unexpected_collision"
-            )
+            reason = str(collision.get("termination_reason") or "unexpected_collision")
             self._fail(reason)
             return
 
@@ -644,7 +640,7 @@ class PlaceOracleConfig:
     action_dt_s: float = 0.1
     open_gripper_raw: float = 845.0
     max_joint_step_rad: float = 0.025
-    max_gripper_step_raw: float = 25.0
+    gripper_opening_rate_raw_per_s: float = DEFAULT_GRIPPER_OPENING_RATE_RAW_PER_S
     preplace_pepper_height_m: float = 0.20
     release_pepper_height_m: float = 0.125
     verify_steps: int = 20
@@ -661,8 +657,8 @@ class PlaceOracleConfig:
             raise ValueError("action_dt_s must be positive")
         if self.max_joint_step_rad <= 0.0:
             raise ValueError("max_joint_step_rad must be positive")
-        if self.max_gripper_step_raw <= 0.0:
-            raise ValueError("max_gripper_step_raw must be positive")
+        if self.gripper_opening_rate_raw_per_s <= 0.0:
+            raise ValueError("gripper_opening_rate_raw_per_s must be positive")
         if self.verify_steps != 20 or self.action_dt_s != 0.1:
             raise ValueError("Stable Place verification requires 20 steps at 0.1 s")
         if self.max_action_steps < 1:
@@ -681,9 +677,7 @@ class PlaceOraclePlan:
     def to_json(self) -> dict[str, Any]:
         return {
             "ring_position": self.ring_position.tolist(),
-            "tcp_to_pepper_translation": (
-                self.tcp_to_pepper_translation.tolist()
-            ),
+            "tcp_to_pepper_translation": (self.tcp_to_pepper_translation.tolist()),
             "tcp_rotation": self.tcp_rotation.tolist(),
             "initial_arm_qpos": self.initial_arm_qpos.tolist(),
             "preplace": {
@@ -771,9 +765,9 @@ class PlaceRedPepperOracleController:
         if site_id < 0:
             raise RuntimeError(f"Oracle TCP site not found: {self.config.tcp_site}")
         tcp_position = np.asarray(data.site_xpos[site_id], dtype=np.float64).copy()
-        tcp_rotation = np.asarray(data.site_xmat[site_id], dtype=np.float64).reshape(
-            3, 3
-        ).copy()
+        tcp_rotation = (
+            np.asarray(data.site_xmat[site_id], dtype=np.float64).reshape(3, 3).copy()
+        )
         ring_position = self._named_position(
             str(runtime.spec["success"]["ring_body"]),
             mujoco.mjtObj.mjOBJ_BODY,
@@ -869,7 +863,9 @@ class PlaceRedPepperOracleController:
         open_values = _interpolate_gripper(
             current_gripper,
             self.config.open_gripper_raw,
-            max_step_raw=self.config.max_gripper_step_raw,
+            max_step_raw=(
+                self.config.gripper_opening_rate_raw_per_s * self.config.action_dt_s
+            ),
         )
         return {
             PlaceOracleStage.RESET: [],
@@ -1005,17 +1001,16 @@ class PlaceRedPepperOracleController:
                 if self._stability_result["stable_place_success"]:
                     self._transition(PlaceOracleStage.COMPLETE, "stable_place_verified")
                 else:
-                    self._fail(str(self._stability_result["stable_place_failure_reason"]))
+                    self._fail(
+                        str(self._stability_result["stable_place_failure_reason"])
+                    )
             return
         if not simulation_finite:
             self._fail("simulation_non_finite")
             return
         if collision.get("forbidden"):
             self._fail(
-                str(
-                    collision.get("termination_reason")
-                    or "unexpected_collision"
-                )
+                str(collision.get("termination_reason") or "unexpected_collision")
             )
             return
 

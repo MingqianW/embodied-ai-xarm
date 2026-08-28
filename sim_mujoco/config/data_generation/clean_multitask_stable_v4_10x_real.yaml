@@ -49,7 +49,7 @@ verification:
     maximum_relative_drift_m: 0.005
     maximum_grasp_region_delta_m: 0.015
     minimum_height_above_table_m: 0.04
-    gripper_half_width_m: 0.012
+    gripper_raw: 492.58
     tcp_to_pepper_translation_m:
     - 0.0
     - 0.0

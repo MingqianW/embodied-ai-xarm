@@ -20,14 +20,21 @@
     <mesh name="link4_mesh" file="link4.stl" />
     <mesh name="link5_mesh" file="link5.stl" />
     <mesh name="link6_mesh" file="link6.stl" />
-    <material name="gripper_dark" rgba="0.18 0.19 0.21 1" />
-    <material name="finger_pad" rgba="0.06 0.06 0.06 1" />
+    <material name="menagerie_white" rgba="1 1 1 1" />
+    <material name="menagerie_black" rgba="0.149 0.149 0.149 1" />
     <material name="table_material" rgba="0.62 0.64 0.64 1" />
     <material name="object_material" rgba="0.85 0.12 0.10 1" />
     <material name="blue_block_material" rgba="0.05 0.55 0.78 1" />
     <material name="pepper_red_material" rgba="0.82 0.035 0.035 1" />
     <material name="pepper_green_material" rgba="0.08 0.34 0.10 1" />
     <material name="ring_material" rgba="0.92 0.92 0.90 1" />
+    <mesh name="xarm_gripper_base_mesh" file="../../gripper/xarm/base_link.stl" />
+    <mesh name="left_outer_knuckle_mesh" file="../../gripper/xarm/left_outer_knuckle.stl" />
+    <mesh name="left_finger_mesh" file="../../gripper/xarm/left_finger.stl" />
+    <mesh name="left_inner_knuckle_mesh" file="../../gripper/xarm/left_inner_knuckle.stl" />
+    <mesh name="right_outer_knuckle_mesh" file="../../gripper/xarm/right_outer_knuckle.stl" />
+    <mesh name="right_finger_mesh" file="../../gripper/xarm/right_finger.stl" />
+    <mesh name="right_inner_knuckle_mesh" file="../../gripper/xarm/right_inner_knuckle.stl" />
   </asset>
   <worldbody>
     <light name="main_light" pos="1 -1 2.5" dir="-0.3 0.3 -1" castshadow="false" />
@@ -60,8 +67,9 @@
                   <inertial pos="0 -0.00677 -0.01098" mass="0.17" fullinertia="9.3e-05 5.87e-05 0.000132 -0 -0 -3.6e-06" />
                   <geom name="link6_visual" type="mesh" mesh="link6_mesh" material="robot_silver" />
                   <site name="end_effector_site" pos="0 0 0" size="0.01" rgba="1 0 0 1" />
-                  <body name="gripper_base" pos="0 0 0" gravcomp="1">
-                    <geom name="gripper_base_collision" type="cylinder" pos="0 0 0.050" size="0.043 0.050" mass="0.50" material="gripper_dark" contype="1" conaffinity="1" friction="0.8 0.01 0.001" />
+                  <body name="xarm_gripper_base_link">
+                    <inertial pos="-0.00065489 -0.0018497 0.048028" quat="0.997403 -0.0717512 -0.0061836 0.000477479" mass="0.54156" diaginertia="0.000471093 0.000332307 0.000254799" />
+                    <geom name="xarm_gripper_base_collision" type="mesh" mesh="xarm_gripper_base_mesh" material="menagerie_white" contype="1" conaffinity="1" group="0" />
                     <site name="tool_center_point" pos="0 0 0.172" size="0.012" rgba="0 1 0 0" />
                     <camera name="wrist_camera" pos="0.07 0.006 0.087" xyaxes="0.05396858831 -0.9984286526 -0.01508698438 -0.9539193421 -0.04708470002 -0.2963459462" fovy="108.7" />
                     <body name="held_red_pepper" pos="0 0 -1">
@@ -71,15 +79,39 @@
                       <geom name="held_pepper_lobe_3" type="ellipsoid" pos="0 -0.011 0" size="0.016 0.016 0.022" mass="0.004" material="pepper_red_material" contype="1" conaffinity="1" friction="1.3 0.02 0.002" rgba="0.82 0.035 0.035 0" />
                       <geom name="held_pepper_stem" type="capsule" pos="0 0 0.026" size="0.005 0.009" mass="0.001" material="pepper_green_material" contype="1" conaffinity="1" friction="1.0 0.01 0.001" rgba="0.08 0.34 0.10 0" />
                     </body>
-                    <body name="left_finger" pos="0 0.008 0.105" gravcomp="1">
-                      <joint name="left_finger_slide" type="slide" axis="0 1 0" limited="true" range="0 0.047" damping="4" armature="0.002" />
-                      <geom name="left_finger_collision" type="box" pos="0 0 0.017" size="0.016 0.006 0.017" mass="0.05" material="gripper_dark" contype="1" conaffinity="1" friction="1.2 0.01 0.001" />
-                      <geom name="left_fingertip_pad" type="box" pos="0 -0.0075 0.052" size="0.016 0.003 0.018" mass="0.01" material="finger_pad" contype="1" conaffinity="1" friction="2.0 0.02 0.002" />
+                    <body name="left_outer_knuckle" pos="0 0.035 0.059098">
+                      <inertial pos="0 0.021559 0.015181" quat="0.47789 0.87842 0 0" mass="0.033618" diaginertia="1.9111e-05 1.79089e-05 1.90167e-06" />
+                      <joint name="left_driver_joint" type="hinge" axis="1 0 0" range="0 0.85" armature="0.005" frictionloss="1" damping="0.1" solreflimit="0.005 1" />
+                      <geom name="left_outer_knuckle_collision" type="mesh" mesh="left_outer_knuckle_mesh" material="menagerie_black" contype="1" conaffinity="1" group="0" />
+                      <body name="left_finger" pos="0 0.035465 0.042039">
+                        <inertial pos="0 -0.016413 0.029258" quat="0.697634 0.115353 -0.115353 0.697634" mass="0.048304" diaginertia="1.88037e-05 1.7493e-05 3.56792e-06" />
+                        <joint name="left_finger_joint" type="hinge" axis="-1 0 0" range="0 0.85" armature="0.1" frictionloss="1" solreflimit="0.005 1" />
+                        <geom name="left_finger_visual" type="mesh" mesh="left_finger_mesh" material="menagerie_black" contype="0" conaffinity="0" group="2" />
+                        <geom name="left_finger_pad_1" type="box" pos="0 -0.024003 0.032" size="0.015 0.002 0.0095" friction="0.7" solimp="0.95 0.99 0.001" solref="0.004 1" mass="0" priority="1" contype="1" conaffinity="1" group="3" rgba="0.0 0.1 0.7 1" />
+                        <geom name="left_finger_pad_2" type="box" pos="0 -0.024003 0.050" size="0.015 0.002 0.0095" friction="0.6" solimp="0.95 0.99 0.001" solref="0.004 1" mass="0" priority="1" contype="1" conaffinity="1" group="3" rgba="0.0 0.5 0.5 1" />
+                      </body>
                     </body>
-                    <body name="right_finger" pos="0 -0.008 0.105" gravcomp="1">
-                      <joint name="right_finger_slide" type="slide" axis="0 -1 0" limited="true" range="0 0.047" damping="4" armature="0.002" />
-                      <geom name="right_finger_collision" type="box" pos="0 0 0.017" size="0.016 0.006 0.017" mass="0.05" material="gripper_dark" contype="1" conaffinity="1" friction="1.2 0.01 0.001" />
-                      <geom name="right_fingertip_pad" type="box" pos="0 0.0075 0.052" size="0.016 0.003 0.018" mass="0.01" material="finger_pad" contype="1" conaffinity="1" friction="2.0 0.02 0.002" />
+                    <body name="left_inner_knuckle" pos="0 0.02 0.074098">
+                      <inertial pos="1.86601e-06 0.0220468 0.0261335" quat="0.664139 -0.242732 0.242713 0.664146" mass="0.0230126" diaginertia="8.34216e-06 6.0949e-06 2.75601e-06" />
+                      <joint name="left_inner_knuckle_joint" type="hinge" axis="1 0 0" range="0 0.85" armature="0.1" frictionloss="1" stiffness="0.05" springref="2.62" damping="0.00125" />
+                      <geom name="left_inner_knuckle_collision" type="mesh" mesh="left_inner_knuckle_mesh" material="menagerie_black" contype="1" conaffinity="1" group="0" />
+                    </body>
+                    <body name="right_outer_knuckle" pos="0 -0.035 0.059098">
+                      <inertial pos="0 -0.021559 0.015181" quat="0.87842 0.47789 0 0" mass="0.033618" diaginertia="1.9111e-05 1.79089e-05 1.90167e-06" />
+                      <joint name="right_driver_joint" type="hinge" axis="-1 0 0" range="0 0.85" armature="0.005" frictionloss="1" damping="0.1" solreflimit="0.005 1" />
+                      <geom name="right_outer_knuckle_collision" type="mesh" mesh="right_outer_knuckle_mesh" material="menagerie_black" contype="1" conaffinity="1" group="0" />
+                      <body name="right_finger" pos="0 -0.035465 0.042039">
+                        <inertial pos="0 0.016413 0.029258" quat="0.697634 -0.115356 0.115356 0.697634" mass="0.048304" diaginertia="1.88038e-05 1.7493e-05 3.56779e-06" />
+                        <joint name="right_finger_joint" type="hinge" axis="1 0 0" range="0 0.85" armature="0.1" frictionloss="1" solreflimit="0.005 1" />
+                        <geom name="right_finger_visual" type="mesh" mesh="right_finger_mesh" material="menagerie_black" contype="0" conaffinity="0" group="2" />
+                        <geom name="right_finger_pad_1" type="box" pos="0 0.024003 0.032" size="0.015 0.002 0.0095" friction="0.7" solimp="0.95 0.99 0.001" solref="0.004 1" mass="0" priority="1" contype="1" conaffinity="1" group="3" rgba="0.0 0.1 0.7 1" />
+                        <geom name="right_finger_pad_2" type="box" pos="0 0.024003 0.050" size="0.015 0.002 0.0095" friction="0.6" solimp="0.95 0.99 0.001" solref="0.004 1" mass="0" priority="1" contype="1" conaffinity="1" group="3" rgba="0.0 0.5 0.5 1" />
+                      </body>
+                    </body>
+                    <body name="right_inner_knuckle" pos="0 -0.02 0.074098">
+                      <inertial pos="1.866e-06 -0.022047 0.026133" quat="0.66415 0.242702 -0.242721 0.664144" mass="0.023013" diaginertia="8.34209e-06 6.0949e-06 2.75601e-06" />
+                      <joint name="right_inner_knuckle_joint" type="hinge" axis="-1 0 0" range="0 0.85" armature="0.1" frictionloss="1" stiffness="0.05" springref="2.62" damping="0.00125" />
+                      <geom name="right_inner_knuckle_collision" type="mesh" mesh="right_inner_knuckle_mesh" material="menagerie_black" contype="1" conaffinity="1" group="0" />
                     </body>
                   </body>
                   <geom name="link6_collision" type="ellipsoid" size="0.018 0.040 0.047" mass="0" rgba="0.2 0.8 0.2 0" group="3" contype="1" conaffinity="1" friction="0.8 0.01 0.001" pos="0 0 0.006" />
@@ -146,21 +178,6 @@
     <geom name="camera_backdrop" type="box" pos="-0.20 0 0.75" size="0.02 1.20 0.75" rgba="0.82 0.83 0.83 1" contype="0" conaffinity="0" />
     <camera name="base_camera" pos="1.476 -0.389 0.516" xyaxes="0.1994707007 0.9794632715 0.02937923446 -0.3523094541 0.04370748073 0.9348623988" fovy="29.2" />
   </worldbody>
-  <contact>
-    <exclude name="exclude_link_base_link1" body1="link_base" body2="link1" />
-    <exclude name="exclude_link1_link2" body1="link1" body2="link2" />
-    <exclude name="exclude_link2_link3" body1="link2" body2="link3" />
-    <exclude name="exclude_link3_link4" body1="link3" body2="link4" />
-    <exclude name="exclude_link4_link5" body1="link4" body2="link5" />
-    <exclude name="exclude_link5_link6" body1="link5" body2="link6" />
-    <exclude name="exclude_link4_link6" body1="link4" body2="link6" />
-    <exclude name="exclude_link6_gripper_base" body1="link6" body2="gripper_base" />
-    <exclude name="exclude_link4_gripper_base" body1="link4" body2="gripper_base" />
-    <exclude name="exclude_link5_gripper_base" body1="link5" body2="gripper_base" />
-    <exclude name="exclude_gripper_base_left_finger" body1="gripper_base" body2="left_finger" />
-    <exclude name="exclude_gripper_base_right_finger" body1="gripper_base" body2="right_finger" />
-    <exclude name="exclude_left_finger_right_finger" body1="left_finger" body2="right_finger" />
-  </contact>
   <actuator>
     <position name="joint1_actuator" joint="joint1" kp="120" ctrlrange="-6.283185307 6.283185307" forcelimited="true" forcerange="-50 50" />
     <position name="joint2_actuator" joint="joint2" kp="120" ctrlrange="-2.059 2.0944" forcelimited="true" forcerange="-50 50" />
@@ -168,12 +185,40 @@
     <position name="joint4_actuator" joint="joint4" kp="70" ctrlrange="-6.283185307 6.283185307" forcelimited="true" forcerange="-32 32" />
     <position name="joint5_actuator" joint="joint5" kp="50" ctrlrange="-1.69297 3.141592654" forcelimited="true" forcerange="-32 32" />
     <position name="joint6_actuator" joint="joint6" kp="30" ctrlrange="-6.283185307 6.283185307" forcelimited="true" forcerange="-20 20" />
-    <position name="gripper_actuator" joint="left_finger_slide" kp="500" ctrlrange="0 0.047" forcelimited="true" forcerange="-40 40" />
+    <general name="gripper_actuator" tendon="split" biastype="affine" forcerange="-50 50" ctrlrange="0 255" gainprm="0.333" biasprm="0 -100 -10" />
   </actuator>
   <keyframe>
-    <key name="home" qpos="0 -0.6 -1.2 0 1.8 0 0.047 0.047 0.458 -0.205 0.063 1 0 0 0 0.45 0 -1 1 0 0 0 0.43 -0.1 -1 1 0 0 0 0.48 0.1 -1 1 0 0 0 0.45 0 -1 1 0 0 0" ctrl="0 -0.6 -1.2 0 1.8 0 0.047" />
+    <key name="home" qpos="0 -0.6 -1.2 0 1.8 0 0.005 0.005 0.005 0.005 0.005 0.005 0.458 -0.205 0.063 1 0 0 0 0.45 0 -1 1 0 0 0 0.43 -0.1 -1 1 0 0 0 0.48 0.1 -1 1 0 0 0 0.45 0 -1 1 0 0 0" ctrl="0 -0.6 -1.2 0 1.8 0 1.501501502" />
   </keyframe>
+  <tendon>
+    <fixed name="split">
+      <joint joint="right_driver_joint" coef="0.5" />
+      <joint joint="left_driver_joint" coef="0.5" />
+    </fixed>
+  </tendon>
   <equality>
-    <joint name="symmetric_gripper" joint1="right_finger_slide" joint2="left_finger_slide" polycoef="0 1 0 0 0" solref="0.01 1" />
+    <connect name="right_finger_connect" anchor="0 0.015 0.015" body1="right_finger" body2="right_inner_knuckle" solref="0.005 1" />
+    <connect name="left_finger_connect" anchor="0 -0.015 0.015" body1="left_finger" body2="left_inner_knuckle" solref="0.005 1" />
+    <joint name="driver_symmetry" joint1="left_driver_joint" joint2="right_driver_joint" polycoef="0 1 0 0 0" solref="0.005 1" />
   </equality>
+  <contact>
+    <exclude name="menagerie_exclude_right_inner_knuckle_right_outer_knuckle" body1="right_inner_knuckle" body2="right_outer_knuckle" />
+    <exclude name="menagerie_exclude_right_inner_knuckle_right_finger" body1="right_inner_knuckle" body2="right_finger" />
+    <exclude name="menagerie_exclude_left_inner_knuckle_left_outer_knuckle" body1="left_inner_knuckle" body2="left_outer_knuckle" />
+    <exclude name="menagerie_exclude_left_inner_knuckle_left_finger" body1="left_inner_knuckle" body2="left_finger" />
+    <exclude name="menagerie_exclude_left_inner_knuckle_xarm_gripper_base_link" body1="left_inner_knuckle" body2="xarm_gripper_base_link" />
+    <exclude name="menagerie_exclude_right_inner_knuckle_xarm_gripper_base_link" body1="right_inner_knuckle" body2="xarm_gripper_base_link" />
+    <exclude name="menagerie_exclude_left_outer_knuckle_xarm_gripper_base_link" body1="left_outer_knuckle" body2="xarm_gripper_base_link" />
+    <exclude name="menagerie_exclude_right_outer_knuckle_xarm_gripper_base_link" body1="right_outer_knuckle" body2="xarm_gripper_base_link" />
+    <exclude name="exclude_link_base_link1" body1="link_base" body2="link1" />
+    <exclude name="exclude_link1_link2" body1="link1" body2="link2" />
+    <exclude name="exclude_link2_link3" body1="link2" body2="link3" />
+    <exclude name="exclude_link3_link4" body1="link3" body2="link4" />
+    <exclude name="exclude_link4_link5" body1="link4" body2="link5" />
+    <exclude name="exclude_link5_link6" body1="link5" body2="link6" />
+    <exclude name="exclude_link4_link6" body1="link4" body2="link6" />
+    <exclude name="exclude_link6_xarm_gripper_base_link" body1="link6" body2="xarm_gripper_base_link" />
+    <exclude name="exclude_link4_xarm_gripper_base_link" body1="link4" body2="xarm_gripper_base_link" />
+    <exclude name="exclude_link5_xarm_gripper_base_link" body1="link5" body2="xarm_gripper_base_link" />
+  </contact>
 </mujoco>

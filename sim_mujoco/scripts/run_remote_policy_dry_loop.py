@@ -38,10 +38,10 @@ DEFAULT_OUTPUT_DIR = mujoco_output_root() / "remote_policy_dry_loop"
 
 
 def hold_current_control(data, state: np.ndarray, config: dict[str, Any]) -> None:
-    from sim_mujoco.remote_policy_observation import gripper_raw_to_sim
+    from sim_mujoco.remote_policy_observation import gripper_raw_to_ctrl
 
     data.ctrl[:6] = state[:6]
-    data.ctrl[6] = gripper_raw_to_sim(float(state[6]), config)
+    data.ctrl[6] = gripper_raw_to_ctrl(float(state[6]), config)
 
 
 def main() -> None:
@@ -142,7 +142,7 @@ def main() -> None:
             print("  raw first action:", first_action)
             print("  clamped target:", safe_target.ctrl_target)
             print("  joint deltas:", safe_target.joint_delta_clamped)
-            print("  gripper target raw/sim:", safe_target.gripper_raw_clamped, safe_target.gripper_sim_target)
+            print("  gripper target raw/ctrl:", safe_target.gripper_raw_clamped, safe_target.gripper_ctrl_target)
             print(f"  latency: {latency:.3f} s")
             if safe_target.clip_messages:
                 print("  clipping:")

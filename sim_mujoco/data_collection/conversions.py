@@ -5,8 +5,8 @@ The stored real dataset convention is:
     [joint1_rad, ..., joint6_rad, gripper_raw]
 
 Arm coordinates are an explicitly audited identity mapping. The gripper is
-not identity: MuJoCo stores a finger-slide distance in metres while the policy
-uses the xArm controller's raw position convention.
+not identity: MuJoCo uses Menagerie's 0-open/255-closed affine-actuator control
+and linkage state while the policy uses the xArm controller's raw convention.
 """
 
 from __future__ import annotations
@@ -19,6 +19,9 @@ import mujoco
 import numpy as np
 
 from sim_mujoco.gripper_mapping import (
+    gripper_state_to_raw,
+    menagerie_ctrl_to_raw_target,
+    raw_gripper_to_menagerie_ctrl,
     raw_gripper_to_sim_slide,
     sim_slide_to_raw_gripper,
 )
@@ -29,7 +32,6 @@ from sim_mujoco.joint_mapping import (
 from sim_mujoco.remote_policy_observation import (
     ARM_JOINT_NAMES,
     DEFAULT_CAMERA_CONFIG_PATH,
-    GRIPPER_LEFT_JOINT,
     joint_qpos,
     load_camera_config,
 )
@@ -63,10 +65,15 @@ def gripper_raw_from_mujoco(
     *,
     camera_config_path: Path = DEFAULT_CAMERA_CONFIG_PATH,
 ) -> float:
-    """Return the left finger slide expressed in the real policy convention."""
+    """Return the simulated linkage state in the real policy convention."""
 
-    slide = joint_qpos(model, data, GRIPPER_LEFT_JOINT)
-    return float(sim_slide_to_raw_gripper(slide, _config(camera_config_path)))
+    return float(
+        gripper_state_to_raw(
+            model,
+            data,
+            _config(camera_config_path),
+        )
+    )
 
 
 def mujoco_gripper_target_from_raw(
@@ -74,12 +81,15 @@ def mujoco_gripper_target_from_raw(
     *,
     camera_config_path: Path = DEFAULT_CAMERA_CONFIG_PATH,
 ) -> float:
-    """Convert an absolute xArm raw gripper target to MuJoCo slide metres."""
+    """Convert an absolute xArm raw gripper target to Menagerie actuator ctrl."""
 
     value = float(raw)
     if not np.isfinite(value):
         raise ValueError("raw gripper target contains NaN or Inf")
-    return float(raw_gripper_to_sim_slide(value, _config(camera_config_path)))
+    config = _config(camera_config_path)
+    if "sim_slide_min_m" in config.get("gripper_mapping", {}):
+        return float(raw_gripper_to_sim_slide(value, config))
+    return float(raw_gripper_to_menagerie_ctrl(value, config))
 
 
 def policy_state_from_mujoco(
@@ -108,7 +118,7 @@ def mujoco_joint_target_from_policy_action(
     *,
     camera_config_path: Path = DEFAULT_CAMERA_CONFIG_PATH,
 ) -> np.ndarray:
-    """Convert a 7D absolute policy action to six qpos plus slide metres."""
+    """Convert a 7D policy action to six arm targets plus gripper ctrl."""
 
     policy_action = _vector7(action, label="action")
     arm_target = raw_arm_state_to_mujoco_qpos(policy_action[:ARM_DOF])
@@ -124,12 +134,15 @@ def policy_action_from_mujoco_target(
     *,
     camera_config_path: Path = DEFAULT_CAMERA_CONFIG_PATH,
 ) -> np.ndarray:
-    """Convert six qpos plus a slide-metre target to a 7D policy action."""
+    """Convert six arm targets plus gripper ctrl to a 7D policy action."""
 
     internal_target = _vector7(target, label="target")
     arm_raw = mujoco_qpos_to_raw_arm_state(internal_target[:ARM_DOF])
-    gripper_raw = sim_slide_to_raw_gripper(
-        float(internal_target[ARM_DOF]),
-        _config(camera_config_path),
-    )
+    config = _config(camera_config_path)
+    if "sim_slide_min_m" in config.get("gripper_mapping", {}):
+        gripper_raw = sim_slide_to_raw_gripper(float(internal_target[ARM_DOF]), config)
+    else:
+        gripper_raw = menagerie_ctrl_to_raw_target(
+            float(internal_target[ARM_DOF]), config
+        )
     return np.concatenate((arm_raw, [gripper_raw])).astype(np.float32)

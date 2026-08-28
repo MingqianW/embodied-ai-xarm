@@ -33,7 +33,7 @@ def main() -> None:
     )
     parser.add_argument("--seed", type=int, default=600000)
     parser.add_argument("--settle-steps", type=int, required=True)
-    parser.add_argument("--gripper-half-width-m", type=float)
+    parser.add_argument("--gripper-raw", type=float)
     parser.add_argument("--tcp-to-pepper-z-m", type=float)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
@@ -42,20 +42,18 @@ def main() -> None:
 
     config = load_pipeline_config(args.config)
     task_scene_config = config.task_scene_config
-    if args.gripper_half_width_m is not None or args.tcp_to_pepper_z_m is not None:
+    if args.gripper_raw is not None or args.tcp_to_pepper_z_m is not None:
         task_scene_data = yaml.safe_load(
             config.task_scene_config.read_text(encoding="utf-8")
         )
         place_scene = task_scene_data["tasks"]["place_red_pepper_in_ring"]
-        if args.gripper_half_width_m is not None:
-            place_scene["initial_gripper_sim_half_width"] = float(
-                args.gripper_half_width_m
-            )
+        if args.gripper_raw is not None:
+            place_scene["initial_gripper_raw"] = float(args.gripper_raw)
             config = replace(
                 config,
                 place_initial=replace(
                     config.place_initial,
-                    gripper_half_width_m=float(args.gripper_half_width_m),
+                    gripper_raw=float(args.gripper_raw),
                 ),
             )
         if args.tcp_to_pepper_z_m is not None:
@@ -97,7 +95,7 @@ def main() -> None:
         "seed": args.seed,
         "settle_steps": args.settle_steps,
         "settle_duration_s": args.settle_steps * 0.002,
-        "gripper_half_width_m": args.gripper_half_width_m,
+        "gripper_raw": args.gripper_raw,
         "tcp_to_pepper_z_m": args.tcp_to_pepper_z_m,
         "resolved_task_scene_config": str(task_scene_config.resolve()),
         "result": result,

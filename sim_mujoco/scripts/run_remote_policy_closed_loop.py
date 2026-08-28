@@ -16,37 +16,41 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from policy_runtime.remote_policy_client import (
+from policy_runtime.remote_policy_client import (  # noqa: E402
     PolicyTimeoutError,
     RemotePolicyClient,
     RemotePolicyConfig,
 )
-from policy_runtime.action_decoder import DEFAULT_ACTION_HORIZON
-from policy_runtime.safety import SafetyConfig, validate_action_chunk
-from sim_mujoco.remote_policy_control import (
+from policy_runtime.action_decoder import DEFAULT_ACTION_HORIZON  # noqa: E402
+from policy_runtime.safety import SafetyConfig, validate_action_chunk  # noqa: E402
+from sim_mujoco.remote_policy_control import (  # noqa: E402
     apply_safe_control_target,
     compute_safe_control_target,
     validate_policy_actions,
 )
-from sim_mujoco.collision import collision_diagnostics
-from sim_mujoco.remote_policy_evaluation import (
+from sim_mujoco.collision import collision_diagnostics  # noqa: E402
+from sim_mujoco.remote_policy_evaluation import (  # noqa: E402
     VideoRecorder,
     write_json,
 )
-from sim_mujoco.remote_policy_observation import (
+from sim_mujoco.remote_policy_observation import (  # noqa: E402
     DEFAULT_CAMERA_CONFIG_PATH,
     DEFAULT_MODEL_PATH,
     arm_actuator_ctrl_limits,
     arm_joint_limits,
     build_openpi_observation,
     get_robot_state,
-    gripper_raw_to_sim,
+    gripper_raw_to_ctrl,
     image_diagnostics,
     initialize_scene,
     load_simulation,
 )
-from sim_mujoco.task_scenes import configure_task_scene, resolve_task, task_names
-from sim_mujoco.paths import mujoco_output_root
+from sim_mujoco.task_scenes import (  # noqa: E402
+    configure_task_scene,
+    resolve_task,
+    task_names,
+)
+from sim_mujoco.paths import mujoco_output_root  # noqa: E402
 
 
 DEFAULT_OUTPUT_DIR = mujoco_output_root() / "remote_policy_closed_loop"
@@ -75,7 +79,9 @@ class EpisodeConfig:
     timeout: float = 120.0
 
 
-def create_policy_client(host: str, port: int, timeout: float = 10.0) -> RemotePolicyClient:
+def create_policy_client(
+    host: str, port: int, timeout: float = 10.0
+) -> RemotePolicyClient:
     client = RemotePolicyClient(
         RemotePolicyConfig(
             host=host,
@@ -118,8 +124,18 @@ def preflight(
             rows.append((label, False, str(exc)))
             return None
 
-    check("XML scene exists", lambda: DEFAULT_MODEL_PATH if DEFAULT_MODEL_PATH.is_file() else (_ for _ in ()).throw(FileNotFoundError(DEFAULT_MODEL_PATH)))
-    check("camera calibration config exists", lambda: DEFAULT_CAMERA_CONFIG_PATH if DEFAULT_CAMERA_CONFIG_PATH.is_file() else (_ for _ in ()).throw(FileNotFoundError(DEFAULT_CAMERA_CONFIG_PATH)))
+    check(
+        "XML scene exists",
+        lambda: DEFAULT_MODEL_PATH
+        if DEFAULT_MODEL_PATH.is_file()
+        else (_ for _ in ()).throw(FileNotFoundError(DEFAULT_MODEL_PATH)),
+    )
+    check(
+        "camera calibration config exists",
+        lambda: DEFAULT_CAMERA_CONFIG_PATH
+        if DEFAULT_CAMERA_CONFIG_PATH.is_file()
+        else (_ for _ in ()).throw(FileNotFoundError(DEFAULT_CAMERA_CONFIG_PATH)),
+    )
     check("task scene config resolves", lambda: resolve_task(task)[0])
     policy = check(
         "remote WebSocket policy connection succeeds",
@@ -159,7 +175,9 @@ def preflight(
                 "task starts without forbidden robot collision",
                 lambda: (
                     "ok"
-                    if not collision_diagnostics(context.model, context.data)["forbidden"]
+                    if not collision_diagnostics(context.model, context.data)[
+                        "forbidden"
+                    ]
                     else (_ for _ in ()).throw(
                         RuntimeError(
                             collision_diagnostics(context.model, context.data)[
@@ -171,27 +189,71 @@ def preflight(
             )
         observation = check(
             "one observation can be constructed",
-            lambda: build_openpi_observation(context.model, context.data, context.renderer, context.config, prompt),
+            lambda: build_openpi_observation(
+                context.model, context.data, context.renderer, context.config, prompt
+            ),
         )
         if observation is not None and task_setup is not None:
             task_setup[0].adjust_observation(observation)
         if observation is not None:
             rows[-1] = (rows[-1][0], rows[-1][1], "ok")
     if context is not None and observation is not None:
-        check("images have correct shape and dtype", lambda: "ok" if observation["observation/image"].shape == (224, 224, 3) and observation["observation/image"].dtype == np.uint8 and observation["observation/wrist_image"].shape == (224, 224, 3) and observation["observation/wrist_image"].dtype == np.uint8 else (_ for _ in ()).throw(ValueError("bad image shape/dtype")))
-        check("state has correct shape and dtype", lambda: "ok" if observation["observation/state"].shape == (7,) and observation["observation/state"].dtype == np.float32 else (_ for _ in ()).throw(ValueError("bad state shape/dtype")))
-        check("current state is finite", lambda: "ok" if np.isfinite(observation["observation/state"]).all() else (_ for _ in ()).throw(ValueError("state has NaN/Inf")))
+        check(
+            "images have correct shape and dtype",
+            lambda: "ok"
+            if observation["observation/image"].shape == (224, 224, 3)
+            and observation["observation/image"].dtype == np.uint8
+            and observation["observation/wrist_image"].shape == (224, 224, 3)
+            and observation["observation/wrist_image"].dtype == np.uint8
+            else (_ for _ in ()).throw(ValueError("bad image shape/dtype")),
+        )
+        check(
+            "state has correct shape and dtype",
+            lambda: "ok"
+            if observation["observation/state"].shape == (7,)
+            and observation["observation/state"].dtype == np.float32
+            else (_ for _ in ()).throw(ValueError("bad state shape/dtype")),
+        )
+        check(
+            "current state is finite",
+            lambda: "ok"
+            if np.isfinite(observation["observation/state"]).all()
+            else (_ for _ in ()).throw(ValueError("state has NaN/Inf")),
+        )
         limits = arm_joint_limits(context.model)
-        check("current state lies inside valid limits", lambda: "ok" if np.all(observation["observation/state"][:6] >= limits[:, 0]) and np.all(observation["observation/state"][:6] <= limits[:, 1]) else (_ for _ in ()).throw(ValueError("state outside limits")))
+        check(
+            "current state lies inside valid limits",
+            lambda: "ok"
+            if np.all(observation["observation/state"][:6] >= limits[:, 0])
+            and np.all(observation["observation/state"][:6] <= limits[:, 1])
+            else (_ for _ in ()).throw(ValueError("state outside limits")),
+        )
     if policy is not None and observation is not None:
         result = check("one inference succeeds", lambda: policy.infer(observation))
         if result is not None:
             rows[-1] = (rows[-1][0], rows[-1][1], "ok")
-            actions = check("action shape is (10, 7)", lambda: validate_policy_actions(np.asarray(result["actions"], dtype=np.float32)))
+            actions = check(
+                "action shape is (10, 7)",
+                lambda: validate_policy_actions(
+                    np.asarray(result["actions"], dtype=np.float32)
+                ),
+            )
             if actions is not None:
                 rows[-1] = (rows[-1][0], rows[-1][1], "ok")
-            check("action values are finite", lambda: "ok" if actions is not None and np.isfinite(actions).all() else (_ for _ in ()).throw(ValueError("actions have NaN/Inf")))
-    check("output directory is writable", lambda: (output_dir.mkdir(parents=True, exist_ok=True), write_json(output_dir / "preflight_write_test.json", {"ok": True}), "ok")[2])
+            check(
+                "action values are finite",
+                lambda: "ok"
+                if actions is not None and np.isfinite(actions).all()
+                else (_ for _ in ()).throw(ValueError("actions have NaN/Inf")),
+            )
+    check(
+        "output directory is writable",
+        lambda: (
+            output_dir.mkdir(parents=True, exist_ok=True),
+            write_json(output_dir / "preflight_write_test.json", {"ok": True}),
+            "ok",
+        )[2],
+    )
 
     print("Preflight")
     print("---------")
@@ -206,9 +268,15 @@ def preflight(
     return all_passed
 
 
-def save_observation_images(output_dir: Path, prefix: str, observation: dict[str, Any]) -> None:
-    Image.fromarray(observation["observation/image"]).save(output_dir / f"{prefix}_base.png")
-    Image.fromarray(observation["observation/wrist_image"]).save(output_dir / f"{prefix}_wrist.png")
+def save_observation_images(
+    output_dir: Path, prefix: str, observation: dict[str, Any]
+) -> None:
+    Image.fromarray(observation["observation/image"]).save(
+        output_dir / f"{prefix}_base.png"
+    )
+    Image.fromarray(observation["observation/wrist_image"]).save(
+        output_dir / f"{prefix}_wrist.png"
+    )
 
 
 def run_episode(
@@ -295,16 +363,22 @@ def run_episode(
                 prompt,
             )
             task_runtime.adjust_observation(observation)
-            Image.fromarray(observation["observation/image"]).save(step_dir / "base.png")
-            Image.fromarray(observation["observation/wrist_image"]).save(step_dir / "wrist.png")
+            Image.fromarray(observation["observation/image"]).save(
+                step_dir / "base.png"
+            )
+            Image.fromarray(observation["observation/wrist_image"]).save(
+                step_dir / "wrist.png"
+            )
 
             infer_start = time.perf_counter()
             try:
                 result = policy.infer(observation)
             except PolicyTimeoutError as exc:
-                current_state = get_robot_state(context.model, context.data, context.config)
+                current_state = get_robot_state(
+                    context.model, context.data, context.config
+                )
                 context.data.ctrl[:6] = current_state[:6]
-                context.data.ctrl[6] = gripper_raw_to_sim(
+                context.data.ctrl[6] = gripper_raw_to_ctrl(
                     float(current_state[6]),
                     context.config,
                 )
@@ -322,7 +396,9 @@ def run_episode(
                 )
                 break
             latency = time.perf_counter() - infer_start
-            actions = validate_policy_actions(np.asarray(result["actions"], dtype=np.float32))
+            actions = validate_policy_actions(
+                np.asarray(result["actions"], dtype=np.float32)
+            )
             model_limits = arm_joint_limits(context.model)
             actuator_limits = arm_actuator_ctrl_limits(context.model)
             canonical_limits = np.column_stack(
@@ -341,9 +417,11 @@ def run_episode(
                 ),
             )
             if not chunk_safety.accepted:
-                current_state = get_robot_state(context.model, context.data, context.config)
+                current_state = get_robot_state(
+                    context.model, context.data, context.config
+                )
                 context.data.ctrl[:6] = current_state[:6]
-                context.data.ctrl[6] = gripper_raw_to_sim(
+                context.data.ctrl[6] = gripper_raw_to_ctrl(
                     float(current_state[6]),
                     context.config,
                 )
@@ -371,15 +449,19 @@ def run_episode(
                     context.config,
                     chunk_safety.actions[action_index],
                     max_joint_step=config.max_joint_step,
+                    control_dt_s=config.control_duration,
                 )
                 executed_targets.append(safe_target)
                 task_runtime.release_if_requested(safe_target.gripper_raw_clamped)
-                physical_gripper_target = task_runtime.physical_gripper_target(
-                    safe_target.gripper_raw_clamped,
-                    safe_target.gripper_sim_target,
+                physical_gripper_raw = task_runtime.physical_gripper_raw_target(
+                    safe_target.gripper_raw_clamped
                 )
-                safe_target.gripper_sim_target = physical_gripper_target
-                safe_target.ctrl_target[6] = physical_gripper_target
+                physical_gripper_ctrl = gripper_raw_to_ctrl(
+                    physical_gripper_raw,
+                    context.config,
+                )
+                safe_target.gripper_ctrl_target = physical_gripper_ctrl
+                safe_target.ctrl_target[6] = physical_gripper_ctrl
                 apply_safe_control_target(context.data, safe_target)
                 sim_steps = max(
                     1,
@@ -404,7 +486,9 @@ def run_episode(
                 "policy_step": step,
                 "observation_state": observation["observation/state"],
                 "base_image": image_diagnostics(observation["observation/image"]),
-                "wrist_image": image_diagnostics(observation["observation/wrist_image"]),
+                "wrist_image": image_diagnostics(
+                    observation["observation/wrist_image"]
+                ),
                 "raw_actions": actions,
                 "chunk_safety": chunk_safety.to_json(),
                 "safe_target": executed_targets[0].to_json(),
@@ -485,12 +569,22 @@ def run_episode(
         if step_records:
             np.savez_compressed(
                 trajectory_path,
-                observation_states=np.asarray([record["observation_state"] for record in step_records], dtype=np.float32),
-                resulting_qpos=np.asarray([record["resulting_qpos"] for record in step_records], dtype=np.float32),
-                raw_actions=np.asarray([record["raw_actions"] for record in step_records], dtype=np.float32),
+                observation_states=np.asarray(
+                    [record["observation_state"] for record in step_records],
+                    dtype=np.float32,
+                ),
+                resulting_qpos=np.asarray(
+                    [record["resulting_qpos"] for record in step_records],
+                    dtype=np.float32,
+                ),
+                raw_actions=np.asarray(
+                    [record["raw_actions"] for record in step_records], dtype=np.float32
+                ),
             )
         else:
-            np.savez_compressed(trajectory_path, observation_states=np.empty((0, 7), dtype=np.float32))
+            np.savez_compressed(
+                trajectory_path, observation_states=np.empty((0, 7), dtype=np.float32)
+            )
 
         wall_time = time.perf_counter() - start_wall
         final_collision = collision_diagnostics(context.model, context.data)
@@ -508,9 +602,13 @@ def run_episode(
             "sim_time": float(context.data.time),
             "wall_time": wall_time,
             "initial_conditions": initial_conditions,
-            "final_state": None if final_state is None else np.asarray(final_state, dtype=np.float32),
+            "final_state": None
+            if final_state is None
+            else np.asarray(final_state, dtype=np.float32),
             "final_qpos": np.asarray(context.data.qpos, dtype=np.float32).copy(),
-            "clipping_count": int(sum(bool(record["safe_target"]["clipped"]) for record in step_records)),
+            "clipping_count": int(
+                sum(bool(record["safe_target"]["clipped"]) for record in step_records)
+            ),
             "clip_messages": [
                 message
                 for record in step_records
@@ -570,4 +668,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-from sim_mujoco.paths import mujoco_output_root

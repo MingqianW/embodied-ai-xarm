@@ -48,7 +48,7 @@ verification:
     minimum_height_above_table_m: 0.04
     # Strict reset diagnostics passed 20/20 retry seeds with 0.55-0.84 mm
     # drift and at least four physical finger contacts per sample.
-    gripper_half_width_m: 0.012
+    gripper_raw: 492.58
     tcp_to_pepper_translation_m: [0.0, 0.0, -0.030]
     tcp_to_pepper_quaternion_wxyz: [1.0, 0.0, 0.0, 0.0]
   place_stable_release:
