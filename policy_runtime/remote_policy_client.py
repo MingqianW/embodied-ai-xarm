@@ -1,8 +1,10 @@
 from __future__ import annotations
 
-import time
 from dataclasses import dataclass
+import time
 from typing import Any
+
+REQUEST_RNG_SEED_KEY = "_openpi_request_rng_seed"
 
 
 class PolicyConnectionError(RuntimeError):
@@ -34,8 +36,8 @@ class RemotePolicyClient:
     receive timeouts that the upstream convenience client does not expose.
     """
 
-    def __init__(self, config: RemotePolicyConfig = RemotePolicyConfig()) -> None:
-        self.config = config
+    def __init__(self, config: RemotePolicyConfig | None = None) -> None:
+        self.config = config or RemotePolicyConfig()
         self._connection: Any | None = None
         self._packer: Any | None = None
         self.server_metadata: dict[str, Any] = {}
@@ -83,13 +85,26 @@ class RemotePolicyClient:
         self._packer = msgpack_numpy.Packer()
         self.server_metadata = dict(metadata) if isinstance(metadata, dict) else {"value": metadata}
 
-    def infer(self, observation: dict[str, Any]) -> dict[str, Any]:
+    def infer(
+        self,
+        observation: dict[str, Any],
+        *,
+        rng_seed: int | None = None,
+    ) -> dict[str, Any]:
         self.connect()
         assert self._connection is not None
         assert self._packer is not None
+        request = dict(observation)
+        if rng_seed is not None:
+            if isinstance(rng_seed, bool) or not 0 <= int(rng_seed) < 2**32:
+                raise ValueError("rng_seed must be an unsigned 32-bit integer")
+            # The OpenPI WebSocket server removes this reserved transport key
+            # before observation transforms, so it can never become a model
+            # input.
+            request[REQUEST_RNG_SEED_KEY] = int(rng_seed)
         started = time.perf_counter()
         try:
-            self._connection.send(self._packer.pack(observation))
+            self._connection.send(self._packer.pack(request))
             response = self._connection.recv(timeout=self.config.inference_timeout_s)
         except TimeoutError as exc:
             self.close()
@@ -119,7 +134,7 @@ class RemotePolicyClient:
             finally:
                 self._connection = None
 
-    def __enter__(self) -> "RemotePolicyClient":
+    def __enter__(self) -> RemotePolicyClient:
         self.connect()
         return self
 

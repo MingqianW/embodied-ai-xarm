@@ -5,6 +5,7 @@ import unittest
 import mujoco
 
 from sim_mujoco.collision import collision_diagnostics
+from sim_mujoco.collision import is_fingertip_pad_geom
 from sim_mujoco.remote_policy_observation import initialize_scene, load_simulation
 from sim_mujoco.task_scenes import configure_task_scene, task_names
 
@@ -17,6 +18,14 @@ def object_id(model: mujoco.MjModel, object_type: mujoco.mjtObj, name: str) -> i
 
 
 class CollisionModelTests(unittest.TestCase):
+    def test_diagnostic_multi_patch_geoms_remain_fingertip_pads(self) -> None:
+        self.assertTrue(is_fingertip_pad_geom("left_fingertip_pad"))
+        self.assertTrue(is_fingertip_pad_geom("left_fingertip_pad_lower"))
+        self.assertTrue(is_fingertip_pad_geom("right_fingertip_pad_upper"))
+        self.assertTrue(is_fingertip_pad_geom("left_finger_pad_1"))
+        self.assertTrue(is_fingertip_pad_geom("right_finger_pad_2"))
+        self.assertFalse(is_fingertip_pad_geom("left_finger_collision"))
+
     def test_every_arm_link_has_enabled_collision_geometry(self) -> None:
         context = load_simulation()
         try:

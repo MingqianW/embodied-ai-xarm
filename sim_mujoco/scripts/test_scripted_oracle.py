@@ -13,18 +13,18 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from policy_runtime.recording import VideoRecorder
-from sim_mujoco.data_collection.oracle_controller import (
+from policy_runtime.recording import VideoRecorder  # noqa: E402
+from sim_mujoco.data_collection.oracle_controller import (  # noqa: E402
     ScriptedOracleController,
     oracle_config_for_task,
 )
-from sim_mujoco.data_collection.task_success import (
+from sim_mujoco.data_collection.task_success import (  # noqa: E402
     accepted_oracle_episode,
     simulation_is_finite,
     update_task_success,
 )
-from sim_mujoco.environment import MuJoCoEnvironment
-from sim_mujoco.paths import mujoco_output_root
+from sim_mujoco.environment import MuJoCoEnvironment  # noqa: E402
+from sim_mujoco.paths import mujoco_output_root  # noqa: E402
 
 
 DEFAULT_OUTPUT = mujoco_output_root() / "scripted_oracle_test"
@@ -90,10 +90,12 @@ def run_one_episode(
             recorder.close()
 
     failure_reason = controller.failure_reason
+    stability = controller.stability_metadata()
     success = accepted_oracle_episode(
         terminal_stage=controller.stage.value,
         task_metrics=task_metrics,
         failure_reason=failure_reason,
+        validation_success=bool(stability.get("stable_grasp_success")),
     )
     result = {
         "seed": seed,
@@ -108,6 +110,7 @@ def run_one_episode(
         "transitions": controller.transition_log(),
         "plan": controller.plan.to_json(),
         "oracle_config": asdict(controller.config),
+        "stable_grasp": stability,
     }
     if recorder is not None:
         result["video"] = recorder.metadata()
@@ -124,6 +127,7 @@ def main() -> None:
     parser.add_argument("--task", default="red_block")
     parser.add_argument("--episodes", type=int, default=10)
     parser.add_argument("--seed-start", type=int, default=0)
+    parser.add_argument("--seed-stride", type=int, default=1)
     parser.add_argument("--object-xy-range", type=float, default=0.0)
     parser.add_argument("--object-yaw-range-deg", type=float, default=0.0)
     parser.add_argument("--joint-noise", type=float, default=0.0)
@@ -145,7 +149,7 @@ def main() -> None:
         joint_noise=args.joint_noise,
     ) as environment:
         for episode_offset in range(args.episodes):
-            seed = args.seed_start + episode_offset
+            seed = args.seed_start + episode_offset * args.seed_stride
             episode_dir = (
                 args.output_dir / f"episode_{episode_offset:06d}_seed_{seed}"
             )
@@ -176,6 +180,7 @@ def main() -> None:
         "failures": args.episodes - successes,
         "success_rate": successes / args.episodes,
         "seed_start": args.seed_start,
+        "seed_stride": args.seed_stride,
         "object_xy_range": args.object_xy_range,
         "object_yaw_range_deg": args.object_yaw_range_deg,
         "joint_noise": args.joint_noise,

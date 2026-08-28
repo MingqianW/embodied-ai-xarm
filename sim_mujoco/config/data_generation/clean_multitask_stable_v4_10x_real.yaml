@@ -1,0 +1,155 @@
+# Strict 10x-real clean simulation plan.
+# Real dataset: local/xarm_pi05_20260703, 198 accepted episodes.
+# Simulation target: 1980 accepted episodes.
+# Physics, cameras, prompts, and validation inherit the validated v3 pipeline.
+schema_version: 1
+dataset_version: xarm_mujoco_clean_multitask_stable_v4_10x_real
+output_schema_version: xarm_real_raw_compatible_sim_v2
+overwrite_existing_outputs: false
+camera_config: sim_mujoco/config/camera_calibration.yaml
+task_scene_config: sim_mujoco/config/task_scenes.yaml
+outputs:
+  raw: /work/nvme/bfmk/mw89/mujoco_datasets/raw/xarm_mujoco_clean_multitask_stable_v4_10x_real
+  converted: /work/nvme/bfmk/mw89/mujoco_datasets/local/xarm_mujoco_clean_multitask_stable_v4_10x_real
+  smoke: /work/nvme/bfmk/mw89/mujoco_datasets/smoke/xarm_mujoco_clean_multitask_stable_v4_10x_real
+  log: /work/nvme/bfmk/mw89/logs/xarm_mujoco_clean_multitask_stable_v4_10x_real
+collection:
+  action_hz: 10
+  object_xy_range_m: 0.02
+  object_yaw_range_deg: 10.0
+  joint_noise_rad: 0.005
+  max_attempts_per_episode: 20
+  seed_retry_stride: 1000
+  scene_variant: clean
+  distractor_count: 0
+recording:
+  record_all_smoke_videos: true
+  representative_video_every: 250
+  native_image_size:
+  - 480
+  - 640
+  - 3
+  base_camera: base_camera
+  wrist_camera: wrist_camera
+  overview_camera: overview_camera
+verification:
+  pick_stable_grasp:
+    entry_lift_height_m: 0.05
+    minimum_lift_height_m: 0.04
+    maximum_relative_downward_slip_m: 0.01
+    maximum_final_relative_downward_slip_m: 0.01
+    maximum_final_downward_speed_mps: 0.01
+    maximum_grasp_region_delta_m: 0.015
+    steps: 20
+    action_dt_s: 0.1
+    velocity_fit_samples: 10
+  place_initial_grasp:
+    steps: 10
+    action_dt_s: 0.1
+    maximum_relative_drift_m: 0.005
+    maximum_grasp_region_delta_m: 0.015
+    minimum_height_above_table_m: 0.04
+    gripper_raw: 492.58
+    tcp_to_pepper_translation_m:
+    - 0.0
+    - 0.0
+    - -0.03
+    tcp_to_pepper_quaternion_wxyz:
+    - 1.0
+    - 0.0
+    - 0.0
+    - 0.0
+  place_stable_release:
+    steps: 20
+    action_dt_s: 0.1
+    ring_radius_m: 0.052
+    maximum_height_above_table_m: 0.09
+    maximum_final_speed_mps: 0.01
+    velocity_fit_samples: 10
+tasks:
+  red_pepper:
+    prompt: pick up the red pepper
+    aliases:
+    - pick_up_the_red_pepper
+    - red pepper
+    episodes: 500
+    clean_episodes: 500
+    distractor_episodes: 0
+    base_seed: 10100000
+    required_active_objects:
+    - red_pepper
+    oracle:
+      closed_gripper_raw: 250.0
+      grasp_tcp_offset_from_object_m: -0.022
+  blue_block:
+    prompt: pick up the blue block
+    aliases:
+    - pick_up_the_blue_block
+    - pick up the light blue block
+    - blue block
+    episodes: 240
+    clean_episodes: 240
+    distractor_episodes: 0
+    base_seed: 10200000
+    required_active_objects:
+    - blue_block
+    oracle:
+      closed_gripper_raw: 211.0
+      grasp_tcp_offset_from_object_m: -0.011
+  red_block:
+    prompt: pick up the red block
+    aliases:
+    - pick_up_the_red_block
+    - red block
+    episodes: 250
+    clean_episodes: 250
+    distractor_episodes: 0
+    base_seed: 10300000
+    required_active_objects:
+    - object
+    oracle:
+      closed_gripper_raw: 200.0
+      grasp_tcp_offset_from_object_m: -0.011
+  smallest_block:
+    prompt: pick up the smallest block
+    aliases:
+    - pick_up_the_smallest_block
+    - smallest block
+    - smallest
+    episodes: 240
+    clean_episodes: 240
+    distractor_episodes: 0
+    base_seed: 10400000
+    required_active_objects:
+    - small_block
+    - large_block
+    oracle:
+      closed_gripper_raw: 200.0
+      grasp_tcp_offset_from_object_m: -0.011
+  largest_block:
+    prompt: pick up the largest block
+    aliases:
+    - pick_up_the_largest_block
+    - largest block
+    - largest
+    episodes: 250
+    clean_episodes: 250
+    distractor_episodes: 0
+    base_seed: 10500000
+    required_active_objects:
+    - small_block
+    - large_block
+    oracle:
+      closed_gripper_raw: 211.0
+      grasp_tcp_offset_from_object_m: -0.011
+  place_red_pepper_in_ring:
+    prompt: place the red pepper in the ring
+    aliases:
+    - place_the_red_pepper_in_the_ring
+    episodes: 500
+    clean_episodes: 500
+    distractor_episodes: 0
+    base_seed: 10600000
+    required_active_objects:
+    - held_red_pepper
+    - ring

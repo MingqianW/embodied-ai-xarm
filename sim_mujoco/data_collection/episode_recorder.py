@@ -198,7 +198,7 @@ class EpisodeRecorder:
         runtime = environment.task_runtime
         if runtime is None:
             raise RuntimeError("Reset the environment before starting a recorder")
-        self._initial_object_pose = self._body_pose(runtime.target_body)
+        self._initial_object_pose = self._body_pose(runtime.active_target_body)
         self._initial_robot_state = policy_state_from_mujoco(
             environment.context.model,
             environment.context.data,
@@ -294,7 +294,7 @@ class EpisodeRecorder:
         Image.fromarray(base_policy).save(self.output_dir / policy_image_rel)
         Image.fromarray(wrist_policy).save(self.output_dir / policy_wrist_rel)
 
-        target_pose = self._body_pose(runtime.target_body)
+        target_pose = self._body_pose(runtime.active_target_body)
         tcp_pose = self._tcp_pose()
         contacts = collision_diagnostics(model, data)
         record = {

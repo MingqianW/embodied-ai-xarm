@@ -1,0 +1,8 @@
+{
+  "model_id": "B",
+  "training_config": "pi05_xarm_real1_sim10_stratified",
+  "checkpoint_root": "/work/nvme/bfmk/mw89/openpi_checkpoints/pi05_xarm/xarm_pi05_base_real1_sim10_stratified_15001_v1",
+  "manager_step": 15000,
+  "norm_asset_id": "xarm_pi05_real_v4sim_10x",
+  "description": "π0.5 base, real plus stable-v4 simulation, exact 1:10 sample-level schedule"
+}

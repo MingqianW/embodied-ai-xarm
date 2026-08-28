@@ -51,6 +51,8 @@ class JointMappingTests(unittest.TestCase):
             / "episode_000"
             / "robot_log.csv"
         )
+        if not log_path.is_file():
+            self.skipTest(f"optional real-data fixture is unavailable: {log_path}")
         with log_path.open("r", encoding="utf-8-sig", newline="") as stream:
             row = next(csv.DictReader(stream))
         raw = np.asarray([float(row[f"j{i}_rad"]) for i in range(1, 7)])

@@ -10,14 +10,18 @@ import numpy as np
 import yaml
 
 from sim_mujoco.joint_mapping import raw_arm_state_to_mujoco_qpos
+from sim_mujoco.gripper_mapping import (
+    is_menagerie_gripper,
+    raw_gripper_to_sim_slide,
+    set_gripper_configuration,
+    sim_slide_to_raw_gripper,
+)
 from sim_mujoco.paths import task_config_path
 from sim_mujoco.remote_policy_observation import (
     ARM_JOINT_NAMES,
     DEFAULT_CAMERA_CONFIG_PATH,
     arm_joint_limits,
-    gripper_raw_to_sim,
-    GRIPPER_LEFT_JOINT,
-    GRIPPER_RIGHT_JOINT,
+    gripper_raw_to_ctrl,
 )
 
 
@@ -43,7 +47,9 @@ def task_names(path: Path = TASK_CONFIG_PATH) -> tuple[str, ...]:
     return tuple(load_task_scene_config(path)["tasks"])
 
 
-def resolve_task(task: str, path: Path = TASK_CONFIG_PATH) -> tuple[str, dict[str, Any]]:
+def resolve_task(
+    task: str, path: Path = TASK_CONFIG_PATH
+) -> tuple[str, dict[str, Any]]:
     config = load_task_scene_config(path)
     requested = _normalized_name(task)
     for task_name, spec in config["tasks"].items():
@@ -79,7 +85,11 @@ def _freejoint_dof_address(model: mujoco.MjModel, body_name: str) -> int:
     return int(model.jnt_dofadr[_freejoint_id(model, body_name)])
 
 
-def _set_body_enabled(model: mujoco.MjModel, body_name: str, enabled: bool) -> None:
+def _set_body_enabled(
+    model: mujoco.MjModel,
+    body_name: str,
+    enabled: bool,
+) -> None:
     body_id = _body_id(model, body_name)
     geom_ids = np.flatnonzero(model.geom_bodyid == body_id)
     alpha = 1.0 if enabled else 0.0
@@ -126,9 +136,7 @@ def body_camera_visibility(
     aspect = float(render_config["native_width"]) / float(
         render_config["native_height"]
     )
-    half_height = depth * math.tan(
-        math.radians(float(model.cam_fovy[camera_id])) / 2.0
-    )
+    half_height = depth * math.tan(math.radians(float(model.cam_fovy[camera_id])) / 2.0)
     half_width = aspect * half_height
     normalized_x = (
         float(camera_position[0] / half_width) if half_width > 0.0 else math.inf
@@ -161,6 +169,7 @@ class TaskSceneRuntime:
     released: bool = False
     success_streak: int = 0
     initial_target_z: float = 0.0
+    release_simulation_time_s: float | None = None
 
     @property
     def prompt(self) -> str:
@@ -170,11 +179,19 @@ class TaskSceneRuntime:
     def target_body(self) -> str:
         return str(self.spec["target_body"])
 
-    def _target_pose(self) -> np.ndarray:
-        body_name = self.target_body
+    @property
+    def active_target_body(self) -> str:
+        """Return the physical object representing the task target right now."""
+
         if self.spec["success"]["type"] == "place_in_ring" and not self.released:
-            body_name = "held_red_pepper"
-        return np.asarray(self.data.xpos[_body_id(self.model, body_name)], dtype=np.float64)
+            return "held_red_pepper"
+        return self.target_body
+
+    def _target_pose(self) -> np.ndarray:
+        return np.asarray(
+            self.data.xpos[_body_id(self.model, self.active_target_body)],
+            dtype=np.float64,
+        )
 
     def adjust_observation(self, observation: dict[str, Any]) -> None:
         if (
@@ -186,28 +203,57 @@ class TaskSceneRuntime:
                 self.spec["initial_gripper_raw"]
             )
 
+    def physical_gripper_raw_target(self, gripper_raw_target: float) -> float:
+        if self.spec["success"]["type"] != "place_in_ring":
+            return float(gripper_raw_target)
+        held_raw = float(self.spec["initial_gripper_raw"])
+        if not self.released:
+            return held_raw
+        if float(gripper_raw_target) >= float(self.spec["release_gripper_raw"]):
+            return max(
+                float(gripper_raw_target),
+                float(self.spec.get("release_min_gripper_raw", held_raw)),
+            )
+        return float(gripper_raw_target)
+
     def physical_gripper_target(
         self,
         gripper_raw_target: float,
         default_sim_target: float,
+        gripper_config: dict[str, Any],
     ) -> float:
+        """Legacy slide target used only by frozen runtime diagnostics."""
+
         if self.spec["success"]["type"] != "place_in_ring":
             return float(default_sim_target)
-        held_opening = float(
-            self.spec.get("initial_gripper_sim_half_width", default_sim_target)
+        mapping = gripper_config.get("gripper_mapping", {})
+        canonical_four_bar = "sim_joint_min_rad" in mapping
+        held = (
+            raw_gripper_to_sim_slide(float(self.spec["initial_gripper_raw"]), gripper_config)
+            if canonical_four_bar
+            else float(self.spec.get("initial_gripper_sim_half_width", 0.012))
         )
         if not self.released:
-            return held_opening
+            return held
         if float(gripper_raw_target) >= float(self.spec["release_gripper_raw"]):
             return max(
                 float(default_sim_target),
-                float(self.spec.get("release_min_sim_half_width", held_opening)),
+                float(
+                    self.spec.get(
+                        "release_min_sim_half_width",
+                        raw_gripper_to_sim_slide(652.0, gripper_config),
+                    )
+                ),
             )
         return float(default_sim_target)
 
     def release_if_requested(self, gripper_raw_target: float) -> bool:
         threshold = self.spec.get("release_gripper_raw")
-        if threshold is None or self.released or float(gripper_raw_target) < float(threshold):
+        if (
+            threshold is None
+            or self.released
+            or float(gripper_raw_target) < float(threshold)
+        ):
             return False
 
         held_body_id = _body_id(self.model, "held_red_pepper")
@@ -219,6 +265,7 @@ class TaskSceneRuntime:
         _set_body_enabled(self.model, "held_red_pepper", False)
         _set_body_enabled(self.model, "red_pepper", True)
         self.released = True
+        self.release_simulation_time_s = float(self.data.time)
         mujoco.mj_forward(self.model, self.data)
         return True
 
@@ -232,17 +279,22 @@ class TaskSceneRuntime:
             "target_body": self.target_body,
             "target_position": target_position.tolist(),
             "released": self.released,
+            "release_simulation_time_s": self.release_simulation_time_s,
         }
         if success_type == "lift":
             lift_height = float(target_position[2] - self.initial_target_z)
             metrics["lift_height_m"] = lift_height
-            metrics["instant_success"] = lift_height >= float(success_config["lift_height_m"])
+            metrics["instant_success"] = lift_height >= float(
+                success_config["lift_height_m"]
+            )
         elif success_type == "place_in_ring":
             ring_position = np.asarray(
                 self.data.xpos[_body_id(self.model, str(success_config["ring_body"]))],
                 dtype=np.float64,
             )
-            ring_distance = float(np.linalg.norm(target_position[:2] - ring_position[:2]))
+            ring_distance = float(
+                np.linalg.norm(target_position[:2] - ring_position[:2])
+            )
             metrics["ring_position"] = ring_position.tolist()
             metrics["ring_xy_distance_m"] = ring_distance
             metrics["height_above_table_m"] = float(target_position[2] - TABLE_TOP_Z)
@@ -288,6 +340,7 @@ def configure_task_scene(
     scene_variant: str = "clean",
     settle_steps: int = 500,
     config_path: Path = TASK_CONFIG_PATH,
+    gripper_config: dict[str, Any] | None = None,
 ) -> tuple[TaskSceneRuntime, dict[str, Any]]:
     config = load_task_scene_config(config_path)
     task_name, spec = resolve_task(task, config_path)
@@ -324,8 +377,10 @@ def configure_task_scene(
         slots = [
             np.asarray(
                 data.qpos[
-                    _freejoint_qpos_address(model, body_name) :
-                    _freejoint_qpos_address(model, body_name) + 2
+                    _freejoint_qpos_address(model, body_name) : _freejoint_qpos_address(
+                        model, body_name
+                    )
+                    + 2
                 ],
                 dtype=np.float64,
             ).copy()
@@ -353,9 +408,7 @@ def configure_task_scene(
                 dtype=np.float64,
             )
             if slot_xy.shape != (2,):
-                raise ValueError(
-                    f"Distractor slot must have two values, got {slot_xy}"
-                )
+                raise ValueError(f"Distractor slot must have two values, got {slot_xy}")
             data.qpos[qpos_addr : qpos_addr + 2] = slot_xy
     for body_name in fixed_bodies:
         if body_name not in poses:
@@ -366,7 +419,11 @@ def configure_task_scene(
         )
 
     for body_name in (*free_bodies, *fixed_bodies):
-        _set_body_enabled(model, body_name, body_name in active_bodies)
+        _set_body_enabled(
+            model,
+            body_name,
+            body_name in active_bodies,
+        )
     for body_name in free_bodies:
         if body_name not in active_bodies:
             qpos_addr = _freejoint_qpos_address(model, body_name)
@@ -382,26 +439,32 @@ def configure_task_scene(
             data.qpos[int(model.jnt_qposadr[joint_id])] = initial_arm[index]
             data.ctrl[index] = initial_arm[index]
         gripper_raw = float(spec.get("initial_gripper_raw", 845.0))
-        gripper_sim = float(
-            spec.get(
-                "initial_gripper_sim_half_width",
-                gripper_raw_to_sim(gripper_raw, load_gripper_config()),
-            )
-        )
-        for joint_name in (GRIPPER_LEFT_JOINT, GRIPPER_RIGHT_JOINT):
-            joint_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, joint_name)
-            data.qpos[int(model.jnt_qposadr[joint_id])] = gripper_sim
-        data.ctrl[6] = gripper_sim
+        effective_gripper_config = gripper_config or load_gripper_config()
+        if (
+            not is_menagerie_gripper(model)
+            and spec["success"]["type"] == "place_in_ring"
+        ):
+            slide = float(spec.get("initial_gripper_sim_half_width", 0.012))
+            gripper_raw = sim_slide_to_raw_gripper(slide, effective_gripper_config)
+        set_gripper_configuration(model, data, gripper_raw, effective_gripper_config)
+        data.ctrl[6] = gripper_raw_to_ctrl(gripper_raw, effective_gripper_config)
 
+    initial_tcp_to_object = spec.get("initial_tcp_to_object")
     scene_delta = np.zeros(2, dtype=np.float64)
     if seed is not None:
-        scene_delta = rng.uniform(-float(object_xy_range), float(object_xy_range), size=2)
+        scene_delta = rng.uniform(
+            -float(object_xy_range), float(object_xy_range), size=2
+        )
     yaw_values: dict[str, float] = {}
     for body_name in spec.get("randomizable_bodies") or ():
         yaw = 0.0
         if seed is not None:
             yaw = math.radians(
-                float(rng.uniform(-float(object_yaw_range_deg), float(object_yaw_range_deg)))
+                float(
+                    rng.uniform(
+                        -float(object_yaw_range_deg), float(object_yaw_range_deg)
+                    )
+                )
             )
         yaw_values[body_name] = yaw
         if body_name in free_bodies:
@@ -426,6 +489,47 @@ def configure_task_scene(
         joint_values.append(clamped)
 
     mujoco.mj_forward(model, data)
+    # Apply the one-time free-body initialization only after the randomized arm
+    # pose is final.  This implements T_world_object = T_world_tcp @
+    # T_tcp_object and avoids arm noise introducing an unrecorded pose jump.
+    if initial_tcp_to_object is not None:
+        if task_name != "place_red_pepper_in_ring":
+            raise ValueError("initial_tcp_to_object is supported only for Place")
+        if spec.get("object_identity") != runtime.target_body:
+            raise ValueError("Place object identity must equal target_body")
+        translation = np.asarray(
+            initial_tcp_to_object.get("translation_m"), dtype=np.float64
+        )
+        quaternion = np.asarray(
+            initial_tcp_to_object.get("quaternion_wxyz"), dtype=np.float64
+        )
+        if translation.shape != (3,) or quaternion.shape != (4,):
+            raise ValueError("Invalid initial TCP-to-object transform")
+        quaternion_norm = float(np.linalg.norm(quaternion))
+        if not np.isfinite(quaternion_norm) or quaternion_norm <= 0.0:
+            raise ValueError(
+                "Initial TCP-to-object quaternion must be finite and nonzero"
+            )
+        quaternion = quaternion / quaternion_norm
+        site_id = mujoco.mj_name2id(
+            model, mujoco.mjtObj.mjOBJ_SITE, "tool_center_point"
+        )
+        tcp_position = np.asarray(data.site_xpos[site_id], dtype=np.float64)
+        tcp_rotation = np.asarray(data.site_xmat[site_id], dtype=np.float64).reshape(
+            3, 3
+        )
+        relative_rotation = np.empty(9, dtype=np.float64)
+        mujoco.mju_quat2Mat(relative_rotation, quaternion)
+        world_rotation = tcp_rotation @ relative_rotation.reshape(3, 3)
+        world_quaternion = np.empty(4, dtype=np.float64)
+        mujoco.mju_mat2Quat(world_quaternion, world_rotation.reshape(-1))
+        qpos_addr = _freejoint_qpos_address(model, runtime.target_body)
+        dof_addr = _freejoint_dof_address(model, runtime.target_body)
+        data.qpos[qpos_addr : qpos_addr + 3] = tcp_position + tcp_rotation @ translation
+        data.qpos[qpos_addr + 3 : qpos_addr + 7] = world_quaternion
+        data.qvel[dof_addr : dof_addr + 6] = 0.0
+        mujoco.mj_forward(model, data)
+
     for _ in range(int(settle_steps)):
         mujoco.mj_step(model, data)
 
@@ -446,7 +550,9 @@ def configure_task_scene(
 
     runtime.initial_target_z = float(runtime._target_pose()[2])
     active_positions = {
-        body_name: np.asarray(data.xpos[_body_id(model, body_name)], dtype=np.float64).tolist()
+        body_name: np.asarray(
+            data.xpos[_body_id(model, body_name)], dtype=np.float64
+        ).tolist()
         for body_name in active_bodies
     }
     initial_conditions = {
@@ -463,6 +569,8 @@ def configure_task_scene(
         "initial_joint_positions": joint_values,
         "wrist_visibility": wrist_visibility,
         "initial_target_z": runtime.initial_target_z,
+        "object_identity": spec.get("object_identity", runtime.target_body),
+        "initial_tcp_to_object": initial_tcp_to_object,
     }
     target_position = runtime._target_pose()
     initial_conditions.update(

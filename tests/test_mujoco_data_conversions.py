@@ -12,10 +12,11 @@ from sim_mujoco.data_collection.conversions import (
     policy_action_from_mujoco_target,
     policy_state_from_mujoco,
 )
+from sim_mujoco.gripper_mapping import set_gripper_configuration
 from sim_mujoco.remote_policy_observation import (
     DEFAULT_MODEL_PATH,
-    GRIPPER_LEFT_JOINT,
     initialize_scene,
+    load_camera_config,
 )
 
 
@@ -39,8 +40,8 @@ class MuJoCoDataConversionTests(unittest.TestCase):
 
     def test_gripper_forward_inverse_round_trip(self) -> None:
         for raw in np.linspace(50.0, 845.0, 33):
-            slide = mujoco_gripper_target_from_raw(float(raw))
-            target = np.asarray([0, 0, 0, 0, 0, 0, slide], dtype=np.float64)
+            ctrl = mujoco_gripper_target_from_raw(float(raw))
+            target = np.asarray([0, 0, 0, 0, 0, 0, ctrl], dtype=np.float64)
             recovered = policy_action_from_mujoco_target(target)
             self.assertAlmostEqual(float(recovered[6]), float(raw), places=3)
 
@@ -53,14 +54,12 @@ class MuJoCoDataConversionTests(unittest.TestCase):
         recovered = policy_action_from_mujoco_target(target)
         np.testing.assert_allclose(recovered, action, rtol=0.0, atol=2e-5)
 
-    def test_gripper_state_reads_the_left_driver_joint(self) -> None:
-        left_joint = mujoco.mj_name2id(
+    def test_gripper_state_reads_mean_driver_configuration(self) -> None:
+        set_gripper_configuration(
             self.model,
-            mujoco.mjtObj.mjOBJ_JOINT,
-            GRIPPER_LEFT_JOINT,
-        )
-        self.data.qpos[self.model.jnt_qposadr[left_joint]] = (
-            mujoco_gripper_target_from_raw(300.0)
+            self.data,
+            300.0,
+            load_camera_config(),
         )
         mujoco.mj_forward(self.model, self.data)
         self.assertAlmostEqual(
@@ -68,6 +67,9 @@ class MuJoCoDataConversionTests(unittest.TestCase):
             300.0,
             places=3,
         )
+
+    def test_gripper_target_uses_local_driver_angle(self) -> None:
+        self.assertAlmostEqual(mujoco_gripper_target_from_raw(300.0), 0.55)
 
     def test_conversion_rejects_wrong_shape_and_non_finite_values(self) -> None:
         with self.assertRaises(ValueError):

@@ -64,8 +64,7 @@ class TaskSceneRuntimeTests(unittest.TestCase):
                 self.assertTrue(np.isfinite(runtime.metrics()["target_position"]).all())
                 self.assertTrue(
                     all(
-                        item["visible"]
-                        for item in initial["wrist_visibility"].values()
+                        item["visible"] for item in initial["wrist_visibility"].values()
                     )
                 )
             finally:
@@ -117,14 +116,16 @@ class TaskSceneRuntimeTests(unittest.TestCase):
             context_a.close()
             context_b.close()
 
-    def test_place_task_transfers_pepper_on_open_command(self) -> None:
+    def test_place_task_swaps_local_held_pepper_on_release(self) -> None:
         context, runtime, _ = self.make_scene("place_red_pepper_in_ring")
         try:
             self.assertFalse(runtime.released)
+            self.assertEqual(runtime.target_body, "red_pepper")
             self.assertAlmostEqual(
-                runtime.physical_gripper_target(440.0, 0.0196),
-                0.0273,
+                runtime.physical_gripper_raw_target(440.0),
+                492.58,
             )
+            self.assertEqual(runtime.active_target_body, "held_red_pepper")
             observation = {
                 "observation/state": np.asarray(
                     [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 845.0],
@@ -133,23 +134,93 @@ class TaskSceneRuntimeTests(unittest.TestCase):
             }
             runtime.adjust_observation(observation)
             self.assertAlmostEqual(
-                float(observation["observation/state"][6]),
-                float(runtime.spec["initial_gripper_raw"]),
-                places=3,
+                float(observation["observation/state"][6]), 492.58, places=3
             )
-            self.assertFalse(runtime.release_if_requested(600.0))
-            self.assertTrue(runtime.release_if_requested(700.0))
-            self.assertTrue(runtime.released)
-            self.assertAlmostEqual(
-                runtime.physical_gripper_target(700.0, 0.0327),
-                0.038,
+            held_id = mujoco.mj_name2id(
+                context.model,
+                mujoco.mjtObj.mjOBJ_BODY,
+                "held_red_pepper",
             )
             pepper_id = mujoco.mj_name2id(
                 context.model,
                 mujoco.mjtObj.mjOBJ_BODY,
                 "red_pepper",
             )
+            pepper_joint = int(context.model.body_jntadr[pepper_id])
+            self.assertEqual(
+                int(context.model.jnt_type[pepper_joint]),
+                int(mujoco.mjtJoint.mjJNT_FREE),
+            )
+            self.assertLess(
+                mujoco.mj_name2id(
+                    context.model,
+                    mujoco.mjtObj.mjOBJ_GEOM,
+                    "red_pepper_grasp_collision",
+                ),
+                0,
+            )
+            held_lobe = mujoco.mj_name2id(
+                context.model,
+                mujoco.mjtObj.mjOBJ_GEOM,
+                "held_pepper_lobe_0",
+            )
+            self.assertEqual(int(context.model.geom_bodyid[held_lobe]), held_id)
+            self.assertEqual(int(context.model.geom_contype[held_lobe]), 1)
+            for hidden_name in ("red_pepper_lobe_0", "red_pepper_stem"):
+                hidden_geom = mujoco.mj_name2id(
+                    context.model,
+                    mujoco.mjtObj.mjOBJ_GEOM,
+                    hidden_name,
+                )
+                self.assertEqual(int(context.model.geom_contype[hidden_geom]), 0)
+                self.assertEqual(int(context.model.geom_conaffinity[hidden_geom]), 0)
+            equality_names = {
+                mujoco.mj_id2name(context.model, mujoco.mjtObj.mjOBJ_EQUALITY, index)
+                for index in range(context.model.neq)
+            }
+            self.assertNotIn(
+                "red_pepper",
+                " ".join(name or "" for name in equality_names),
+            )
+            position_before_release = context.data.xpos[held_id].copy()
+            self.assertFalse(runtime.release_if_requested(600.0))
+            self.assertTrue(runtime.release_if_requested(700.0))
+            self.assertTrue(runtime.released)
+            np.testing.assert_allclose(
+                context.data.xpos[pepper_id], position_before_release, atol=1e-12
+            )
+            self.assertEqual(runtime.active_target_body, "red_pepper")
+            self.assertIsNotNone(runtime.release_simulation_time_s)
+            self.assertAlmostEqual(
+                runtime.physical_gripper_raw_target(700.0),
+                700.0,
+            )
             self.assertGreater(float(context.data.xpos[pepper_id, 2]), 0.05)
+        finally:
+            context.close()
+
+    def test_pick_pepper_uses_local_compound_geometry(self) -> None:
+        context, runtime, _ = self.make_scene("red_pepper")
+        try:
+            for geom_name in (
+                "red_pepper_lobe_0",
+                "red_pepper_stem",
+            ):
+                geom_id = mujoco.mj_name2id(
+                    context.model,
+                    mujoco.mjtObj.mjOBJ_GEOM,
+                    geom_name,
+                )
+                self.assertEqual(int(context.model.geom_contype[geom_id]), 1)
+                self.assertEqual(int(context.model.geom_conaffinity[geom_id]), 1)
+            self.assertLess(
+                mujoco.mj_name2id(
+                    context.model,
+                    mujoco.mjtObj.mjOBJ_GEOM,
+                    "red_pepper_grasp_collision",
+                ),
+                0,
+            )
         finally:
             context.close()
 

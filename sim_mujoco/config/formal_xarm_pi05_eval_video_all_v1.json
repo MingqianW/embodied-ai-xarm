@@ -1,0 +1,89 @@
+{
+  "protocol_version": "xarm-pi05-formal-evaluation-v1",
+  "tasks": [
+    {
+      "task_id": "red_pepper",
+      "prompt": "pick up the red pepper"
+    },
+    {
+      "task_id": "blue_block",
+      "prompt": "pick up the blue block"
+    },
+    {
+      "task_id": "red_block",
+      "prompt": "pick up the red block"
+    },
+    {
+      "task_id": "smallest_block",
+      "prompt": "pick up the smallest block"
+    },
+    {
+      "task_id": "largest_block",
+      "prompt": "pick up the largest block"
+    },
+    {
+      "task_id": "place_red_pepper_in_ring",
+      "prompt": "place the red pepper in the ring"
+    }
+  ],
+  "seeds": {
+    "start": 50000,
+    "count": 20
+  },
+  "control": {
+    "execute_chunk_steps": 5,
+    "policy_action_horizon": 10,
+    "max_policy_steps": 50,
+    "control_duration_s": 0.1,
+    "expected_physics_timestep_s": 0.002
+  },
+  "environment": {
+    "object_xy_range_m": 0.03,
+    "object_yaw_range_deg": 15.0,
+    "joint_noise_rad": 0.01
+  },
+  "paths": {
+    "camera_config": "/u/mw89/repos/embodied-ai-xarm/sim_mujoco/config/camera_calibration.yaml",
+    "task_scene_config": "/u/mw89/repos/embodied-ai-xarm/sim_mujoco/config/task_scenes.yaml",
+    "robot_xml": "/u/mw89/repos/embodied-ai-xarm/sim_mujoco/assets/xarm6/xarm6_pick_scene.xml"
+  },
+  "outputs": {
+    "formal_output_root": "/work/nvme/bfmk/mw89/mujoco_outputs/policy_evaluation/pi05_abc_15000_six_task_all_videos_v1"
+  },
+  "video": {
+    "video_policy": "all",
+    "representatives_per_category": 1,
+    "periodic_every_n_episodes": 1
+  },
+  "invalid_episode_behavior": {
+    "fail_on_invalid": true
+  },
+  "policy_rng": {
+    "scheme": "blake2s-request-scoped-v1",
+    "salt": "xarm-pi05-formal-evaluation-v1"
+  },
+  "pick_success": {
+    "lift_height_m": 0.05,
+    "meaningful_lift_diagnostic_m": 0.005,
+    "sustained_policy_checks": 3
+  },
+  "placement_reset_validation": {
+    "checks": 10,
+    "check_interval_s": 0.1,
+    "max_relative_drift_m": 0.005,
+    "min_height_above_table_m": 0.04,
+    "min_gripper_contacts": 1
+  },
+  "placement_success": {
+    "ring_inner_radius_m": 0.053,
+    "pepper_effective_radius_m": 0.022,
+    "containment_tolerance_m": 0.002,
+    "min_height_above_table_m": 0.005,
+    "max_height_above_table_m": 0.04,
+    "max_linear_speed_mps": 0.01,
+    "max_angular_speed_radps": 0.25,
+    "min_gripper_distance_m": 0.045,
+    "release_gripper_raw": 650.0,
+    "sustained_policy_checks": 3
+  }
+}

@@ -122,12 +122,17 @@ def _open_dataset(
     _, LeRobotDataset = _lerobot_imports()
     needs_image_writer_start = False
     if output_path.exists() and overwrite:
-        if any(output_path.iterdir()) and not (
+        entries = tuple(output_path.iterdir())
+        safety_marker_only = (
+            len(entries) == 1 and entries[0].name == "OVERWRITE_MARKER.json"
+        )
+        if entries and not safety_marker_only and not (
             output_path / "meta" / "info.json"
         ).is_file():
             raise ValueError(
                 "Refusing --overwrite because the target is a non-empty "
-                f"directory without a LeRobot meta/info.json marker: {output_path}"
+                "directory without a LeRobot meta/info.json or exact-root "
+                f"OVERWRITE_MARKER.json marker: {output_path}"
             )
         shutil.rmtree(output_path)
     if output_path.exists():

@@ -1,0 +1,8 @@
+STATUS=COMPLETED
+JOB_IDS=2771521,2771952,2773385,2773386,2773387
+CURRENT_STATUS=Pipeline completed successfully
+LATEST_STEP=50000
+CHECKPOINT_PATH=/work/nvme/bfmk/mw89/openpi_checkpoints/pi05_xarm/xarm_pi05_real50_sim50_ep198_continue_30000_to_50000_v1/50000
+LOG_PATHS=/work/nvme/bfmk/mw89/logs/openpi_real_sim_50_50/slurm/pi05-rs50-<job-id>.{out,err}
+MONITORING_COMMANDS=bash /u/mw89/repos/openpi/slurm/monitor_pi05_xarm_real_sim_50_50.sh
+CONTINUATION_COMMANDS=bash /u/mw89/repos/openpi/slurm/submit_pi05_xarm_real_sim_50_50_after_preflight.sh

@@ -77,10 +77,11 @@ class ScriptedOracleTests(unittest.TestCase):
             previous = action[:6].copy()
             controller.action_steps += 1
 
-    def test_fixed_episode_lifts_object(self) -> None:
+    def test_full_verification_window_controls_acceptance(self) -> None:
         self.environment.reset(seed=3)
         controller = ScriptedOracleController(self.environment)
         metrics = self.environment.task_runtime.metrics()
+        maximum_success_streak = 0
         while not controller.terminal:
             action = controller.next_action()
             if action is None:
@@ -88,6 +89,9 @@ class ScriptedOracleTests(unittest.TestCase):
             self.environment.apply_action(action)
             self.environment.step_physics(controller.config.action_dt_s)
             metrics = update_task_success(self.environment)
+            maximum_success_streak = max(
+                maximum_success_streak, int(metrics["success_streak"])
+            )
             collision = self.environment.safety_diagnostics()["collision"]
             controller.notify_post_step(
                 task_metrics=metrics,
@@ -95,7 +99,10 @@ class ScriptedOracleTests(unittest.TestCase):
                 simulation_finite=simulation_is_finite(self.environment),
             )
         self.assertEqual(controller.stage, OracleStage.COMPLETE)
-        self.assertTrue(metrics["task_success"])
+        self.assertGreaterEqual(maximum_success_streak, 3)
+        stability = controller.stability_metadata()
+        self.assertTrue(stability["stable_grasp_success"])
+        self.assertEqual(stability["verification_steps_executed"], 20)
         self.assertIsNone(controller.failure_reason)
 
     def test_same_seed_produces_identical_action_plan(self) -> None:

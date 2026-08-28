@@ -14,11 +14,48 @@ ROBOT_BODY_NAMES = {
     "link5",
     "link6",
     "gripper_base",
+    "left_outer_knuckle",
     "left_finger",
+    "left_inner_knuckle",
+    "right_outer_knuckle",
     "right_finger",
+    "right_inner_knuckle",
 }
 SUPPORT_GEOM_NAMES = {"table", "floor"}
 SUPPORT_PENETRATION_TOLERANCE_M = 1e-4
+GRIPPER_CONTACT_BODIES = {"left_finger", "right_finger"}
+
+
+def is_fingertip_pad_geom(name: str) -> bool:
+    """Return whether a geom is a production or diagnostic pad primitive."""
+
+    return str(name).startswith(
+        (
+            "left_finger_pad_",
+            "right_finger_pad_",
+            "left_fingertip_pad",
+            "right_fingertip_pad",
+        )
+    )
+
+
+def target_gripper_contact_count(
+    diagnostics: dict[str, Any], target_body: str
+) -> int:
+    """Count reliable target-body contacts with either physical finger."""
+
+    return sum(
+        1
+        for contact in diagnostics.get("contacts") or ()
+        if (
+            contact.get("body1") == target_body
+            and contact.get("body2") in GRIPPER_CONTACT_BODIES
+        )
+        or (
+            contact.get("body2") == target_body
+            and contact.get("body1") in GRIPPER_CONTACT_BODIES
+        )
+    )
 
 
 def _name(
@@ -66,7 +103,7 @@ def collision_diagnostics(
             mounted_base_contact = robot_body == "link_base" and support_geom == "floor"
             tabletop_fingertip_contact = (
                 support_geom == "table"
-                and robot_geom in {"left_fingertip_pad", "right_fingertip_pad"}
+                and is_fingertip_pad_geom(robot_geom)
             )
             if (
                 not mounted_base_contact

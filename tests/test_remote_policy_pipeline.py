@@ -12,23 +12,24 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from sim_mujoco.remote_policy_control import (
+from sim_mujoco.remote_policy_control import (  # noqa: E402
     ACTION_SHAPE,
     clamp_gripper_raw,
     clamp_joint_target,
     extract_first_action,
+    rate_limit_gripper_raw,
     validate_policy_actions,
 )
-from sim_mujoco.remote_policy_observation import (
+from sim_mujoco.remote_policy_observation import (  # noqa: E402
     ARM_JOINT_NAMES,
     build_openpi_observation,
-    gripper_raw_to_sim,
-    gripper_sim_to_raw,
+    gripper_raw_to_ctrl,
     initialize_scene,
     load_camera_config,
     load_simulation,
 )
-from sim_mujoco.environment import MuJoCoEnvironment
+from sim_mujoco.gripper_mapping import menagerie_ctrl_to_raw_target  # noqa: E402
+from sim_mujoco.environment import MuJoCoEnvironment  # noqa: E402
 
 
 class GripperMappingTests(unittest.TestCase):
@@ -36,17 +37,25 @@ class GripperMappingTests(unittest.TestCase):
         self.config = load_camera_config()
 
     def test_raw_to_sim_conversion(self) -> None:
-        self.assertAlmostEqual(gripper_raw_to_sim(50.0, self.config), 0.00605, places=4)
-        self.assertAlmostEqual(gripper_raw_to_sim(845.0, self.config), 0.04675, places=4)
+        self.assertAlmostEqual(
+            gripper_raw_to_ctrl(50.0, self.config), 0.8, places=6
+        )
+        self.assertAlmostEqual(
+            gripper_raw_to_ctrl(845.0, self.config), 0.005, places=6
+        )
 
     def test_sim_to_raw_conversion(self) -> None:
-        self.assertAlmostEqual(gripper_sim_to_raw(0.00605, self.config), 50.0, places=1)
-        self.assertAlmostEqual(gripper_sim_to_raw(0.04675, self.config), 845.0, places=1)
+        self.assertAlmostEqual(
+            menagerie_ctrl_to_raw_target(0.8, self.config), 50.0, places=3
+        )
+        self.assertAlmostEqual(
+            menagerie_ctrl_to_raw_target(0.005, self.config), 845.0, places=3
+        )
 
     def test_round_trip_consistency(self) -> None:
         for value in (50.0, 150.0, 400.0, 845.0):
-            sim = gripper_raw_to_sim(value, self.config)
-            raw = gripper_sim_to_raw(sim, self.config)
+            ctrl = gripper_raw_to_ctrl(value, self.config)
+            raw = menagerie_ctrl_to_raw_target(ctrl, self.config)
             self.assertAlmostEqual(raw, value, places=5)
 
 
@@ -84,13 +93,28 @@ class ActionSafetyTests(unittest.TestCase):
             actuator_limits,
             max_joint_step=0.05,
         )
-        np.testing.assert_allclose(clamped, np.asarray([0.05, -0.05, 0.05, 0.0, 0.05, -0.05], dtype=np.float32))
+        np.testing.assert_allclose(
+            clamped, np.asarray([0.05, -0.05, 0.05, 0.0, 0.05, -0.05], dtype=np.float32)
+        )
         self.assertTrue(messages)
 
     def test_gripper_clamping(self) -> None:
         self.assertEqual(clamp_gripper_raw(10.0)[0], 50.0)
         self.assertEqual(clamp_gripper_raw(900.0)[0], 845.0)
         self.assertEqual(clamp_gripper_raw(400.0)[0], 400.0)
+
+    def test_gripper_rate_limit_uses_direction_specific_real_il_rates(self) -> None:
+        closing, closing_messages = rate_limit_gripper_raw(
+            100.0, 400.0, control_dt_s=0.1
+        )
+        opening, opening_messages = rate_limit_gripper_raw(
+            800.0, 400.0, control_dt_s=0.1
+        )
+
+        self.assertAlmostEqual(closing, 375.6)
+        self.assertAlmostEqual(opening, 422.0)
+        self.assertTrue(closing_messages)
+        self.assertTrue(opening_messages)
 
     def test_json_serialization(self) -> None:
         payload = {"state": np.zeros(7, dtype=np.float32).tolist()}
@@ -111,7 +135,9 @@ class ObservationTests(unittest.TestCase):
                 "pick up the object",
             )
             self.assertEqual(observation["observation/image"].shape, (224, 224, 3))
-            self.assertEqual(observation["observation/wrist_image"].shape, (224, 224, 3))
+            self.assertEqual(
+                observation["observation/wrist_image"].shape, (224, 224, 3)
+            )
             self.assertEqual(observation["observation/image"].dtype, np.uint8)
             self.assertEqual(observation["observation/wrist_image"].dtype, np.uint8)
             self.assertEqual(observation["observation/state"].shape, (7,))
