@@ -32,6 +32,14 @@ wandb/
 Thumbs.db
 Desktop.ini
 
+# Temporary editor, merge, and patch artifacts
+*.before_*
+*.bak
+*.orig
+*.rej
+*.tmp
+*~
+
 # Local data and machine-specific configuration
 xarm_colab_payload.zip
 fine_tune/xarm_data_config.json

@@ -1,0 +1,35 @@
+# Keep cross-platform source and configuration files normalized in Git.
+* text=auto
+
+.gitattributes text eol=lf
+.gitignore text eol=lf
+.gitmodules text eol=lf
+
+*.py text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.xml text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.sh text eol=lf
+*.sbatch text eol=lf
+*.txt text eol=lf
+*.ini text eol=lf
+*.cfg text eol=lf
+*.toml text eol=lf
+
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Common repository assets are binary and must not be line-normalized.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.mp4 binary
+*.avi binary
+*.npy binary
+*.npz binary
+*.parquet binary
+*.pptx binary
+*.stl binary
