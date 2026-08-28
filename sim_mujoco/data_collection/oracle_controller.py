@@ -9,7 +9,7 @@ from typing import Any
 import mujoco
 import numpy as np
 
-from sim_mujoco.collision import target_gripper_contact_count
+from simulation.physics.collision import target_gripper_contact_count
 from sim_mujoco.data_collection.conversions import (
     mujoco_gripper_target_from_raw,
     policy_action_from_mujoco_target,
@@ -25,8 +25,8 @@ from sim_mujoco.data_generation.stability import (
     evaluate_pick_stability,
     evaluate_place_stability,
 )
-from sim_mujoco.environment import MuJoCoEnvironment
-from sim_mujoco.remote_policy_control import (
+from simulation.environment import MuJoCoEnvironment
+from simulation.robot.control import (
     DEFAULT_GRIPPER_CLOSING_RATE_RAW_PER_S,
     DEFAULT_GRIPPER_OPENING_RATE_RAW_PER_S,
 )
@@ -147,15 +147,15 @@ class OraclePlan:
             "initial_arm_qpos": self.initial_arm_qpos.tolist(),
             "pregrasp": {
                 **asdict(self.pregrasp),
-                "joint_qpos": self.pregrasp.joint_qpos.tolist(),
+                "joint_position": self.pregrasp.joint_position.tolist(),
             },
             "grasp": {
                 **asdict(self.grasp),
-                "joint_qpos": self.grasp.joint_qpos.tolist(),
+                "joint_position": self.grasp.joint_position.tolist(),
             },
             "lift": {
                 **asdict(self.lift),
-                "joint_qpos": self.lift.joint_qpos.tolist(),
+                "joint_position": self.lift.joint_position.tolist(),
             },
         }
 
@@ -349,7 +349,7 @@ class ScriptedOracleController:
             site_name=self.config.tcp_site,
             target_position=grasp_position,
             target_rotation=tcp_rotation,
-            seed_joint_qpos=pregrasp.joint_qpos,
+            seed_joint_qpos=pregrasp.joint_position,
         )
         lift = solve_site_pose(
             model,
@@ -357,7 +357,7 @@ class ScriptedOracleController:
             site_name=self.config.tcp_site,
             target_position=lift_position,
             target_rotation=tcp_rotation,
-            seed_joint_qpos=grasp.joint_qpos,
+            seed_joint_qpos=grasp.joint_position,
         )
         plan = OraclePlan(
             object_position=object_position,
@@ -407,12 +407,12 @@ class ScriptedOracleController:
         )
         pregrasp_arms = _interpolate_arm(
             self.plan.initial_arm_qpos,
-            self.plan.pregrasp.joint_qpos,
+            self.plan.pregrasp.joint_position,
             max_step_rad=cfg.max_joint_step_rad,
         )
         descend_arms = _interpolate_arm(
-            self.plan.pregrasp.joint_qpos,
-            self.plan.grasp.joint_qpos,
+            self.plan.pregrasp.joint_position,
+            self.plan.grasp.joint_position,
             max_step_rad=cfg.max_joint_step_rad,
         )
         close_values = _interpolate_gripper(
@@ -421,8 +421,8 @@ class ScriptedOracleController:
             max_step_raw=cfg.gripper_closing_rate_raw_per_s * cfg.action_dt_s,
         )
         lift_arms = _interpolate_arm(
-            self.plan.grasp.joint_qpos,
-            self.plan.lift.joint_qpos,
+            self.plan.grasp.joint_position,
+            self.plan.lift.joint_position,
             max_step_rad=cfg.lift_max_joint_step_rad,
         )
         return {
@@ -438,12 +438,12 @@ class ScriptedOracleController:
                 _policy_action(arm, cfg.open_gripper_raw) for arm in descend_arms
             ],
             OracleStage.CLOSE_GRIPPER: [
-                _policy_action(self.plan.grasp.joint_qpos, value)
+                _policy_action(self.plan.grasp.joint_position, value)
                 for value in close_values
             ],
             OracleStage.HOLD: [
                 _policy_action(
-                    self.plan.grasp.joint_qpos,
+                    self.plan.grasp.joint_position,
                     cfg.closed_gripper_raw,
                 )
                 for _ in range(cfg.hold_steps)
@@ -453,7 +453,7 @@ class ScriptedOracleController:
             ],
             OracleStage.VERIFY: [
                 _policy_action(
-                    self.plan.lift.joint_qpos,
+                    self.plan.lift.joint_position,
                     cfg.closed_gripper_raw,
                 )
                 for _ in range(cfg.verify_steps)
@@ -682,11 +682,11 @@ class PlaceOraclePlan:
             "initial_arm_qpos": self.initial_arm_qpos.tolist(),
             "preplace": {
                 **asdict(self.preplace),
-                "joint_qpos": self.preplace.joint_qpos.tolist(),
+                "joint_position": self.preplace.joint_position.tolist(),
             },
             "release": {
                 **asdict(self.release),
-                "joint_qpos": self.release.joint_qpos.tolist(),
+                "joint_position": self.release.joint_position.tolist(),
             },
         }
 
@@ -810,7 +810,7 @@ class PlaceRedPepperOracleController:
             site_name=self.config.tcp_site,
             target_position=release_pepper - pepper_offset_world,
             target_rotation=tcp_rotation,
-            seed_joint_qpos=preplace.joint_qpos,
+            seed_joint_qpos=preplace.joint_position,
         )
         plan = PlaceOraclePlan(
             ring_position=ring_position,
@@ -852,12 +852,12 @@ class PlaceRedPepperOracleController:
         )
         preplace_arms = _interpolate_arm(
             self.plan.initial_arm_qpos,
-            self.plan.preplace.joint_qpos,
+            self.plan.preplace.joint_position,
             max_step_rad=self.config.max_joint_step_rad,
         )
         release_arms = _interpolate_arm(
-            self.plan.preplace.joint_qpos,
-            self.plan.release.joint_qpos,
+            self.plan.preplace.joint_position,
+            self.plan.release.joint_position,
             max_step_rad=self.config.max_joint_step_rad,
         )
         open_values = _interpolate_gripper(
@@ -876,7 +876,7 @@ class PlaceRedPepperOracleController:
                 _policy_action(arm, current_gripper) for arm in release_arms
             ],
             PlaceOracleStage.RELEASE: [
-                _policy_action(self.plan.release.joint_qpos, value)
+                _policy_action(self.plan.release.joint_position, value)
                 for value in open_values
             ],
             PlaceOracleStage.RETREAT: [
@@ -885,7 +885,7 @@ class PlaceRedPepperOracleController:
             ],
             PlaceOracleStage.VERIFY: [
                 _policy_action(
-                    self.plan.preplace.joint_qpos,
+                    self.plan.preplace.joint_position,
                     self.config.open_gripper_raw,
                 )
                 for _ in range(self.config.verify_steps)

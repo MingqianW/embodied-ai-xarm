@@ -31,21 +31,21 @@ and `roll_deg` rotates the image around its optical axis.
 ## Reproduce
 
 Activate an environment containing the packages pinned in
-`../constraints.txt`, then run from the repository root:
+`../../sim_mujoco/constraints.txt`, then run from the repository root:
 
 ```powershell
 python sim_mujoco/scripts/discover_raw_camera_data.py
 python sim_mujoco/scripts/select_camera_calibration_frames.py --calibration-count 12 --validation-count 4 --max-episodes 36
 python sim_mujoco/scripts/calibrate_cameras.py --trials 120 --optimization-width 160 --optimization-height 120
 python sim_mujoco/scripts/tune_base_roll_fovy.py --final-roll 2 --final-fovy 57.479524
-python sim_mujoco/scripts/build_xarm6_pick_scene.py
+python -m simulation.tools.build_xarm6_pick_scene
 python sim_mujoco/scripts/evaluate_camera_calibration.py
 ```
 
 Regenerate only the scene after manually changing the active camera config:
 
 ```powershell
-python sim_mujoco/scripts/build_xarm6_pick_scene.py
+python -m simulation.tools.build_xarm6_pick_scene
 ```
 
 Render a selected frame at native and policy resolution:

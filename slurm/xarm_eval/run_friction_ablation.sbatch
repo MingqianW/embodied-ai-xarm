@@ -40,11 +40,11 @@ module list 2>&1 || true
 nvidia-smi
 
 FILES=(
-  sim_mujoco/gripper_mapping.py
-  sim_mujoco/remote_policy_observation.py
+  simulation/robot/gripper_mapping.py
+  simulation/observation/policy.py
   sim_mujoco/data_collection/conversions.py
-  sim_mujoco/environment.py
-  sim_mujoco/task_scenes.py
+  simulation/environment.py
+  simulation/scene
   sim_mujoco/gripper_slip_diagnostics.py
   sim_mujoco/scripts/run_scripted_gripper_slip_experiments.py
   sim_mujoco/scripts/run_friction_ablation.py

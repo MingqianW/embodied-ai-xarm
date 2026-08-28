@@ -18,8 +18,9 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from sim_mujoco.data_collection.ik_solver import solve_site_pose
-from sim_mujoco.environment import MuJoCoEnvironment
-from sim_mujoco.remote_policy_observation import ARM_JOINT_NAMES, GRIPPER_LEFT_JOINT
+from simulation.environment import MuJoCoEnvironment
+from simulation.robot.model import ARM_JOINT_NAMES
+from simulation.robot.model import LEFT_GRIPPER_DRIVER_JOINT_NAME
 
 
 TCP_SITE = "tool_center_point"
@@ -78,7 +79,7 @@ def _current_position_targets(environment: MuJoCoEnvironment) -> np.ndarray:
     for joint_name in ARM_JOINT_NAMES:
         joint_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, joint_name)
         arm.append(data.qpos[model.jnt_qposadr[joint_id]])
-    gripper_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, GRIPPER_LEFT_JOINT)
+    gripper_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, LEFT_GRIPPER_DRIVER_JOINT_NAME)
     return np.asarray([*arm, data.qpos[model.jnt_qposadr[gripper_id]]], dtype=np.float64)
 
 
@@ -97,7 +98,7 @@ def _move_tcp(environment: MuJoCoEnvironment, state: TeleoperationState, directi
     if not solution.success:
         print(f"IK rejected movement: {solution.reason}; error={solution.position_error_m * 1000:.1f} mm")
         return
-    state.target[:6] = solution.joint_qpos
+    state.target[:6] = solution.joint_position
     print("TCP target (m):", np.array2string(target_position, precision=3))
 
 

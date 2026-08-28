@@ -40,7 +40,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--robot-xml",
         type=Path,
-        default=PROJECT_ROOT / "sim_mujoco/assets/xarm6/xarm6_pick_scene.xml",
+        default=PROJECT_ROOT / "simulation/assets/xarm6/xarm6_pick_scene.xml",
     )
     parser.add_argument("--menagerie-validation-root", type=Path)
     return parser
@@ -299,7 +299,7 @@ def _tcp_z_trajectory(
 ) -> np.ndarray:
     import mujoco
 
-    from sim_mujoco.joint_mapping import raw_arm_state_to_mujoco_qpos
+    from simulation.robot.joint_mapping import raw_arm_state_to_mujoco_qpos
 
     result = np.empty(len(states), dtype=np.float64)
     for index, state in enumerate(states):

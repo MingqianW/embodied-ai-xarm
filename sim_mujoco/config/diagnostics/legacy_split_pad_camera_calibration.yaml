@@ -28,6 +28,6 @@ render:
   preprocessing: resize_with_pad
 metadata:
   status: frozen_legacy_split_pad_diagnostic_only
-  source: sim_mujoco/config/camera_calibration.yaml
+  source: simulation/config/camera_calibration.yaml
   camera_parameters_changed: false
   production_camera_calibration_modified: false

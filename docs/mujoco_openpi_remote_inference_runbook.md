@@ -60,13 +60,13 @@ The printed path should point inside this repository.
 Core simulation scene:
 
 ```text
-sim_mujoco/assets/xarm6/xarm6_pick_scene.xml
+simulation/assets/xarm6/xarm6_pick_scene.xml
 ```
 
 Camera calibration:
 
 ```text
-sim_mujoco/config/camera_calibration.yaml
+simulation/config/camera_calibration.yaml
 ```
 
 Reusable observation pipeline:
@@ -74,7 +74,9 @@ Reusable observation pipeline:
 ```text
 policy_runtime/observation_builder.py
 policy_runtime/image_preprocessing.py
-sim_mujoco/remote_policy_observation.py
+simulation/observation/cameras.py
+simulation/observation/state.py
+simulation/observation/policy.py
 ```
 
 Reusable action safety/control pipeline:
@@ -82,7 +84,8 @@ Reusable action safety/control pipeline:
 ```text
 policy_runtime/action_decoder.py
 policy_runtime/safety.py
-sim_mujoco/remote_policy_control.py
+simulation/robot/control.py
+simulation/robot/gripper_mapping.py
 ```
 
 Single real-observation inference test:
@@ -181,7 +184,8 @@ In the current project mapping, high raw value means open:
 ```text
 raw_closed = 50.0
 raw_open = 845.0
-sim_half_width_open_m = 0.04
+sim_joint_min_rad = 0.005
+sim_joint_max_rad = 0.85
 ```
 
 Do not change the mapping based on visual guesswork. Verify against the existing
@@ -192,7 +196,7 @@ conversion functions and training-data convention first.
 The source of truth is always:
 
 ```text
-sim_mujoco/config/camera_calibration.yaml
+simulation/config/camera_calibration.yaml
 ```
 
 Current calibrated parameters in this repository:
@@ -370,8 +374,8 @@ Run syntax checks:
 
 ```powershell
 & "D:\miniconda\envs\mujoco-pi\python.exe" -m py_compile `
-  ".\sim_mujoco\remote_policy_observation.py" `
-  ".\sim_mujoco\remote_policy_control.py" `
+  ".\simulation\observation\policy.py" `
+  ".\simulation\robot\control.py" `
   ".\sim_mujoco\scripts\test_remote_policy_mujoco.py" `
   ".\sim_mujoco\scripts\run_remote_policy_dry_loop.py" `
   ".\sim_mujoco\scripts\run_remote_policy_closed_loop.py"

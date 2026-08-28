@@ -23,8 +23,8 @@ REPORT_TEXT="$LOG_ROOT/TEST_REPORT.txt"
 "$PYTHON" -m compileall -q \
   sim_mujoco/data_generation \
   sim_mujoco/data_collection \
-  sim_mujoco/environment.py \
-  sim_mujoco/task_scenes.py \
+  simulation/environment.py \
+  simulation/scene \
   fine_tune/xarm_lerobot_writer.py \
   tests 2>&1 | tee "$REPORT_TEXT"
 
@@ -34,10 +34,10 @@ git diff --check 2>&1 | tee -a "$REPORT_TEXT"
   2>&1 | tee -a "$REPORT_TEXT"
 
 "$PYTHON" -m pytest -q \
-  tests/test_mujoco_task_scenes.py \
+  tests/simulation/test_task_scenes.py \
   tests/test_mujoco_scripted_oracle.py \
   tests/test_mujoco_data_conversions.py \
-  tests/test_mujoco_gripper_motion.py \
+  tests/simulation/test_gripper_motion.py \
   tests/test_mujoco_collisions.py \
   tests/test_mujoco_lerobot_pipeline.py \
   2>&1 | tee -a "$REPORT_TEXT"

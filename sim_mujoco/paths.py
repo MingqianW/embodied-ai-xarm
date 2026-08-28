@@ -10,8 +10,7 @@ import os
 from pathlib import Path
 from typing import Mapping
 
-
-SOURCE_ROOT = Path(__file__).resolve().parents[1]
+from simulation.resources import repository_root
 
 
 def _path_from_env(
@@ -25,10 +24,6 @@ def _path_from_env(
     if not value:
         return default.resolve()
     return Path(value).expanduser().resolve()
-
-
-def repository_root(environ: Mapping[str, str] | None = None) -> Path:
-    return _path_from_env("EMBODIED_AI_ROOT", SOURCE_ROOT, environ=environ)
 
 
 def mujoco_output_root(environ: Mapping[str, str] | None = None) -> Path:
@@ -60,27 +55,3 @@ def openpi_checkpoint_root(environ: Mapping[str, str] | None = None) -> Path | N
     env = os.environ if environ is None else environ
     value = env.get("OPENPI_CHECKPOINT_ROOT")
     return Path(value).expanduser().resolve() if value else None
-
-
-def simulation_root(environ: Mapping[str, str] | None = None) -> Path:
-    return repository_root(environ) / "sim_mujoco"
-
-
-def active_model_path(environ: Mapping[str, str] | None = None) -> Path:
-    return _path_from_env(
-        "XARM_MUJOCO_MODEL_PATH",
-        simulation_root(environ) / "assets" / "xarm6" / "xarm6_pick_scene.xml",
-        environ=environ,
-    )
-
-
-def camera_config_path(environ: Mapping[str, str] | None = None) -> Path:
-    return _path_from_env(
-        "XARM_CAMERA_CONFIG_PATH",
-        simulation_root(environ) / "config" / "camera_calibration.yaml",
-        environ=environ,
-    )
-
-
-def task_config_path(environ: Mapping[str, str] | None = None) -> Path:
-    return simulation_root(environ) / "config" / "task_scenes.yaml"

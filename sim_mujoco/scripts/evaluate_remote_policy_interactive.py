@@ -25,7 +25,7 @@ from sim_mujoco.scripts.run_remote_policy_closed_loop import (
     run_episode,
     validate_execute_chunk_steps,
 )
-from sim_mujoco.task_scenes import task_names
+from simulation.scene import task_names
 from sim_mujoco.paths import mujoco_output_root
 
 

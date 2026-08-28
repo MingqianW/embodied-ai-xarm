@@ -6,10 +6,10 @@ control semantics remain shared across tasks.
 
 The source of truth is:
 
-- Scene configuration: `sim_mujoco/config/task_scenes.yaml`
-- Runtime scene selection: `sim_mujoco/task_scenes.py`
-- Object geometry generation: `sim_mujoco/scripts/build_xarm6_pick_scene.py`
-- Compiled scene: `sim_mujoco/assets/xarm6/xarm6_pick_scene.xml`
+- Scene configuration: `simulation/config/task_scenes.yaml`
+- Runtime scene selection: `simulation/scene/`
+- Object geometry generation: `python -m simulation.tools.build_xarm6_pick_scene`
+- Compiled scene: `simulation/assets/xarm6/xarm6_pick_scene.xml`
 
 ## Raw-data correspondence
 

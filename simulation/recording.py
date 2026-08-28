@@ -4,7 +4,7 @@ from typing import Any
 
 import numpy as np
 
-from sim_mujoco.environment import MuJoCoEnvironment
+from simulation.environment import MuJoCoEnvironment
 
 
 def capture_recording_frames(environment: MuJoCoEnvironment) -> dict[str, np.ndarray]:

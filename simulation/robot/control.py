@@ -6,18 +6,16 @@ from typing import Any
 import mujoco
 import numpy as np
 
-from sim_mujoco.joint_mapping import raw_arm_state_to_mujoco_qpos
 from policy_runtime.action_decoder import (
     validate_policy_actions as _validate_policy_actions,
 )
 from policy_runtime.safety import clamp_absolute_joint_target, clamp_scalar
-from sim_mujoco.remote_policy_observation import (
-    arm_actuator_ctrl_limits,
-    arm_joint_limits,
-    get_robot_state,
-    gripper_actuator_ctrl_limits,
-    gripper_raw_to_ctrl,
-)
+from simulation.observation.state import get_robot_state
+from simulation.robot.gripper import actuator_ctrl_from_raw_hardware
+from simulation.robot.joint_mapping import raw_arm_state_to_mujoco_qpos
+from simulation.robot.model import arm_actuator_ctrl_limits
+from simulation.robot.model import arm_joint_limits
+from simulation.robot.model import gripper_actuator_ctrl_limits
 
 
 ACTION_SHAPE = (10, 7)
@@ -140,7 +138,7 @@ def rate_limit_gripper_raw(
 
 
 def convert_gripper_raw_to_ctrl(raw_value: float, config: dict[str, Any]) -> float:
-    return float(gripper_raw_to_ctrl(float(raw_value), config))
+    return float(actuator_ctrl_from_raw_hardware(float(raw_value), config))
 
 
 def compute_safe_control_target(

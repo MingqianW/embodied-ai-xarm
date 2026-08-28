@@ -7,8 +7,10 @@ import xml.etree.ElementTree as ET
 
 import yaml
 
+from simulation.resources import asset_path
+from simulation.resources import repository_root
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = repository_root()
 
 XARM_DESCRIPTION = (
     PROJECT_ROOT
@@ -40,11 +42,7 @@ INERTIA_PATH = (
 )
 
 OUTPUT_PATH = (
-    PROJECT_ROOT
-    / "sim_mujoco"
-    / "assets"
-    / "xarm6"
-    / "xarm6_arm.xml"
+    asset_path("xarm6", "xarm6_arm.xml")
 )
 
 

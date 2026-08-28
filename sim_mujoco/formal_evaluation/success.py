@@ -9,14 +9,14 @@ from typing import Any
 import mujoco
 import numpy as np
 
-from sim_mujoco.collision import collision_diagnostics
-from sim_mujoco.collision import target_gripper_contact_count
+from simulation.physics.collision import collision_diagnostics
+from simulation.physics.collision import target_gripper_contact_count
 from sim_mujoco.formal_evaluation.config import FormalProtocol
-from sim_mujoco.remote_policy_observation import get_robot_state
-from sim_mujoco.remote_policy_observation import gripper_raw_to_ctrl
-from sim_mujoco.task_scenes import TABLE_TOP_Z
-from sim_mujoco.task_scenes import TaskSceneRuntime
-from sim_mujoco.task_scenes import load_gripper_config
+from simulation.observation.state import get_robot_state
+from simulation.robot.gripper import actuator_ctrl_from_raw_hardware
+from simulation.scene import TABLE_TOP_Z
+from simulation.scene import TaskSceneRuntime
+from simulation.configuration import load_simulation_config
 
 
 def _body_id(model: mujoco.MjModel, body_name: str) -> int:
@@ -83,7 +83,7 @@ def validate_initial_place_grasp(
     if initial_arm.shape != (6,) or not np.isfinite(initial_arm).all():
         raise ValueError("Place reset has invalid initial arm hold target")
     held_raw = float(runtime.spec["initial_gripper_raw"])
-    held_ctrl = gripper_raw_to_ctrl(held_raw, load_gripper_config())
+    held_ctrl = actuator_ctrl_from_raw_hardware(held_raw, load_simulation_config())
     samples: list[dict[str, Any]] = []
     for _ in range(protocol.placement_initial_validation_checks):
         data.ctrl[:6] = initial_arm

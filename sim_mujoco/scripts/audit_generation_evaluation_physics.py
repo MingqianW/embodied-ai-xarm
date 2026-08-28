@@ -24,13 +24,11 @@ import numpy as np  # noqa: E402
 
 from sim_mujoco.data_generation.config import load_pipeline_config  # noqa: E402
 from sim_mujoco.formal_evaluation.config import load_protocol  # noqa: E402
-from sim_mujoco.paths import active_model_path  # noqa: E402
-from sim_mujoco.remote_policy_observation import (  # noqa: E402
-    apply_camera_calibration,
-    initialize_scene,
-    load_camera_config,
-)
-from sim_mujoco.task_scenes import configure_task_scene  # noqa: E402
+from simulation.resources import model_path  # noqa: E402
+from simulation.observation.cameras import apply_camera_calibration  # noqa: E402
+from simulation.runtime import initialize_scene  # noqa: E402
+from simulation.configuration import load_simulation_config  # noqa: E402
+from simulation.scene import configure_task_scene  # noqa: E402
 
 
 DEFAULT_GENERATION_CONFIG = (
@@ -258,7 +256,7 @@ def _build(
     joint_noise: float,
 ) -> tuple[mujoco.MjModel, mujoco.MjData, dict[str, Any]]:
     model = mujoco.MjModel.from_xml_path(str(model_path))
-    apply_camera_calibration(model, load_camera_config(camera_config_path))
+    apply_camera_calibration(model, load_simulation_config(camera_config_path))
     data = mujoco.MjData(model)
     initialize_scene(model, data, settle_steps=0)
     _, initial = configure_task_scene(
@@ -279,7 +277,7 @@ def _build(
 def audit(generation_config_path: Path, evaluation_protocol_path: Path, tasks: list[str] | None) -> dict[str, Any]:
     generation = load_pipeline_config(generation_config_path.expanduser().resolve())
     evaluation = load_protocol(evaluation_protocol_path.expanduser().resolve())
-    generation_model_path = active_model_path()
+    generation_model_path = model_path()
     configured_tasks = [task.task_id for task in generation.tasks]
     selected_tasks = configured_tasks if not tasks else list(dict.fromkeys(tasks))
     unknown = sorted(set(selected_tasks) - set(configured_tasks))

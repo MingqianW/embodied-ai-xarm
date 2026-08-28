@@ -5,17 +5,13 @@ import unittest
 import mujoco
 import numpy as np
 
-from sim_mujoco.gripper_mapping import (
-    MENAGERIE_GRIPPER_JOINTS,
-    measure_fingertip_aperture_m,
-    menagerie_ctrl_to_raw_target,
-    raw_gripper_to_menagerie_ctrl,
-    set_menagerie_gripper_configuration,
-)
-from sim_mujoco.remote_policy_observation import (
-    DEFAULT_MODEL_PATH,
-    load_camera_config,
-)
+from simulation.robot.model import XARM_FOUR_BAR_JOINT_NAMES
+from simulation.robot.gripper import measure_fingertip_aperture_m
+from simulation.robot.gripper import set_raw_gripper_configuration
+from simulation.robot.gripper_mapping import actuator_ctrl_rad_to_raw_hardware
+from simulation.robot.gripper_mapping import raw_hardware_to_actuator_ctrl_rad
+from simulation.resources import DEFAULT_MODEL_PATH
+from simulation.configuration import load_simulation_config
 from sim_mujoco.scripts.run_menagerie_gripper_validation import _close_renderer
 
 
@@ -30,7 +26,7 @@ class MenagerieGripperIntegrationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.model = mujoco.MjModel.from_xml_path(str(DEFAULT_MODEL_PATH))
-        cls.config = load_camera_config()
+        cls.config = load_simulation_config()
 
     def test_exact_compiled_actuator_contract(self) -> None:
         actuator = named_id(
@@ -53,7 +49,7 @@ class MenagerieGripperIntegrationTests(unittest.TestCase):
         )
 
     def test_linkage_tendon_constraints_and_pads_exist(self) -> None:
-        for name in MENAGERIE_GRIPPER_JOINTS:
+        for name in XARM_FOUR_BAR_JOINT_NAMES:
             named_id(self.model, mujoco.mjtObj.mjOBJ_JOINT, name)
         self.assertEqual(self.model.ntendon, 1)
         named_id(self.model, mujoco.mjtObj.mjOBJ_TENDON, "gripper_split")
@@ -112,13 +108,13 @@ class MenagerieGripperIntegrationTests(unittest.TestCase):
         openings = []
         for raw in (50, 100, 200, 300, 400, 500, 600, 700, 800, 845):
             mujoco.mj_resetDataKeyframe(self.model, data, keyframe)
-            ctrl = raw_gripper_to_menagerie_ctrl(raw, self.config)
+            ctrl = raw_hardware_to_actuator_ctrl_rad(raw, self.config)
             self.assertAlmostEqual(
-                menagerie_ctrl_to_raw_target(ctrl, self.config),
+                actuator_ctrl_rad_to_raw_hardware(ctrl, self.config),
                 raw,
                 places=7,
             )
-            set_menagerie_gripper_configuration(self.model, data, raw, self.config)
+            set_raw_gripper_configuration(self.model, data, raw, self.config)
             data.ctrl[6] = ctrl
             for _ in range(500):
                 mujoco.mj_step(self.model, data)

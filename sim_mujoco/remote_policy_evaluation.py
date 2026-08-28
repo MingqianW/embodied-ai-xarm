@@ -24,14 +24,13 @@ from policy_runtime.recording import (
     pad_to_aspect as _shared_pad_to_aspect,
     tile_recording_frame,
 )
-from sim_mujoco.remote_policy_observation import (
-    ARM_JOINT_NAMES,
-    BASE_CAMERA,
-    WRIST_CAMERA,
-    arm_joint_limits,
-    joint_qpos,
-    render_native_rgb,
-)
+from simulation.robot.model import ARM_JOINT_NAMES
+from simulation.robot.model import BASE_CAMERA_NAME
+from simulation.robot.model import WRIST_CAMERA_NAME
+from simulation.robot.model import arm_joint_limits
+from simulation.robot.model import joint_position
+from simulation.observation.cameras import render_rgb
+from simulation.observation.policy import policy_image
 
 
 OVERVIEW_CAMERA = "overview_camera"
@@ -299,10 +298,9 @@ class VideoRecorder:
         self.next_frame_time += 1.0 / float(self.fps)
 
     def record(self, context: Any) -> None:
-        overview = render_native_rgb(context.renderer, context.data, OVERVIEW_CAMERA)
-        base_native = render_native_rgb(context.renderer, context.data, BASE_CAMERA)
-        wrist_native = render_native_rgb(context.renderer, context.data, WRIST_CAMERA)
-        from sim_mujoco.remote_policy_observation import policy_image
+        overview = render_rgb(context.renderer, context.data, OVERVIEW_CAMERA)
+        base_native = render_rgb(context.renderer, context.data, BASE_CAMERA_NAME)
+        wrist_native = render_rgb(context.renderer, context.data, WRIST_CAMERA_NAME)
 
         base = policy_image(base_native, context.config)
         wrist = policy_image(wrist_native, context.config)

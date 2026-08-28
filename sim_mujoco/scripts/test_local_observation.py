@@ -6,8 +6,8 @@ import mujoco
 import numpy as np
 
 from policy_runtime.image_preprocessing import preprocess_policy_image
-from sim_mujoco.gripper_mapping import menagerie_state_to_raw_gripper
-from sim_mujoco.remote_policy_observation import load_camera_config
+from simulation.robot.gripper import read_raw_gripper_position
+from simulation.configuration import load_simulation_config
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -28,7 +28,7 @@ OUTPUT_PATH = (
 )
 
 
-def joint_qpos(
+def joint_position(
     model: mujoco.MjModel,
     data: mujoco.MjData,
     joint_name: str,
@@ -114,20 +114,20 @@ def main() -> None:
 
     arm_state = np.array(
         [
-            joint_qpos(model, data, "joint1"),
-            joint_qpos(model, data, "joint2"),
-            joint_qpos(model, data, "joint3"),
-            joint_qpos(model, data, "joint4"),
-            joint_qpos(model, data, "joint5"),
-            joint_qpos(model, data, "joint6"),
+            joint_position(model, data, "joint1"),
+            joint_position(model, data, "joint2"),
+            joint_position(model, data, "joint3"),
+            joint_position(model, data, "joint4"),
+            joint_position(model, data, "joint5"),
+            joint_position(model, data, "joint6"),
         ],
         dtype=np.float32,
     )
 
-    gripper_raw = menagerie_state_to_raw_gripper(
+    gripper_raw = read_raw_gripper_position(
         model,
         data,
-        load_camera_config(),
+        load_simulation_config(),
     )
 
     state = np.concatenate(

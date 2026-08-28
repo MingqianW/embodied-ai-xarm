@@ -19,7 +19,7 @@ from policy_runtime.remote_policy_client import RemotePolicyClient
 from policy_runtime.safety import SafetyConfig
 from policy_runtime.safety import validate_action_chunk
 
-from sim_mujoco.collision import collision_diagnostics
+from simulation.physics.collision import collision_diagnostics
 from sim_mujoco.formal_evaluation.config import FormalProtocol
 from sim_mujoco.formal_evaluation.config import TaskSpec
 from sim_mujoco.formal_evaluation.failure_diagnosis import diagnose_episode_failure
@@ -39,17 +39,17 @@ from sim_mujoco.gripper_slip_diagnostics import PhysicsTraceRecorder
 from sim_mujoco.gripper_slip_diagnostics import reconstruct_network_action
 from sim_mujoco.formal_evaluation.success import FormalTaskEvaluator
 from sim_mujoco.formal_evaluation.success import validate_initial_place_grasp
-from sim_mujoco.remote_policy_control import apply_safe_control_target
-from sim_mujoco.remote_policy_control import compute_safe_control_target
+from simulation.robot.control import apply_safe_control_target
+from simulation.robot.control import compute_safe_control_target
 from sim_mujoco.remote_policy_evaluation import VideoRecorder
-from sim_mujoco.remote_policy_observation import arm_actuator_ctrl_limits
-from sim_mujoco.remote_policy_observation import arm_joint_limits
-from sim_mujoco.remote_policy_observation import build_openpi_observation
-from sim_mujoco.remote_policy_observation import get_robot_state
-from sim_mujoco.remote_policy_observation import gripper_raw_to_ctrl
-from sim_mujoco.remote_policy_observation import initialize_scene
-from sim_mujoco.remote_policy_observation import load_simulation
-from sim_mujoco.task_scenes import configure_task_scene
+from simulation.robot.model import arm_actuator_ctrl_limits
+from simulation.robot.model import arm_joint_limits
+from simulation.observation.policy import build_policy_observation
+from simulation.observation.state import get_robot_state
+from simulation.robot.gripper import actuator_ctrl_from_raw_hardware
+from simulation.runtime import initialize_scene
+from simulation.runtime import load_simulation
+from simulation.scene import configure_task_scene
 
 
 @dataclass(frozen=True)
@@ -161,7 +161,7 @@ def _apply_diagnostic_latch(
 ) -> None:
     target.gripper_raw_clamped = float(latch_raw)
     physical_raw = runtime.physical_gripper_raw_target(float(latch_raw))
-    target.gripper_ctrl_target = gripper_raw_to_ctrl(
+    target.gripper_ctrl_target = actuator_ctrl_from_raw_hardware(
         physical_raw,
         context.config,
     )
@@ -325,7 +325,7 @@ def run_formal_episode(
             recorder.maybe_record(context)
 
         while invalid_reason is None and policy_steps < protocol.max_policy_steps:
-            observation = build_openpi_observation(
+            observation = build_policy_observation(
                 context.model,
                 context.data,
                 context.renderer,
@@ -435,7 +435,7 @@ def run_formal_episode(
                 physical_gripper_raw = runtime.physical_gripper_raw_target(
                     target.gripper_raw_clamped
                 )
-                target.gripper_ctrl_target = gripper_raw_to_ctrl(
+                target.gripper_ctrl_target = actuator_ctrl_from_raw_hardware(
                     physical_gripper_raw,
                     context.config,
                 )

@@ -23,29 +23,27 @@ from policy_runtime.remote_policy_client import (  # noqa: E402
 )
 from policy_runtime.action_decoder import DEFAULT_ACTION_HORIZON  # noqa: E402
 from policy_runtime.safety import SafetyConfig, validate_action_chunk  # noqa: E402
-from sim_mujoco.remote_policy_control import (  # noqa: E402
+from simulation.robot.control import (  # noqa: E402
     apply_safe_control_target,
     compute_safe_control_target,
     validate_policy_actions,
 )
-from sim_mujoco.collision import collision_diagnostics  # noqa: E402
+from simulation.physics.collision import collision_diagnostics  # noqa: E402
 from sim_mujoco.remote_policy_evaluation import (  # noqa: E402
     VideoRecorder,
     write_json,
 )
-from sim_mujoco.remote_policy_observation import (  # noqa: E402
-    DEFAULT_CAMERA_CONFIG_PATH,
-    DEFAULT_MODEL_PATH,
-    arm_actuator_ctrl_limits,
-    arm_joint_limits,
-    build_openpi_observation,
-    get_robot_state,
-    gripper_raw_to_ctrl,
-    image_diagnostics,
-    initialize_scene,
-    load_simulation,
-)
-from sim_mujoco.task_scenes import (  # noqa: E402
+from simulation.resources import DEFAULT_CAMERA_CONFIG_PATH  # noqa: E402
+from simulation.resources import DEFAULT_MODEL_PATH  # noqa: E402
+from simulation.robot.model import arm_actuator_ctrl_limits  # noqa: E402
+from simulation.robot.model import arm_joint_limits  # noqa: E402
+from simulation.observation.policy import build_policy_observation  # noqa: E402
+from simulation.observation.state import get_robot_state  # noqa: E402
+from simulation.robot.gripper import actuator_ctrl_from_raw_hardware  # noqa: E402
+from policy_runtime.image_preprocessing import image_diagnostics  # noqa: E402
+from simulation.runtime import initialize_scene  # noqa: E402
+from simulation.runtime import load_simulation  # noqa: E402
+from simulation.scene import (  # noqa: E402
     configure_task_scene,
     resolve_task,
     task_names,
@@ -189,7 +187,7 @@ def preflight(
             )
         observation = check(
             "one observation can be constructed",
-            lambda: build_openpi_observation(
+            lambda: build_policy_observation(
                 context.model, context.data, context.renderer, context.config, prompt
             ),
         )
@@ -329,7 +327,7 @@ def run_episode(
             joint_noise=config.joint_noise,
         )
 
-        initial_observation = build_openpi_observation(
+        initial_observation = build_policy_observation(
             context.model,
             context.data,
             context.renderer,
@@ -355,7 +353,7 @@ def run_episode(
 
             step_dir = config.output_dir / f"policy_step_{step:03d}"
             step_dir.mkdir(parents=True, exist_ok=True)
-            observation = build_openpi_observation(
+            observation = build_policy_observation(
                 context.model,
                 context.data,
                 context.renderer,
@@ -378,7 +376,7 @@ def run_episode(
                     context.model, context.data, context.config
                 )
                 context.data.ctrl[:6] = current_state[:6]
-                context.data.ctrl[6] = gripper_raw_to_ctrl(
+                context.data.ctrl[6] = actuator_ctrl_from_raw_hardware(
                     float(current_state[6]),
                     context.config,
                 )
@@ -421,7 +419,7 @@ def run_episode(
                     context.model, context.data, context.config
                 )
                 context.data.ctrl[:6] = current_state[:6]
-                context.data.ctrl[6] = gripper_raw_to_ctrl(
+                context.data.ctrl[6] = actuator_ctrl_from_raw_hardware(
                     float(current_state[6]),
                     context.config,
                 )
@@ -456,7 +454,7 @@ def run_episode(
                 physical_gripper_raw = task_runtime.physical_gripper_raw_target(
                     safe_target.gripper_raw_clamped
                 )
-                physical_gripper_ctrl = gripper_raw_to_ctrl(
+                physical_gripper_ctrl = actuator_ctrl_from_raw_hardware(
                     physical_gripper_raw,
                     context.config,
                 )
@@ -546,7 +544,7 @@ def run_episode(
             viewer.close()
 
         try:
-            final_observation = build_openpi_observation(
+            final_observation = build_policy_observation(
                 context.model,
                 context.data,
                 context.renderer,

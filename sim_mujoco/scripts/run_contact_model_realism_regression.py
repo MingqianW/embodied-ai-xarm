@@ -33,7 +33,7 @@ from sim_mujoco.data_collection.oracle_controller import (  # noqa: E402
     PlaceOracleStage,
     PlaceRedPepperOracleController,
 )
-from sim_mujoco.environment import MuJoCoEnvironment  # noqa: E402
+from simulation.environment import MuJoCoEnvironment  # noqa: E402
 from sim_mujoco.gripper_slip_diagnostics import (  # noqa: E402
     CommandContext,
     PhysicsTraceRecorder,
@@ -50,7 +50,7 @@ from sim_mujoco.scripts.run_scripted_gripper_slip_experiments import (  # noqa: 
     _sha256,
     _step,
 )
-from sim_mujoco.task_scenes import resolve_task  # noqa: E402
+from simulation.scene import resolve_task  # noqa: E402
 
 
 ALLOWED_OUTPUT_ROOT = Path("/work/nvme/bfmk/mw89")
@@ -325,7 +325,7 @@ def _push_plan(
         seed_joint_qpos=initial[:6],
     )
     push_solutions = []
-    seed_qpos = start.joint_qpos
+    seed_qpos = start.joint_position
     for position in np.linspace(start_position, end_position, 27)[1:]:
         solution = solve_site_pose(
             model,
@@ -336,7 +336,7 @@ def _push_plan(
             seed_joint_qpos=seed_qpos,
         )
         push_solutions.append(solution)
-        seed_qpos = solution.joint_qpos
+        seed_qpos = solution.joint_position
     failed_waypoints = [
         index
         for index, solution in enumerate(push_solutions, start=1)
@@ -350,9 +350,9 @@ def _push_plan(
     close_count = max(1, int(np.ceil(abs(initial[6] - closed) / 25.0)))
     close_values = np.linspace(initial[6], closed, close_count + 1)[1:]
     approach = _interpolate_arm_targets(
-        initial[:6], start.joint_qpos, max_step_rad=0.025
+        initial[:6], start.joint_position, max_step_rad=0.025
     )
-    push = [solution.joint_qpos for solution in push_solutions]
+    push = [solution.joint_position for solution in push_solutions]
     end_qpos = push[-1]
     settle_count = int(round(PUSH_SETTLE_S / ACTION_DT_S))
     return [

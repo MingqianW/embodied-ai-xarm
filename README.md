@@ -43,5 +43,5 @@ from Git. Fine-tuning scripts default to
 `fine_tune/xarm_data_config.json` to use another location.
 
 See `docs/step1_data_collection.md`, `docs/step2_openpi_finetuning.md`,
-`sim_mujoco/calibration/README.md`, and
+`simulation/calibration/README.md`, and
 `docs/ISAAC_SIM_SETUP.md` for the detailed workflows.

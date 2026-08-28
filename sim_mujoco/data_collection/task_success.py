@@ -6,7 +6,7 @@ from typing import Any
 
 import numpy as np
 
-from sim_mujoco.environment import MuJoCoEnvironment
+from simulation.environment import MuJoCoEnvironment
 
 
 def simulation_is_finite(environment: MuJoCoEnvironment) -> bool:

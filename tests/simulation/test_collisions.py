@@ -4,10 +4,11 @@ import unittest
 
 import mujoco
 
-from sim_mujoco.collision import collision_diagnostics
-from sim_mujoco.collision import is_fingertip_pad_geom
-from sim_mujoco.remote_policy_observation import initialize_scene, load_simulation
-from sim_mujoco.task_scenes import configure_task_scene, task_names
+from simulation.physics.collision import collision_diagnostics
+from simulation.physics.collision import is_fingertip_pad_geom
+from simulation.runtime import initialize_scene
+from simulation.runtime import load_simulation
+from simulation.scene import configure_task_scene, task_names
 
 
 def object_id(model: mujoco.MjModel, object_type: mujoco.mjtObj, name: str) -> int:

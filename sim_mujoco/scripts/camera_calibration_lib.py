@@ -13,15 +13,18 @@ import numpy as np
 import yaml
 from openpi_client import image_tools
 from PIL import Image, ImageDraw
-from sim_mujoco.gripper_mapping import set_gripper_configuration
+from simulation.robot.gripper import set_raw_gripper_configuration
+from simulation.resources import DEFAULT_CAMERA_CONFIG_PATH
+from simulation.resources import DEFAULT_MODEL_PATH
+from simulation.resources import package_root
+from simulation.resources import repository_root
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-SIM_ROOT = PROJECT_ROOT / "sim_mujoco"
+PROJECT_ROOT = repository_root()
 RAW_ROOT = PROJECT_ROOT / "fine_tune" / "data" / "xarm_pi05_data" / "raw"
-MODEL_PATH = SIM_ROOT / "assets" / "xarm6" / "xarm6_pick_scene.xml"
-CONFIG_PATH = SIM_ROOT / "config" / "camera_calibration.yaml"
-CALIBRATION_ROOT = SIM_ROOT / "calibration"
+MODEL_PATH = DEFAULT_MODEL_PATH
+CONFIG_PATH = DEFAULT_CAMERA_CONFIG_PATH
+CALIBRATION_ROOT = package_root() / "calibration"
 BASELINE_CONFIG_PATH = CALIBRATION_ROOT / "baseline_camera_calibration.yaml"
 MANIFEST_PATH = CALIBRATION_ROOT / "selected_frames.json"
 METRICS_PATH = CALIBRATION_ROOT / "calibration_metrics.json"
@@ -297,7 +300,7 @@ class CalibrationRenderer:
         mujoco.mj_resetData(self.model, self.data)
         for index, value in enumerate(sample["joint_positions_rad"], start=1):
             set_joint_qpos(self.model, self.data, f"joint{index}", float(value))
-        set_gripper_configuration(
+        set_raw_gripper_configuration(
             self.model,
             self.data,
             float(sample["gripper_mm"]),

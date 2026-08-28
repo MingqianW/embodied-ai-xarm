@@ -4,7 +4,7 @@ This pipeline generates clean, oracle-controlled xArm MuJoCo demonstrations in
 the real-recorder-compatible raw layout and converts them to the repository's
 canonical LeRobot/OpenPI format. It supports five Pick tasks and one Place task.
 The camera source of truth is
-`sim_mujoco/config/camera_calibration.yaml`; collection never substitutes older
+`simulation/config/camera_calibration.yaml`; collection never substitutes older
 calibration values.
 
 The versioned collection plan is

@@ -1,13 +1,14 @@
 # MuJoCo Remote Policy Pipeline
 
-This directory contains the xArm6 MuJoCo scene, calibrated camera setup, and
-safe remote Pi0.5 policy runners.
+This directory contains MuJoCo data-generation, evaluation, diagnostic, and
+operator workflows. The reusable xArm6 model, scene, cameras, mappings, and
+environment live in the canonical `simulation/` package.
 
 The simulator-independent observation, image preprocessing, bounded OpenPI
 transport, action decoding/safety, logging, recording, and evaluation schema
-now live in `policy_runtime/`. `sim_mujoco/environment.py` implements the same
+now live in `policy_runtime/`. `simulation/environment.py` implements the same
 environment protocol as `sim_isaac/environment.py`; the existing
-`remote_policy_*` modules remain compatibility-facing MuJoCo helpers.
+`remote_policy_*` modules remain workflow-facing MuJoCo helpers.
 
 For the full operator/Codex procedure, see
 [`docs/mujoco_openpi_remote_inference_runbook.md`](../docs/mujoco_openpi_remote_inference_runbook.md).
@@ -17,8 +18,8 @@ For task-specific object layouts and full-suite evaluation, see
 ## Prerequisites
 
 - Python environment: `D:\miniconda\envs\mujoco-pi\python.exe`
-- The MuJoCo pick scene: `sim_mujoco\assets\xarm6\xarm6_pick_scene.xml`
-- Camera calibration: `sim_mujoco\config\camera_calibration.yaml`
+- The MuJoCo pick scene: `simulation\assets\xarm6\xarm6_pick_scene.xml`
+- Camera calibration: `simulation\config\camera_calibration.yaml`
 - OpenPI client importable in the `mujoco-pi` environment.
 - An SSH tunnel from local `127.0.0.1:18000` to the remote policy server.
 - The remote Pi0.5 policy server already running on DeltaAI.
@@ -93,14 +94,14 @@ The first six values are treated as absolute joint targets after OpenPI output
 postprocessing. The gripper value is an absolute raw target in the training
 range.
 
-Safety rules in `remote_policy_control.py`:
+Safety rules in `simulation/robot/control.py`:
 
 - Reject NaN, Inf, and wrong action shape.
 - Initially use only `actions[0]`.
 - Clamp each joint to at most `0.05` rad per policy update by default.
 - Clamp joints to MuJoCo joint limits and actuator control limits.
 - Clamp `gripper_raw` to `[50, 845]`.
-- Convert gripper raw to MuJoCo half-width target using the calibrated mapping.
+- Convert gripper hardware units to the direct-angle actuator target in radians.
 - Report every clipping event.
 
 ## Single Inference

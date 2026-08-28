@@ -2,8 +2,8 @@ schema_version: 1
 dataset_version: xarm_mujoco_clean_multitask_stable_v3
 output_schema_version: xarm_real_raw_compatible_sim_v2
 overwrite_existing_outputs: false
-camera_config: sim_mujoco/config/camera_calibration.yaml
-task_scene_config: sim_mujoco/config/task_scenes.yaml
+camera_config: simulation/config/camera_calibration.yaml
+task_scene_config: simulation/config/task_scenes.yaml
 
 outputs:
   raw: /work/nvme/bfmk/mw89/mujoco_datasets/raw/xarm_mujoco_clean_multitask_stable_v3

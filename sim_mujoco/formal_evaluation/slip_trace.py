@@ -18,9 +18,9 @@ from typing import Mapping
 import mujoco
 import numpy as np
 
-from sim_mujoco.collision import collision_diagnostics
-from sim_mujoco.collision import target_gripper_contact_count
-from sim_mujoco.remote_policy_observation import get_robot_state
+from simulation.physics.collision import collision_diagnostics
+from simulation.physics.collision import target_gripper_contact_count
+from simulation.observation.state import get_robot_state
 
 
 SLIP_TRACE_ENV = "XARM_SLIP_TRACE"

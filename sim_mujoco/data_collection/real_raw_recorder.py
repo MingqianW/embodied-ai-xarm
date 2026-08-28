@@ -14,12 +14,10 @@ import numpy as np
 from PIL import Image
 
 from sim_mujoco.data_collection.conversions import policy_state_from_mujoco
-from sim_mujoco.environment import MuJoCoEnvironment
-from sim_mujoco.remote_policy_observation import (
-    BASE_CAMERA,
-    WRIST_CAMERA,
-    render_native_rgb,
-)
+from simulation.environment import MuJoCoEnvironment
+from simulation.robot.model import BASE_CAMERA_NAME
+from simulation.robot.model import WRIST_CAMERA_NAME
+from simulation.observation.cameras import render_rgb
 
 
 ROBOT_LOG_FIELDS = (
@@ -42,8 +40,8 @@ ROBOT_LOG_FIELDS = (
     "realsense_2_file",
 )
 CAMERA_MAPPING = {
-    "realsense_0": BASE_CAMERA,
-    "realsense_1": WRIST_CAMERA,
+    "realsense_0": BASE_CAMERA_NAME,
+    "realsense_1": WRIST_CAMERA_NAME,
     "realsense_2": "overview_camera",
 }
 
@@ -167,7 +165,7 @@ class RealRawEpisodeRecorder:
         timestamp_ms = int(round(timestamp * 1000.0))
         image_paths: dict[str, str] = {}
         for raw_camera, mujoco_camera in CAMERA_MAPPING.items():
-            image = render_native_rgb(
+            image = render_rgb(
                 self.environment.context.renderer,
                 self.environment.context.data,
                 mujoco_camera,

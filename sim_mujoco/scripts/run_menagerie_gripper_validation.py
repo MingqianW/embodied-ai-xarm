@@ -19,18 +19,14 @@ if str(PROJECT_ROOT) not in sys.path:
 import mujoco  # noqa: E402
 import numpy as np  # noqa: E402
 
-from sim_mujoco.gripper_mapping import (  # noqa: E402
-    MENAGERIE_GRIPPER_JOINTS,
-    measure_fingertip_aperture_m,
-    menagerie_state_to_raw_gripper,
-    raw_gripper_to_menagerie_ctrl,
-    set_menagerie_gripper_configuration,
-)
-from sim_mujoco.remote_policy_observation import (  # noqa: E402
-    DEFAULT_CAMERA_CONFIG_PATH,
-    DEFAULT_MODEL_PATH,
-    load_camera_config,
-)
+from simulation.robot.model import XARM_FOUR_BAR_JOINT_NAMES  # noqa: E402
+from simulation.robot.gripper import measure_fingertip_aperture_m  # noqa: E402
+from simulation.robot.gripper import read_raw_gripper_position  # noqa: E402
+from simulation.robot.gripper import set_raw_gripper_configuration  # noqa: E402
+from simulation.robot.gripper_mapping import raw_hardware_to_actuator_ctrl_rad  # noqa: E402
+from simulation.resources import DEFAULT_CAMERA_CONFIG_PATH  # noqa: E402
+from simulation.resources import DEFAULT_MODEL_PATH  # noqa: E402
+from simulation.configuration import load_simulation_config  # noqa: E402
 
 
 ALLOWED_OUTPUT_ROOT = Path("/work/nvme/bfmk/mw89")
@@ -54,9 +50,9 @@ def _joint_qpos(model: mujoco.MjModel, data: mujoco.MjData, name: str) -> float:
 def static_validation() -> dict[str, Any]:
     model = mujoco.MjModel.from_xml_path(str(DEFAULT_MODEL_PATH))
     data = mujoco.MjData(model)
-    config = load_camera_config(DEFAULT_CAMERA_CONFIG_PATH)
+    config = load_simulation_config(DEFAULT_CAMERA_CONFIG_PATH)
     actuator = _id(model, mujoco.mjtObj.mjOBJ_ACTUATOR, "gripper_actuator")
-    for name in MENAGERIE_GRIPPER_JOINTS:
+    for name in XARM_FOUR_BAR_JOINT_NAMES:
         _id(model, mujoco.mjtObj.mjOBJ_JOINT, name)
     pads = [
         f"{side}_finger_pad_{index}" for side in ("left", "right") for index in (1, 2)
@@ -72,14 +68,14 @@ def static_validation() -> dict[str, Any]:
         *RAW_COMMANDS,
         OFFICIAL_REFERENCE_COMMANDS[1],
     ):
-        set_menagerie_gripper_configuration(
+        set_raw_gripper_configuration(
             model,
             data,
             raw,
             config,
             operational_bounds=False,
         )
-        data.ctrl[actuator] = raw_gripper_to_menagerie_ctrl(
+        data.ctrl[actuator] = raw_hardware_to_actuator_ctrl_rad(
             raw,
             config,
             operational_bounds=False,
@@ -118,7 +114,7 @@ def static_validation() -> dict[str, Any]:
         "model": str(DEFAULT_MODEL_PATH),
         "mujoco_version": mujoco.__version__,
         "actuator_count": int(model.nu),
-        "gripper_joint_names": list(MENAGERIE_GRIPPER_JOINTS),
+        "gripper_joint_names": list(XARM_FOUR_BAR_JOINT_NAMES),
         "gripper_actuator_name": "gripper_actuator",
         "actuator_ctrlrange": model.actuator_ctrlrange[actuator].tolist(),
         "actuator_forcerange": model.actuator_forcerange[actuator].tolist(),
@@ -162,7 +158,7 @@ def _dynamic_trial(
     data = mujoco.MjData(model)
     key = _id(model, mujoco.mjtObj.mjOBJ_KEY, "home")
     mujoco.mj_resetDataKeyframe(model, data, key)
-    set_menagerie_gripper_configuration(model, data, initial_raw, config)
+    set_raw_gripper_configuration(model, data, initial_raw, config)
     data.ctrl[6] = float(ctrl)
     mujoco.mj_forward(model, data)
     start_aperture = measure_fingertip_aperture_m(model, data)
@@ -178,7 +174,7 @@ def _dynamic_trial(
         "right_driver_rad": right,
         "driver_symmetry_error_rad": abs(left - right),
         "measured_aperture_mm": 1000.0 * measure_fingertip_aperture_m(model, data),
-        "reconstructed_raw": menagerie_state_to_raw_gripper(model, data, config),
+        "reconstructed_raw": read_raw_gripper_position(model, data, config),
         "actuator_force_actuator_space": float(data.actuator_force[6]),
         "warning_count": warning_count,
         "finite": bool(np.isfinite(data.qpos).all() and np.isfinite(data.qvel).all()),
@@ -195,7 +191,7 @@ def run_dynamic(output_root: Path) -> dict[str, Any]:
         raise FileExistsError(f"Refusing existing output: {output}")
     output.mkdir(parents=True, exist_ok=False)
     model = mujoco.MjModel.from_xml_path(str(DEFAULT_MODEL_PATH))
-    config = load_camera_config(DEFAULT_CAMERA_CONFIG_PATH)
+    config = load_simulation_config(DEFAULT_CAMERA_CONFIG_PATH)
     static = static_validation()
     direction = [
         _dynamic_trial(model, config, ctrl=0.0, initial_raw=425.0),
@@ -206,7 +202,7 @@ def run_dynamic(output_root: Path) -> dict[str, Any]:
         row = _dynamic_trial(
             model,
             config,
-            ctrl=raw_gripper_to_menagerie_ctrl(raw, config),
+            ctrl=raw_hardware_to_actuator_ctrl_rad(raw, config),
             initial_raw=845.0,
         )
         row["project_raw_command"] = raw

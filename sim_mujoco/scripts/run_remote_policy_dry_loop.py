@@ -18,19 +18,18 @@ if str(PROJECT_ROOT) not in sys.path:
 from policy_runtime.episode_logging import json_default, write_json
 from policy_runtime.remote_policy_client import RemotePolicyClient, RemotePolicyConfig
 from policy_runtime.safety import SafetyConfig, validate_action_chunk
-from sim_mujoco.remote_policy_control import (
+from simulation.robot.control import (
     compute_safe_control_target,
     extract_first_action,
     validate_policy_actions,
 )
-from sim_mujoco.remote_policy_observation import (
-    arm_actuator_ctrl_limits,
-    arm_joint_limits,
-    build_openpi_observation,
-    image_diagnostics,
-    initialize_scene,
-    load_simulation,
-)
+from simulation.robot.gripper import actuator_ctrl_from_raw_hardware
+from simulation.robot.model import arm_actuator_ctrl_limits
+from simulation.robot.model import arm_joint_limits
+from simulation.observation.policy import build_policy_observation
+from policy_runtime.image_preprocessing import image_diagnostics
+from simulation.runtime import initialize_scene
+from simulation.runtime import load_simulation
 from sim_mujoco.paths import mujoco_output_root
 
 
@@ -38,10 +37,8 @@ DEFAULT_OUTPUT_DIR = mujoco_output_root() / "remote_policy_dry_loop"
 
 
 def hold_current_control(data, state: np.ndarray, config: dict[str, Any]) -> None:
-    from sim_mujoco.remote_policy_observation import gripper_raw_to_ctrl
-
     data.ctrl[:6] = state[:6]
-    data.ctrl[6] = gripper_raw_to_ctrl(float(state[6]), config)
+    data.ctrl[6] = actuator_ctrl_from_raw_hardware(float(state[6]), config)
 
 
 def main() -> None:
@@ -73,7 +70,7 @@ def main() -> None:
             iteration_dir = args.output_dir / f"iteration_{iteration:03d}"
             iteration_dir.mkdir(parents=True, exist_ok=True)
 
-            observation = build_openpi_observation(
+            observation = build_policy_observation(
                 context.model,
                 context.data,
                 context.renderer,

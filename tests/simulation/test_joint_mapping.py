@@ -7,18 +7,16 @@ from pathlib import Path
 import mujoco
 import numpy as np
 
-from sim_mujoco.joint_mapping import (
+from simulation.robot.joint_mapping import (
     mujoco_qpos_to_raw_arm_state,
     raw_arm_state_to_mujoco_qpos,
 )
-from sim_mujoco.remote_policy_observation import (
-    ARM_JOINT_NAMES,
-    initialize_scene,
-    load_simulation,
-)
+from simulation.robot.model import ARM_JOINT_NAMES
+from simulation.runtime import initialize_scene
+from simulation.runtime import load_simulation
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 class JointMappingTests(unittest.TestCase):

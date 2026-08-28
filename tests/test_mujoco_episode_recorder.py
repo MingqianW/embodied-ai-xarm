@@ -21,7 +21,7 @@ from sim_mujoco.data_collection.episode_recorder import (
 from sim_mujoco.data_collection.oracle_controller import (
     ScriptedOracleController,
 )
-from sim_mujoco.environment import MuJoCoEnvironment
+from simulation.environment import MuJoCoEnvironment
 from sim_mujoco.scripts.collect_oracle_data import (
     _record_attempt,
     _run_config_from_args,

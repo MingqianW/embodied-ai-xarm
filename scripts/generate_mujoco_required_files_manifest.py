@@ -16,12 +16,14 @@ OUTPUT_DIR = ROOT / "docs" / "mujoco_migration"
 
 CATEGORIES: dict[str, list[str]] = {
     "simulation_assets": [
-        "sim_mujoco/assets/xarm6/xarm6_arm.xml",
-        "sim_mujoco/assets/xarm6/xarm6_pick_scene.xml",
+        "simulation/assets/xarm6/xarm6_arm.xml",
+        "simulation/assets/xarm6/xarm6_pick_scene.xml",
+        "simulation/assets/xarm6/README.md",
         "sim_mujoco/scenes/minimal.xml",
-        "sim_mujoco/config/camera_calibration.yaml",
-        "sim_mujoco/calibration/baseline_camera_calibration.yaml",
-        "sim_mujoco/config/task_scenes.yaml",
+        "simulation/config/camera_calibration.yaml",
+        "simulation/config/gripper_mapping.yaml",
+        "simulation/calibration/baseline_camera_calibration.yaml",
+        "simulation/config/task_scenes.yaml",
         "third_party/xarm_ros2/xarm_description/config/kinematics/default/xarm6_default_kinematics.yaml",
         "third_party/xarm_ros2/xarm_description/config/link_inertial/xarm6_type6_HT_BR2.yaml",
         *[
@@ -31,19 +33,30 @@ CATEGORIES: dict[str, list[str]] = {
         ],
     ],
     "simulation_code": [
-        "sim_mujoco/__init__.py",
+        "simulation/__init__.py",
+        "simulation/configuration.py",
+        "simulation/environment.py",
+        "simulation/resources.py",
+        "simulation/runtime.py",
+        "simulation/observation/cameras.py",
+        "simulation/observation/policy.py",
+        "simulation/observation/state.py",
+        "simulation/physics/collision.py",
+        "simulation/robot/control.py",
+        "simulation/robot/gripper.py",
+        "simulation/robot/gripper_mapping.py",
+        "simulation/robot/joint_mapping.py",
+        "simulation/robot/legacy_gripper.py",
+        "simulation/robot/model.py",
+        "simulation/scene/objects.py",
+        "simulation/scene/reset.py",
+        "simulation/scene/runtime.py",
+        "simulation/scene/tasks.py",
+        "simulation/recording.py",
+        "simulation/tools/generate_xarm6_mjcf.py",
+        "simulation/tools/build_xarm6_pick_scene.py",
         "sim_mujoco/paths.py",
-        "sim_mujoco/environment.py",
-        "sim_mujoco/collision.py",
-        "sim_mujoco/gripper_mapping.py",
-        "sim_mujoco/joint_mapping.py",
-        "sim_mujoco/task_scenes.py",
-        "sim_mujoco/recording.py",
-        "sim_mujoco/remote_policy_observation.py",
-        "sim_mujoco/remote_policy_control.py",
         "sim_mujoco/remote_policy_evaluation.py",
-        "sim_mujoco/scripts/generate_xarm6_mjcf.py",
-        "sim_mujoco/scripts/build_xarm6_pick_scene.py",
         "sim_mujoco/scripts/camera_calibration_lib.py",
         "sim_mujoco/scripts/render_task_scenes.py",
         "sim_mujoco/scripts/smoke_test_headless_render.py",
@@ -113,16 +126,11 @@ CATEGORIES: dict[str, list[str]] = {
             f"tests/{name}.py"
             for name in (
                 "test_mujoco_chunk_execution",
-                "test_mujoco_collisions",
                 "test_mujoco_data_conversions",
                 "test_mujoco_episode_recorder",
-                "test_mujoco_gripper_motion",
                 "test_mujoco_hf_safety",
-                "test_mujoco_joint_mapping",
                 "test_mujoco_lerobot_pipeline",
-                "test_mujoco_paths",
                 "test_mujoco_scripted_oracle",
-                "test_mujoco_task_scenes",
                 "test_policy_runtime_actions",
                 "test_policy_runtime_config",
                 "test_policy_runtime_evaluation",
@@ -134,12 +142,24 @@ CATEGORIES: dict[str, list[str]] = {
                 "test_remote_policy_pipeline",
             )
         ],
+        *[
+            f"tests/simulation/{name}.py"
+            for name in (
+                "test_collisions",
+                "test_gripper_integration",
+                "test_gripper_motion",
+                "test_joint_mapping",
+                "test_model_contract",
+                "test_resources",
+                "test_task_scenes",
+            )
+        ],
     ],
 }
 
 GENERATED = {
-    "sim_mujoco/assets/xarm6/xarm6_arm.xml",
-    "sim_mujoco/assets/xarm6/xarm6_pick_scene.xml",
+    "simulation/assets/xarm6/xarm6_arm.xml",
+    "simulation/assets/xarm6/xarm6_pick_scene.xml",
 }
 
 PURPOSES = {

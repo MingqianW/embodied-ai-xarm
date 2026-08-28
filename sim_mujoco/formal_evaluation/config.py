@@ -9,9 +9,9 @@ from pathlib import Path
 from typing import Any
 
 from sim_mujoco.data_generation.registry import TASKS
-from sim_mujoco.paths import active_model_path
-from sim_mujoco.paths import camera_config_path
-from sim_mujoco.paths import task_config_path
+from simulation.resources import camera_config_path
+from simulation.resources import model_path
+from simulation.resources import task_config_path
 
 FORMAL_PROTOCOL_VERSION = "xarm-pi05-formal-evaluation-v1"
 FORMAL_STABLE_HOLD_PROTOCOL_VERSION = "xarm-pi05-formal-evaluation-v2"
@@ -168,7 +168,7 @@ def load_protocol(path: Path | None = None) -> FormalProtocol:
         robot_xml_path=_canonical_input_path(
             raw["paths"]["robot_xml"],
             config_path=path,
-            fallback=active_model_path(),
+            fallback=model_path(),
         ),
         output_root=_absolute_path(raw["outputs"]["formal_output_root"], config_path=path),
         video_policy=str(video.get("video_policy", "periodic")),
@@ -258,7 +258,7 @@ def validate_protocol(protocol: FormalProtocol) -> None:
         raise ValueError("Formal evaluation output root must be under /work/nvme/bfmk/mw89")
     # Catch accidental divergence from canonical path resolution before a job
     # spends GPU time loading a policy.
-    expected_paths = (camera_config_path(), task_config_path(), active_model_path())
+    expected_paths = (camera_config_path(), task_config_path(), model_path())
     actual_paths = (
         protocol.camera_config_path,
         protocol.task_scene_config_path,

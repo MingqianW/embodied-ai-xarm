@@ -30,7 +30,7 @@ from sim_mujoco.data_collection.task_success import (
     simulation_is_finite,
     update_task_success,
 )
-from sim_mujoco.environment import MuJoCoEnvironment
+from simulation.environment import MuJoCoEnvironment
 from sim_mujoco.paths import mujoco_dataset_root
 
 

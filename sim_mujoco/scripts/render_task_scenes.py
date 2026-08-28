@@ -13,14 +13,12 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from sim_mujoco.remote_policy_observation import (
-    BASE_CAMERA,
-    WRIST_CAMERA,
-    initialize_scene,
-    load_simulation,
-    render_native_rgb,
-)
-from sim_mujoco.task_scenes import configure_task_scene, task_names
+from simulation.robot.model import BASE_CAMERA_NAME
+from simulation.robot.model import WRIST_CAMERA_NAME
+from simulation.runtime import initialize_scene
+from simulation.runtime import load_simulation
+from simulation.observation.cameras import render_rgb
+from simulation.scene import configure_task_scene, task_names
 from sim_mujoco.paths import mujoco_output_root
 
 
@@ -76,10 +74,10 @@ def main() -> None:
             task_dir = args.output_dir / task
             task_dir.mkdir(parents=True, exist_ok=True)
             Image.fromarray(
-                render_native_rgb(context.renderer, context.data, BASE_CAMERA)
+                render_rgb(context.renderer, context.data, BASE_CAMERA_NAME)
             ).save(task_dir / "base.png")
             Image.fromarray(
-                render_native_rgb(context.renderer, context.data, WRIST_CAMERA)
+                render_rgb(context.renderer, context.data, WRIST_CAMERA_NAME)
             ).save(task_dir / "wrist.png")
             if args.show_collisions:
                 for geom_id in range(context.model.ngeom):
@@ -91,7 +89,7 @@ def main() -> None:
                     if geom_name.endswith("_visual"):
                         context.model.geom_rgba[geom_id, 3] = 0.0
                 Image.fromarray(
-                    render_native_rgb(
+                    render_rgb(
                         context.renderer,
                         context.data,
                         "overview_camera",

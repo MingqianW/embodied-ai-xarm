@@ -6,27 +6,24 @@ from typing import Any
 import mujoco
 import numpy as np
 
-from sim_mujoco.collision import collision_diagnostics
-from sim_mujoco.gripper_mapping import is_menagerie_gripper
 from policy_runtime.image_preprocessing import ImagePreprocessingConfig
 from policy_runtime.observation_builder import build_policy_observation
 from policy_runtime.schemas import PolicyObservation
-from sim_mujoco.remote_policy_observation import (
-    BASE_CAMERA,
-    DEFAULT_CAMERA_CONFIG_PATH,
-    DEFAULT_MODEL_PATH,
-    WRIST_CAMERA,
-    arm_actuator_ctrl_limits,
-    arm_joint_limits,
-    get_robot_state,
-    gripper_raw_to_ctrl,
-    initialize_scene,
-    load_simulation,
-    policy_image,
-    render_native_rgb,
-)
-from sim_mujoco.task_scenes import (
-    TASK_CONFIG_PATH,
+from simulation.observation.cameras import render_rgb
+from simulation.observation.policy import policy_image
+from simulation.observation.state import get_robot_state
+from simulation.physics.collision import collision_diagnostics
+from simulation.resources import task_config_path
+from simulation.robot.gripper import actuator_ctrl_from_raw_hardware
+from simulation.robot.gripper import has_xarm_four_bar_gripper
+from simulation.robot.model import BASE_CAMERA_NAME
+from simulation.robot.model import OVERVIEW_CAMERA_NAME
+from simulation.robot.model import WRIST_CAMERA_NAME
+from simulation.robot.model import arm_actuator_ctrl_limits
+from simulation.robot.model import arm_joint_limits
+from simulation.runtime import initialize_scene
+from simulation.runtime import load_simulation
+from simulation.scene import (
     TaskSceneRuntime,
     configure_task_scene,
     resolve_task,
@@ -39,9 +36,10 @@ class MuJoCoEnvironment:
     def __init__(
         self,
         *,
-        model_path: Path = DEFAULT_MODEL_PATH,
-        camera_config_path: Path = DEFAULT_CAMERA_CONFIG_PATH,
-        task_scene_config_path: Path = TASK_CONFIG_PATH,
+        model_path: Path | None = None,
+        camera_config_path: Path | None = None,
+        gripper_config_path: Path | None = None,
+        task_scene_config_path: Path | None = None,
         task: str = "red_block",
         prompt: str | None = None,
         settle_steps: int = 500,
@@ -50,8 +48,16 @@ class MuJoCoEnvironment:
         joint_noise: float = 0.0,
         scene_variant: str = "clean",
     ) -> None:
-        self.context = load_simulation(model_path, camera_config_path)
-        self.task_scene_config_path = Path(task_scene_config_path).resolve()
+        self.context = load_simulation(
+            model_path,
+            camera_config_path,
+            gripper_config_path,
+        )
+        self.task_scene_config_path = (
+            task_config_path()
+            if task_scene_config_path is None
+            else Path(task_scene_config_path).resolve()
+        )
         self.task, task_spec = resolve_task(task, self.task_scene_config_path)
         self.prompt = str(prompt or task_spec["prompt"])
         self.settle_steps = int(settle_steps)
@@ -108,15 +114,15 @@ class MuJoCoEnvironment:
         return self.observe()
 
     def observe(self) -> PolicyObservation:
-        base_native = render_native_rgb(
+        base_native = render_rgb(
             self.context.renderer,
             self.context.data,
-            BASE_CAMERA,
+            BASE_CAMERA_NAME,
         )
-        wrist_native = render_native_rgb(
+        wrist_native = render_rgb(
             self.context.renderer,
             self.context.data,
-            WRIST_CAMERA,
+            WRIST_CAMERA_NAME,
         )
         observation = build_policy_observation(
             base_native,
@@ -147,11 +153,15 @@ class MuJoCoEnvironment:
         gripper_raw = float(value[6])
         if self.task_runtime is not None:
             self.task_runtime.release_if_requested(gripper_raw)
-        gripper_target = gripper_raw_to_ctrl(gripper_raw, self.context.config)
+        gripper_target = actuator_ctrl_from_raw_hardware(
+            gripper_raw, self.context.config
+        )
         if self.task_runtime is not None:
-            if is_menagerie_gripper(self.context.model):
+            if has_xarm_four_bar_gripper(self.context.model):
                 gripper_raw = self.task_runtime.physical_gripper_raw_target(gripper_raw)
-                gripper_target = gripper_raw_to_ctrl(gripper_raw, self.context.config)
+                gripper_target = actuator_ctrl_from_raw_hardware(
+                    gripper_raw, self.context.config
+                )
             else:
                 gripper_target = self.task_runtime.physical_gripper_target(
                     gripper_raw,
@@ -178,7 +188,7 @@ class MuJoCoEnvironment:
             self.context.model, self.context.data, self.context.config
         )
         self.context.data.ctrl[:6] = state[:6]
-        self.context.data.ctrl[6] = gripper_raw_to_ctrl(
+        self.context.data.ctrl[6] = actuator_ctrl_from_raw_hardware(
             float(state[6]), self.context.config
         )
 
@@ -240,17 +250,17 @@ class MuJoCoEnvironment:
         return diagnostics
 
     def recording_frames(self) -> dict[str, np.ndarray]:
-        viewer = render_native_rgb(
+        viewer = render_rgb(
             self.context.renderer,
             self.context.data,
-            "overview_camera",
+            OVERVIEW_CAMERA_NAME,
         )
         base = policy_image(
-            render_native_rgb(self.context.renderer, self.context.data, BASE_CAMERA),
+            render_rgb(self.context.renderer, self.context.data, BASE_CAMERA_NAME),
             self.context.config,
         )
         wrist = policy_image(
-            render_native_rgb(self.context.renderer, self.context.data, WRIST_CAMERA),
+            render_rgb(self.context.renderer, self.context.data, WRIST_CAMERA_NAME),
             self.context.config,
         )
         return {"viewer": viewer, "base": base, "wrist": wrist}

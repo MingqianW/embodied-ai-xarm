@@ -3,17 +3,16 @@ from __future__ import annotations
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
+import mujoco
 import numpy as np
-import yaml
 
+from simulation.configuration import load_camera_calibration
+from simulation.resources import DEFAULT_CAMERA_CONFIG_PATH
+from simulation.resources import asset_path
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-
-SOURCE_MODEL = PROJECT_ROOT / "sim_mujoco" / "assets" / "xarm6" / "xarm6_arm.xml"
-
-OUTPUT_MODEL = PROJECT_ROOT / "sim_mujoco" / "assets" / "xarm6" / "xarm6_pick_scene.xml"
-
-CAMERA_CONFIG = PROJECT_ROOT / "sim_mujoco" / "config" / "camera_calibration.yaml"
+SOURCE_MODEL = asset_path("xarm6", "xarm6_arm.xml")
+OUTPUT_MODEL = asset_path("xarm6", "xarm6_pick_scene.xml")
+CAMERA_CONFIG = DEFAULT_CAMERA_CONFIG_PATH
 
 
 HOME_ARM_QPOS = [
@@ -30,6 +29,15 @@ MENAGERIE_GRIPPER_MESH_DIR = "../../gripper/xarm"
 MENAGERIE_DRIVER_RANGE = "0 0.85"
 PROJECT_OPEN_DRIVER_ANGLE = 0.005
 PROJECT_OPEN_CTRL = PROJECT_OPEN_DRIVER_ANGLE
+# The checked-in MJCF carries a calibrated fallback mount. Runtime loading
+# reapplies the package-owned camera calibration from YAML, including model
+# variants and explicit path overrides.
+MJCF_WRIST_CAMERA_POSITION = (0.0674069555, 0.0057714126, 0.0865342728)
+MJCF_WRIST_CAMERA_XYAXES = (
+    "0.1267779936 -0.9901214204 -0.05989084331 "
+    "-0.9553633746 -0.1056386758 -0.2759008749"
+)
+MJCF_WRIST_CAMERA_FOVY_DEG = 90.3695
 
 OBJECT_INITIAL_QPOS = [
     0.458,  # x
@@ -40,6 +48,29 @@ OBJECT_INITIAL_QPOS = [
     0.0,  # quaternion y
     0.0,  # quaternion z
 ]
+
+MODEL_DIMENSIONS = (
+    "nq",
+    "nv",
+    "nu",
+    "nbody",
+    "njnt",
+    "ngeom",
+    "nsite",
+    "ncam",
+    "neq",
+    "nexclude",
+    "ntendon",
+)
+MODEL_OPTIONS = (
+    "timestep",
+    "integrator",
+    "solver",
+    "cone",
+    "impratio",
+    "iterations",
+    "tolerance",
+)
 
 
 def format_values(values) -> str:
@@ -94,20 +125,40 @@ def camera_xyaxes(
     return format_values(np.concatenate([rolled_x, rolled_y]))
 
 
-def load_camera_config() -> dict:
-    if not CAMERA_CONFIG.is_file():
-        raise FileNotFoundError(f"Camera calibration config not found: {CAMERA_CONFIG}")
+def _compiled_model_differences(
+    canonical_path: Path,
+    candidate_path: Path,
+) -> list[str]:
+    """Compare every exposed compiled array plus global model contracts."""
 
-    with CAMERA_CONFIG.open("r", encoding="utf-8") as stream:
-        config = yaml.safe_load(stream)
-
-    for camera_name in ("base_camera", "wrist_camera"):
-        section = config.get(camera_name, {})
-        for key in ("position", "target", "roll_deg", "fovy_deg"):
-            if key not in section:
-                raise ValueError(f"Missing {camera_name}.{key} in {CAMERA_CONFIG}")
-
-    return config
+    canonical = mujoco.MjModel.from_xml_path(str(canonical_path))
+    candidate = mujoco.MjModel.from_xml_path(str(candidate_path))
+    differences = [
+        name
+        for name in MODEL_DIMENSIONS
+        if getattr(canonical, name) != getattr(candidate, name)
+    ]
+    differences.extend(
+        f"option.{name}"
+        for name in MODEL_OPTIONS
+        if getattr(canonical.opt, name) != getattr(candidate.opt, name)
+    )
+    array_names = sorted(
+        name
+        for name in set(dir(canonical)) & set(dir(candidate))
+        if isinstance(getattr(canonical, name), np.ndarray)
+        and isinstance(getattr(candidate, name), np.ndarray)
+    )
+    differences.extend(
+        name
+        for name in array_names
+        if not np.array_equal(getattr(canonical, name), getattr(candidate, name))
+    )
+    if canonical.names != candidate.names:
+        differences.append("names")
+    if canonical.paths != candidate.paths:
+        differences.append("paths")
+    return differences
 
 
 def add_material(
@@ -344,13 +395,15 @@ def add_robot_collision_model(root: ET.Element) -> None:
         ("link4", "gripper_base"),
         ("link5", "gripper_base"),
     )
-    for body1, body2 in adjacent_pairs:
-        ET.SubElement(
-            contact,
-            "exclude",
-            name=f"exclude_{body1}_{body2}",
-            body1=body1,
-            body2=body2,
+    for index, (body1, body2) in enumerate(adjacent_pairs):
+        contact.insert(
+            index,
+            ET.Element(
+                "exclude",
+                name=f"exclude_{body1}_{body2}",
+                body1=body1,
+                body2=body2,
+            ),
         )
 
 
@@ -410,17 +463,17 @@ def add_menagerie_joint(
 def add_menagerie_mesh_geom(
     body: ET.Element,
     *,
-    name: str,
+    name: str | None,
     mesh: str,
     material: str,
-    visual_only: bool = False,
 ) -> None:
     attributes = {
-        "name": name,
         "type": "mesh",
         "mesh": mesh,
         "material": material,
     }
+    if name is not None:
+        attributes["name"] = name
     attributes.update(contype="0", conaffinity="0", group="2")
     ET.SubElement(body, "geom", **attributes)
 
@@ -430,8 +483,6 @@ def add_menagerie_pad(
     *,
     name: str,
     position: str,
-    friction: str,
-    rgba: str,
 ) -> None:
     ET.SubElement(
         body,
@@ -458,7 +509,6 @@ def add_menagerie_gripper(
     link6: ET.Element,
     asset: ET.Element,
     actuator: ET.Element,
-    camera_config: dict,
 ) -> None:
     """Build the LOCAL four-bar gripper on the existing xArm6 flange.
 
@@ -488,7 +538,6 @@ def add_menagerie_gripper(
         name="gripper_base_visual",
         mesh="xarm_gripper_base_mesh",
         material="robot_white",
-        visual_only=True,
     )
     ET.SubElement(
         gripper_base,
@@ -512,20 +561,13 @@ def add_menagerie_gripper(
         size="0.012",
         rgba="0 1 0 0",
     )
-    wrist_config = camera_config["wrist_camera"]
-    wrist_camera_position = np.asarray(wrist_config["position"], dtype=np.float64)
-    wrist_camera_target = np.asarray(wrist_config["target"], dtype=np.float64)
     ET.SubElement(
         gripper_base,
         "camera",
         name="wrist_camera",
-        pos=format_values(wrist_camera_position),
-        xyaxes=camera_xyaxes(
-            wrist_camera_position,
-            wrist_camera_target,
-            roll_deg=wrist_config["roll_deg"],
-        ),
-        fovy=format_values(wrist_config["fovy_deg"]),
+        pos=format_values(MJCF_WRIST_CAMERA_POSITION),
+        xyaxes=MJCF_WRIST_CAMERA_XYAXES,
+        fovy=format_values(MJCF_WRIST_CAMERA_FOVY_DEG),
     )
     held_pepper = ET.SubElement(
         gripper_base,
@@ -558,10 +600,9 @@ def add_menagerie_gripper(
     )
     add_menagerie_mesh_geom(
         left_outer,
-        name="left_outer_knuckle_collision",
+        name=None,
         mesh="xarm_gripper_left_outer_mesh",
         material="gripper_dark",
-        visual_only=True,
     )
     left_finger = ET.SubElement(
         left_outer,
@@ -586,24 +627,19 @@ def add_menagerie_gripper(
     )
     add_menagerie_mesh_geom(
         left_finger,
-        name="left_finger_visual",
+        name=None,
         mesh="xarm_gripper_left_finger_mesh",
         material="gripper_dark",
-        visual_only=True,
     )
     add_menagerie_pad(
         left_finger,
         name="left_finger_pad_1",
         position="0 -0.024003 0.032",
-        friction="2.0 0.012 0.0001",
-        rgba="0.0 0.1 0.7 1",
     )
     add_menagerie_pad(
         left_finger,
         name="left_finger_pad_2",
         position="0 -0.024003 0.050",
-        friction="2.0 0.012 0.0001",
-        rgba="0.0 0.5 0.5 1",
     )
 
     left_inner = ET.SubElement(
@@ -629,10 +665,9 @@ def add_menagerie_gripper(
     )
     add_menagerie_mesh_geom(
         left_inner,
-        name="left_inner_knuckle_collision",
+        name=None,
         mesh="xarm_gripper_left_inner_mesh",
         material="gripper_dark",
-        visual_only=True,
     )
 
     right_outer = ET.SubElement(
@@ -658,10 +693,9 @@ def add_menagerie_gripper(
     )
     add_menagerie_mesh_geom(
         right_outer,
-        name="right_outer_knuckle_collision",
+        name=None,
         mesh="xarm_gripper_right_outer_mesh",
         material="gripper_dark",
-        visual_only=True,
     )
     right_finger = ET.SubElement(
         right_outer,
@@ -686,24 +720,19 @@ def add_menagerie_gripper(
     )
     add_menagerie_mesh_geom(
         right_finger,
-        name="right_finger_visual",
+        name=None,
         mesh="xarm_gripper_right_finger_mesh",
         material="gripper_dark",
-        visual_only=True,
     )
     add_menagerie_pad(
         right_finger,
         name="right_finger_pad_1",
         position="0 0.024003 0.032",
-        friction="2.0 0.012 0.0001",
-        rgba="0.0 0.1 0.7 1",
     )
     add_menagerie_pad(
         right_finger,
         name="right_finger_pad_2",
         position="0 0.024003 0.050",
-        friction="2.0 0.012 0.0001",
-        rgba="0.0 0.5 0.5 1",
     )
 
     right_inner = ET.SubElement(
@@ -729,10 +758,9 @@ def add_menagerie_gripper(
     )
     add_menagerie_mesh_geom(
         right_inner,
-        name="right_inner_knuckle_collision",
+        name=None,
         mesh="xarm_gripper_right_inner_mesh",
         material="gripper_dark",
-        visual_only=True,
     )
 
     tendon = root.find("tendon")
@@ -785,12 +813,9 @@ def add_menagerie_gripper(
 
     contact = root.find("contact")
     if contact is None:
-        contact = ET.SubElement(root, "contact")
+        contact = ET.Element("contact")
+        root.insert(list(root).index(actuator), contact)
     for body1, body2 in (
-        ("right_inner_knuckle", "right_outer_knuckle"),
-        ("right_inner_knuckle", "right_finger"),
-        ("left_inner_knuckle", "left_outer_knuckle"),
-        ("left_inner_knuckle", "left_finger"),
         ("gripper_base", "left_finger"),
         ("gripper_base", "right_finger"),
         ("left_finger", "right_finger"),
@@ -808,7 +833,7 @@ def main() -> None:
     if not SOURCE_MODEL.is_file():
         raise FileNotFoundError(f"Source arm model not found: {SOURCE_MODEL}")
 
-    camera_config = load_camera_config()
+    camera_config = load_camera_calibration(CAMERA_CONFIG)
     tree = ET.parse(SOURCE_MODEL)
     root = tree.getroot()
 
@@ -887,7 +912,6 @@ def main() -> None:
         link6=link6,
         asset=asset,
         actuator=actuator,
-        camera_config=camera_config,
     )
 
     # ------------------------------------------------------------------
@@ -1095,13 +1119,33 @@ def main() -> None:
 
     ET.indent(root, space="  ")
 
+    output_exists = OUTPUT_MODEL.is_file()
+    candidate_path = (
+        OUTPUT_MODEL.with_name(f".{OUTPUT_MODEL.name}.candidate")
+        if output_exists
+        else OUTPUT_MODEL
+    )
+    if candidate_path.exists() and candidate_path != OUTPUT_MODEL:
+        raise FileExistsError(f"Refusing to overwrite build candidate: {candidate_path}")
+
     tree.write(
-        OUTPUT_MODEL,
+        candidate_path,
         encoding="utf-8",
         xml_declaration=True,
     )
 
-    print("Generated:", OUTPUT_MODEL)
+    if output_exists:
+        differences = _compiled_model_differences(OUTPUT_MODEL, candidate_path)
+        if differences:
+            joined = ", ".join(differences)
+            raise RuntimeError(
+                "Generated candidate differs from the authoritative compiled "
+                f"model ({joined}). Candidate preserved at {candidate_path}"
+            )
+        candidate_path.unlink()
+
+    action = "Validated without rewriting" if output_exists else "Generated"
+    print(f"{action}:", OUTPUT_MODEL)
     print("Arm actuators: 6")
     print("Gripper actuators: 1")
     print(f"Menagerie gripper revision: {MENAGERIE_REVISION}")

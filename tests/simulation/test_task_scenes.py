@@ -5,8 +5,9 @@ import unittest
 import mujoco
 import numpy as np
 
-from sim_mujoco.remote_policy_observation import initialize_scene, load_simulation
-from sim_mujoco.task_scenes import (
+from simulation.runtime import initialize_scene
+from simulation.runtime import load_simulation
+from simulation.scene import (
     configure_task_scene,
     resolve_task,
     task_names,

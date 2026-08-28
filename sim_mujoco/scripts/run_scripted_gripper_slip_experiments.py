@@ -25,20 +25,20 @@ if str(PROJECT_ROOT) not in sys.path:
 import mujoco  # noqa: E402
 import numpy as np  # noqa: E402
 
-from sim_mujoco.collision import collision_diagnostics  # noqa: E402
+from simulation.physics.collision import collision_diagnostics  # noqa: E402
 from sim_mujoco.data_collection.oracle_controller import (  # noqa: E402
     OracleConfig,
     OracleStage,
     ScriptedOracleController,
 )
 from sim_mujoco.data_collection.ik_solver import solve_site_pose  # noqa: E402
-from sim_mujoco.environment import MuJoCoEnvironment  # noqa: E402
+from simulation.environment import MuJoCoEnvironment  # noqa: E402
 from sim_mujoco.gripper_slip_diagnostics import (  # noqa: E402
     CommandContext,
     PhysicsTraceRecorder,
 )
 from sim_mujoco.remote_policy_evaluation import VideoRecorder  # noqa: E402
-from sim_mujoco.task_scenes import resolve_task  # noqa: E402
+from simulation.scene import resolve_task  # noqa: E402
 
 
 ALLOWED_OUTPUT_ROOT = Path("/work/nvme/bfmk/mw89")
@@ -51,7 +51,7 @@ CLOSED_RAW_BY_TASK = {
 }
 GRASP_OFFSET_BY_TASK = {"red_pepper": -0.020}
 HOLD_KINDS = ("static", "suspended")
-BASE_MODEL_PATH = PROJECT_ROOT / "sim_mujoco/assets/xarm6/xarm6_pick_scene.xml"
+BASE_MODEL_PATH = PROJECT_ROOT / "simulation/assets/xarm6/xarm6_pick_scene.xml"
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -403,7 +403,7 @@ def _dynamic_arm_segments(
         raise ValueError(f"Unknown motion profile: {profile}")
 
     segments: list[tuple[str, list[np.ndarray]]] = []
-    previous = np.asarray(controller.plan.lift.joint_qpos, dtype=np.float64)
+    previous = np.asarray(controller.plan.lift.joint_position, dtype=np.float64)
     for stage, position, rotation in waypoints:
         solution = solve_site_pose(
             model,
@@ -421,11 +421,11 @@ def _dynamic_arm_segments(
             )
         targets = _interpolate_arm_targets(
             previous,
-            solution.joint_qpos,
+            solution.joint_position,
             max_step_rad=controller.config.lift_max_joint_step_rad,
         )
         segments.append((stage, targets))
-        previous = np.asarray(solution.joint_qpos, dtype=np.float64)
+        previous = np.asarray(solution.joint_position, dtype=np.float64)
     return segments
 
 
@@ -1059,9 +1059,9 @@ def _run_trial(
                 break
 
         hold_arm = np.asarray(
-            controller.plan.grasp.joint_qpos
+            controller.plan.grasp.joint_position
             if hold_kind == "static"
-            else controller.plan.lift.joint_qpos,
+            else controller.plan.lift.joint_position,
             dtype=np.float64,
         )
         dynamic_action_count = 0

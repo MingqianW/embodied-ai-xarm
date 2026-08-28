@@ -23,15 +23,11 @@ if str(PROJECT_ROOT) not in sys.path:
 import mujoco  # noqa: E402
 import numpy as np  # noqa: E402
 
-from sim_mujoco.gripper_mapping import (  # noqa: E402
-    measure_fingertip_aperture_m,
-    raw_gripper_to_menagerie_ctrl,
-)
-from sim_mujoco.remote_policy_observation import (  # noqa: E402
-    DEFAULT_CAMERA_CONFIG_PATH,
-    load_camera_config,
-)
-from sim_mujoco.remote_policy_control import (  # noqa: E402
+from simulation.robot.gripper import measure_fingertip_aperture_m  # noqa: E402
+from simulation.robot.gripper_mapping import raw_hardware_to_actuator_ctrl_rad  # noqa: E402
+from simulation.resources import DEFAULT_CAMERA_CONFIG_PATH  # noqa: E402
+from simulation.configuration import load_simulation_config  # noqa: E402
+from simulation.robot.control import (  # noqa: E402
     DEFAULT_GRIPPER_CLOSING_RATE_RAW_PER_S,
     DEFAULT_GRIPPER_OPENING_RATE_RAW_PER_S,
 )
@@ -780,8 +776,8 @@ def validate_runtime_model(*, gripper_force_limit: float = 50.0) -> dict[str, An
         if not placement["passed"]:
             errors.append(f"{width_mm} mm fixture placement is not symmetric")
         if width_mm == WIDTHS_MM[0]:
-            data.ctrl[runtime_ids["actuator"]] = raw_gripper_to_menagerie_ctrl(
-                CLOSED_RAW, load_camera_config(DEFAULT_CAMERA_CONFIG_PATH)
+            data.ctrl[runtime_ids["actuator"]] = raw_hardware_to_actuator_ctrl_rad(
+                CLOSED_RAW, load_simulation_config(DEFAULT_CAMERA_CONFIG_PATH)
             )
             mujoco.mj_forward(width_model, data)
             no_step_sample = _sample(
@@ -838,13 +834,13 @@ def _run_width(
     data = mujoco.MjData(model)
     ids = _runtime_ids(model)
     placement = _position_fixture(model, data, ids, width_mm)
-    config = load_camera_config(DEFAULT_CAMERA_CONFIG_PATH)
-    data.ctrl[ids["actuator"]] = raw_gripper_to_menagerie_ctrl(OPEN_RAW, config)
+    config = load_simulation_config(DEFAULT_CAMERA_CONFIG_PATH)
+    data.ctrl[ids["actuator"]] = raw_hardware_to_actuator_ctrl_rad(OPEN_RAW, config)
     _step_for(model, data, OPEN_SETTLE_S)
     for raw_command in close_command_schedule(
         closing_rate_raw_per_s=closing_rate_raw_per_s
     ):
-        data.ctrl[ids["actuator"]] = raw_gripper_to_menagerie_ctrl(raw_command, config)
+        data.ctrl[ids["actuator"]] = raw_hardware_to_actuator_ctrl_rad(raw_command, config)
         _step_for(model, data, CONTROL_PERIOD_S)
 
     trial_dir = output / "trials" / f"width_{width_mm:02d}mm"
@@ -923,7 +919,7 @@ def main() -> None:
     (output / "model_validation.json").write_text(
         json.dumps(validation, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
-    config = load_camera_config(DEFAULT_CAMERA_CONFIG_PATH)
+    config = load_simulation_config(DEFAULT_CAMERA_CONFIG_PATH)
     manifest = {
         "schema_version": "xarm_menagerie_grip_force_vs_width_v3",
         "created_utc": datetime.now(UTC).isoformat(),
@@ -942,7 +938,7 @@ def main() -> None:
         "widths_mm": list(WIDTHS_MM),
         "open_raw": OPEN_RAW,
         "closed_raw": CLOSED_RAW,
-        "closed_menagerie_ctrl": raw_gripper_to_menagerie_ctrl(CLOSED_RAW, config),
+        "closed_menagerie_ctrl": raw_hardware_to_actuator_ctrl_rad(CLOSED_RAW, config),
         "gripper_force_limit_actuator_space": args.gripper_force_limit,
         "closing_rate_raw_per_s": args.closing_rate_raw_per_s,
         "opening_rate_raw_per_s": args.opening_rate_raw_per_s,

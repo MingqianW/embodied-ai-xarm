@@ -48,22 +48,22 @@ git status --short 2>/dev/null || true
 module list 2>&1 || true
 
 FILES=(
-  sim_mujoco/gripper_mapping.py
-  sim_mujoco/remote_policy_observation.py
-  sim_mujoco/remote_policy_control.py
-  sim_mujoco/environment.py
-  sim_mujoco/task_scenes.py
+  simulation/robot/gripper_mapping.py
+  simulation/observation/policy.py
+  simulation/robot/control.py
+  simulation/environment.py
+  simulation/scene
   sim_mujoco/data_collection/conversions.py
-  sim_mujoco/scripts/build_xarm6_pick_scene.py
+  simulation/tools/build_xarm6_pick_scene.py
   sim_mujoco/scripts/run_menagerie_gripper_validation.py
   sim_mujoco/scripts/run_grip_force_vs_width.py
   sim_mujoco/scripts/analyze_grip_force_vs_width.py
   sim_mujoco/scripts/run_scripted_gripper_slip_experiments.py
   sim_mujoco/scripts/analyze_scripted_gripper_slip_experiments.py
-  tests/test_menagerie_gripper_integration.py
+  tests/simulation/test_gripper_integration.py
   tests/test_mujoco_data_conversions.py
-  tests/test_mujoco_gripper_motion.py
-  tests/test_mujoco_task_scenes.py
+  tests/simulation/test_gripper_motion.py
+  tests/simulation/test_task_scenes.py
   tests/test_remote_policy_pipeline.py
   tests/test_grip_force_vs_width.py
 )
@@ -72,16 +72,16 @@ FILES=(
 "${PYTHON}" -m ruff check "${FILES[@]}"
 git diff --check
 
-SCENE_SHA_BEFORE=$(sha256sum sim_mujoco/assets/xarm6/xarm6_pick_scene.xml | cut -d' ' -f1)
-"${PYTHON}" sim_mujoco/scripts/build_xarm6_pick_scene.py
-SCENE_SHA_AFTER=$(sha256sum sim_mujoco/assets/xarm6/xarm6_pick_scene.xml | cut -d' ' -f1)
+SCENE_SHA_BEFORE=$(sha256sum simulation/assets/xarm6/xarm6_pick_scene.xml | cut -d' ' -f1)
+"${PYTHON}" -m simulation.tools.build_xarm6_pick_scene
+SCENE_SHA_AFTER=$(sha256sum simulation/assets/xarm6/xarm6_pick_scene.xml | cut -d' ' -f1)
 test "${SCENE_SHA_BEFORE}" = "${SCENE_SHA_AFTER}"
 
 "${PYTHON}" -m pytest -q \
-  tests/test_menagerie_gripper_integration.py \
+  tests/simulation/test_gripper_integration.py \
   tests/test_mujoco_data_conversions.py \
-  tests/test_mujoco_gripper_motion.py \
-  tests/test_mujoco_task_scenes.py \
+  tests/simulation/test_gripper_motion.py \
+  tests/simulation/test_task_scenes.py \
   tests/test_remote_policy_pipeline.py \
   tests/test_grip_force_vs_width.py \
   tests/test_mujoco_collisions.py \

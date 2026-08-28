@@ -15,9 +15,12 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from sim_mujoco.environment import MuJoCoEnvironment
-from sim_mujoco.paths import active_model_path, mujoco_output_root
-from sim_mujoco.remote_policy_observation import BASE_CAMERA, WRIST_CAMERA
+from simulation.environment import MuJoCoEnvironment
+from sim_mujoco.paths import mujoco_output_root
+from simulation.observation.cameras import render_rgb
+from simulation.resources import model_path
+from simulation.robot.model import BASE_CAMERA_NAME
+from simulation.robot.model import WRIST_CAMERA_NAME
 
 
 def main() -> None:
@@ -33,22 +36,20 @@ def main() -> None:
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
     report: dict[str, object] = {
-        "active_xml": str(active_model_path()),
+        "active_xml": str(model_path()),
         "task": args.task,
         "seed": args.seed,
-        "cameras": [BASE_CAMERA, WRIST_CAMERA],
+        "cameras": [BASE_CAMERA_NAME, WRIST_CAMERA_NAME],
         "images": {},
     }
     with MuJoCoEnvironment(task=args.task) as environment:
         environment.reset(seed=args.seed)
         frames = {
-            BASE_CAMERA: environment.context.renderer,
-            WRIST_CAMERA: environment.context.renderer,
+            BASE_CAMERA_NAME: environment.context.renderer,
+            WRIST_CAMERA_NAME: environment.context.renderer,
         }
         for camera_name in frames:
-            from sim_mujoco.remote_policy_observation import render_native_rgb
-
-            image = render_native_rgb(
+            image = render_rgb(
                 environment.context.renderer,
                 environment.context.data,
                 camera_name,

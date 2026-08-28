@@ -16,10 +16,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from sim_mujoco.remote_policy_observation import (
-    ARM_JOINT_NAMES,
-    DEFAULT_MODEL_PATH,
-)
+from simulation.robot.model import ARM_JOINT_NAMES
+from simulation.resources import DEFAULT_MODEL_PATH
 from sim_mujoco.paths import mujoco_output_root
 
 
@@ -574,11 +572,11 @@ def write_report(results: dict[str, Any], path: Path) -> None:
         "  unchanged state and next-state absolute actions.",
         "- `fine_tune/openpi_xarm_config.py:24-65`: state/action contract and",
         "  delta/absolute OpenPI transforms.",
-        "- `sim_mujoco/remote_policy_observation.py:151-184`: named-joint qpos to",
+        "- `simulation/observation/state.py`: named-joint qpos to",
         "  policy state.",
-        "- `sim_mujoco/remote_policy_control.py:102-155`: policy absolute targets to",
+        "- `simulation/robot/control.py`: policy absolute targets to",
         "  MuJoCo controls.",
-        "- `sim_mujoco/task_scenes.py`: named-joint reset overrides.",
+        "- `simulation/scene/reset.py`: named-joint reset overrides.",
         "",
         "First raw frame from each task:",
         "",

@@ -4,11 +4,9 @@ import unittest
 
 import mujoco
 
-from sim_mujoco.gripper_mapping import measure_fingertip_aperture_m
-from sim_mujoco.remote_policy_observation import (
-    initialize_scene,
-    load_simulation,
-)
+from simulation.robot.gripper import measure_fingertip_aperture_m
+from simulation.runtime import initialize_scene
+from simulation.runtime import load_simulation
 
 
 class GripperMotionTests(unittest.TestCase):

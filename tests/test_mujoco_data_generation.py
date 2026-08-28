@@ -24,7 +24,7 @@ from sim_mujoco.data_generation.stability import (
     evaluate_place_initial_grasp,
     evaluate_place_stability,
 )
-from sim_mujoco.task_scenes import load_task_scene_config
+from simulation.scene import load_task_scene_config
 
 
 CONFIG_PATH = Path(

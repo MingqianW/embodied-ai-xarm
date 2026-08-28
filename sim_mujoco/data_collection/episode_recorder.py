@@ -15,17 +15,15 @@ import numpy as np
 from PIL import Image
 
 from policy_runtime.recording import tile_recording_frame
-from sim_mujoco.collision import collision_diagnostics
+from simulation.physics.collision import collision_diagnostics
 from sim_mujoco.data_collection.conversions import policy_state_from_mujoco
-from sim_mujoco.environment import MuJoCoEnvironment
-from sim_mujoco.remote_policy_observation import (
-    BASE_CAMERA,
-    DEFAULT_CAMERA_CONFIG_PATH,
-    DEFAULT_MODEL_PATH,
-    WRIST_CAMERA,
-    policy_image,
-    render_native_rgb,
-)
+from simulation.environment import MuJoCoEnvironment
+from simulation.robot.model import BASE_CAMERA_NAME
+from simulation.robot.model import WRIST_CAMERA_NAME
+from simulation.resources import DEFAULT_CAMERA_CONFIG_PATH
+from simulation.resources import DEFAULT_MODEL_PATH
+from simulation.observation.policy import policy_image
+from simulation.observation.cameras import render_rgb
 
 
 RAW_SCHEMA_VERSION = "xarm_mujoco_raw_v1"
@@ -260,15 +258,15 @@ class EpisodeRecorder:
             raise RuntimeError("Task runtime is missing")
 
         frame_index = len(self.records)
-        base_native = render_native_rgb(
+        base_native = render_rgb(
             self.environment.context.renderer,
             data,
-            BASE_CAMERA,
+            BASE_CAMERA_NAME,
         )
-        wrist_native = render_native_rgb(
+        wrist_native = render_rgb(
             self.environment.context.renderer,
             data,
-            WRIST_CAMERA,
+            WRIST_CAMERA_NAME,
         )
         base_policy = policy_image(
             base_native,
@@ -325,7 +323,7 @@ class EpisodeRecorder:
         self.records.append(record)
 
         if self._overview_video is not None:
-            overview = render_native_rgb(
+            overview = render_rgb(
                 self.environment.context.renderer,
                 data,
                 "overview_camera",

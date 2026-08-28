@@ -50,7 +50,7 @@ git status --short 2>/dev/null || true
 module list 2>&1 || true
 
 FILES=(
-  sim_mujoco/remote_policy_control.py
+  simulation/robot/control.py
   sim_mujoco/data_collection/oracle_controller.py
   sim_mujoco/formal_evaluation/episode_runner.py
   sim_mujoco/scripts/run_remote_policy_closed_loop.py

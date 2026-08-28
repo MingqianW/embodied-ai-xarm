@@ -12,12 +12,10 @@ from sim_mujoco.data_collection.conversions import (
     policy_action_from_mujoco_target,
     policy_state_from_mujoco,
 )
-from sim_mujoco.gripper_mapping import set_gripper_configuration
-from sim_mujoco.remote_policy_observation import (
-    DEFAULT_MODEL_PATH,
-    initialize_scene,
-    load_camera_config,
-)
+from simulation.robot.gripper import set_raw_gripper_configuration
+from simulation.resources import DEFAULT_MODEL_PATH
+from simulation.runtime import initialize_scene
+from simulation.configuration import load_simulation_config
 
 
 class MuJoCoDataConversionTests(unittest.TestCase):
@@ -55,11 +53,11 @@ class MuJoCoDataConversionTests(unittest.TestCase):
         np.testing.assert_allclose(recovered, action, rtol=0.0, atol=2e-5)
 
     def test_gripper_state_reads_mean_driver_configuration(self) -> None:
-        set_gripper_configuration(
+        set_raw_gripper_configuration(
             self.model,
             self.data,
             300.0,
-            load_camera_config(),
+            load_simulation_config(),
         )
         mujoco.mj_forward(self.model, self.data)
         self.assertAlmostEqual(

@@ -16,15 +16,13 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from policy_runtime.episode_logging import json_default, write_json
 from policy_runtime.remote_policy_client import RemotePolicyClient, RemotePolicyConfig
-from sim_mujoco.remote_policy_control import validate_policy_actions
-from sim_mujoco.remote_policy_observation import (
-    DEFAULT_MODEL_PATH,
-    arm_joint_limits,
-    build_openpi_observation,
-    image_diagnostics,
-    initialize_scene,
-    load_simulation,
-)
+from simulation.robot.control import validate_policy_actions
+from simulation.resources import DEFAULT_MODEL_PATH
+from simulation.robot.model import arm_joint_limits
+from simulation.observation.policy import build_policy_observation
+from policy_runtime.image_preprocessing import image_diagnostics
+from simulation.runtime import initialize_scene
+from simulation.runtime import load_simulation
 from sim_mujoco.paths import mujoco_output_root
 
 
@@ -89,7 +87,7 @@ def main() -> None:
     context = load_simulation()
     try:
         initialize_scene(context.model, context.data)
-        observation = build_openpi_observation(
+        observation = build_policy_observation(
             context.model,
             context.data,
             context.renderer,

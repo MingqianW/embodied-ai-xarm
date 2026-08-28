@@ -12,7 +12,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from sim_mujoco.remote_policy_control import (  # noqa: E402
+from simulation.robot.control import (  # noqa: E402
     ACTION_SHAPE,
     clamp_gripper_raw,
     clamp_joint_target,
@@ -20,42 +20,40 @@ from sim_mujoco.remote_policy_control import (  # noqa: E402
     rate_limit_gripper_raw,
     validate_policy_actions,
 )
-from sim_mujoco.remote_policy_observation import (  # noqa: E402
-    ARM_JOINT_NAMES,
-    build_openpi_observation,
-    gripper_raw_to_ctrl,
-    initialize_scene,
-    load_camera_config,
-    load_simulation,
-)
-from sim_mujoco.gripper_mapping import menagerie_ctrl_to_raw_target  # noqa: E402
-from sim_mujoco.environment import MuJoCoEnvironment  # noqa: E402
+from simulation.robot.model import ARM_JOINT_NAMES  # noqa: E402
+from simulation.observation.policy import build_policy_observation  # noqa: E402
+from simulation.robot.gripper import actuator_ctrl_from_raw_hardware  # noqa: E402
+from simulation.runtime import initialize_scene  # noqa: E402
+from simulation.runtime import load_simulation  # noqa: E402
+from simulation.configuration import load_simulation_config  # noqa: E402
+from simulation.robot.gripper_mapping import actuator_ctrl_rad_to_raw_hardware  # noqa: E402
+from simulation.environment import MuJoCoEnvironment  # noqa: E402
 
 
 class GripperMappingTests(unittest.TestCase):
     def setUp(self) -> None:
-        self.config = load_camera_config()
+        self.config = load_simulation_config()
 
     def test_raw_to_sim_conversion(self) -> None:
         self.assertAlmostEqual(
-            gripper_raw_to_ctrl(50.0, self.config), 0.8, places=6
+            actuator_ctrl_from_raw_hardware(50.0, self.config), 0.8, places=6
         )
         self.assertAlmostEqual(
-            gripper_raw_to_ctrl(845.0, self.config), 0.005, places=6
+            actuator_ctrl_from_raw_hardware(845.0, self.config), 0.005, places=6
         )
 
     def test_sim_to_raw_conversion(self) -> None:
         self.assertAlmostEqual(
-            menagerie_ctrl_to_raw_target(0.8, self.config), 50.0, places=3
+            actuator_ctrl_rad_to_raw_hardware(0.8, self.config), 50.0, places=3
         )
         self.assertAlmostEqual(
-            menagerie_ctrl_to_raw_target(0.005, self.config), 845.0, places=3
+            actuator_ctrl_rad_to_raw_hardware(0.005, self.config), 845.0, places=3
         )
 
     def test_round_trip_consistency(self) -> None:
         for value in (50.0, 150.0, 400.0, 845.0):
-            ctrl = gripper_raw_to_ctrl(value, self.config)
-            raw = menagerie_ctrl_to_raw_target(ctrl, self.config)
+            ctrl = actuator_ctrl_from_raw_hardware(value, self.config)
+            raw = actuator_ctrl_rad_to_raw_hardware(ctrl, self.config)
             self.assertAlmostEqual(raw, value, places=5)
 
 
@@ -127,7 +125,7 @@ class ObservationTests(unittest.TestCase):
         context = load_simulation()
         try:
             initialize_scene(context.model, context.data)
-            observation = build_openpi_observation(
+            observation = build_policy_observation(
                 context.model,
                 context.data,
                 context.renderer,

@@ -16,12 +16,10 @@ from typing import Any, Iterable
 import mujoco
 import numpy as np
 
-from sim_mujoco.gripper_mapping import (
-    driver_angle_to_raw_gripper,
-    is_menagerie_gripper,
-    measure_fingertip_aperture_m,
-    sim_slide_to_raw_gripper,
-)
+from simulation.robot.gripper_mapping import driver_angle_rad_to_raw_hardware
+from simulation.robot.gripper import has_xarm_four_bar_gripper
+from simulation.robot.gripper import measure_fingertip_aperture_m
+from simulation.robot.legacy_gripper import legacy_slide_m_to_raw_hardware
 
 
 LEFT_FINGER_BODY = "left_finger"
@@ -234,7 +232,7 @@ class PhysicsTraceRecorder:
         self.gripper_actuator_id = _id(
             model, mujoco.mjtObj.mjOBJ_ACTUATOR, GRIPPER_ACTUATOR
         )
-        self.menagerie = is_menagerie_gripper(model)
+        self.menagerie = has_xarm_four_bar_gripper(model)
         self.affine_menagerie = bool(
             self.menagerie
             and float(model.actuator_ctrlrange[self.gripper_actuator_id, 1]) > 1.0
@@ -453,14 +451,14 @@ class PhysicsTraceRecorder:
                     None if self.menagerie else float(data.qvel[right_dof_address])
                 ),
                 "left_raw_equivalent": float(
-                    driver_angle_to_raw_gripper(left_driver, self.camera_config)
+                    driver_angle_rad_to_raw_hardware(left_driver, self.camera_config)
                     if self.menagerie
-                    else sim_slide_to_raw_gripper(left_driver, self.camera_config)
+                    else legacy_slide_m_to_raw_hardware(left_driver, self.camera_config)
                 ),
                 "right_raw_equivalent": float(
-                    driver_angle_to_raw_gripper(right_driver, self.camera_config)
+                    driver_angle_rad_to_raw_hardware(right_driver, self.camera_config)
                     if self.menagerie
-                    else sim_slide_to_raw_gripper(right_driver, self.camera_config)
+                    else legacy_slide_m_to_raw_hardware(right_driver, self.camera_config)
                 ),
                 "pad_center_distance_m": pad_center_distance,
                 "pad_surface_gap_m": pad_gap,

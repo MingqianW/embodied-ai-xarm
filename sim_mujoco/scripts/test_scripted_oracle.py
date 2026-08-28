@@ -23,7 +23,7 @@ from sim_mujoco.data_collection.task_success import (  # noqa: E402
     simulation_is_finite,
     update_task_success,
 )
-from sim_mujoco.environment import MuJoCoEnvironment  # noqa: E402
+from simulation.environment import MuJoCoEnvironment  # noqa: E402
 from sim_mujoco.paths import mujoco_output_root  # noqa: E402
 
 

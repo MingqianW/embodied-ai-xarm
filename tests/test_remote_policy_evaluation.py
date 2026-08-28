@@ -25,7 +25,8 @@ from sim_mujoco.remote_policy_evaluation import (
     write_json,
     write_summary,
 )
-from sim_mujoco.remote_policy_observation import initialize_scene, load_simulation
+from simulation.runtime import initialize_scene
+from simulation.runtime import load_simulation
 
 
 class LabelAndSummaryTests(unittest.TestCase):

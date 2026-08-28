@@ -12,7 +12,7 @@ from typing import Any
 import mujoco
 import numpy as np
 
-from sim_mujoco.collision import target_gripper_contact_count
+from simulation.physics.collision import target_gripper_contact_count
 from sim_mujoco.data_collection.conversions import policy_state_from_mujoco
 from sim_mujoco.data_collection.oracle_controller import (
     OracleConfig,
@@ -42,9 +42,9 @@ from sim_mujoco.data_generation.stability import (
     StabilitySample,
     evaluate_place_initial_grasp,
 )
-from sim_mujoco.environment import MuJoCoEnvironment
-from sim_mujoco.remote_policy_observation import render_native_rgb
-from sim_mujoco.task_scenes import TABLE_TOP_Z
+from simulation.environment import MuJoCoEnvironment
+from simulation.observation.cameras import render_rgb
+from simulation.scene import TABLE_TOP_Z
 
 
 def resolve_seed(task: TaskPlan, requested_episode_index: int, retry_index: int, stride: int) -> int:
@@ -154,7 +154,7 @@ def _validate_place_initial_grasp(
             ("realsense_2", "overview_camera"),
         ):
             diagnostic_frames[raw_name].append(
-                render_native_rgb(
+                render_rgb(
                     environment.context.renderer,
                     environment.context.data,
                     camera_name,

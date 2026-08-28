@@ -7,13 +7,13 @@ from dataclasses import dataclass
 import mujoco
 import numpy as np
 
-from sim_mujoco.remote_policy_observation import ARM_JOINT_NAMES
+from simulation.robot.model import ARM_JOINT_NAMES
 
 
 @dataclass(frozen=True)
 class IKSolution:
     success: bool
-    joint_qpos: np.ndarray
+    joint_position: np.ndarray
     iterations: int
     position_error_m: float
     orientation_error_rad: float
@@ -137,7 +137,7 @@ def solve_site_pose(
         ):
             return IKSolution(
                 success=True,
-                joint_qpos=np.asarray(
+                joint_position=np.asarray(
                     work.qpos[qpos_addresses],
                     dtype=np.float64,
                 ).copy(),
@@ -172,7 +172,7 @@ def solve_site_pose(
         except np.linalg.LinAlgError:
             return IKSolution(
                 success=False,
-                joint_qpos=np.asarray(
+                joint_position=np.asarray(
                     work.qpos[qpos_addresses],
                     dtype=np.float64,
                 ).copy(),
@@ -184,7 +184,7 @@ def solve_site_pose(
         if not np.isfinite(delta).all():
             return IKSolution(
                 success=False,
-                joint_qpos=np.asarray(
+                joint_position=np.asarray(
                     work.qpos[qpos_addresses],
                     dtype=np.float64,
                 ).copy(),
@@ -206,7 +206,7 @@ def solve_site_pose(
 
     return IKSolution(
         success=False,
-        joint_qpos=np.asarray(
+        joint_position=np.asarray(
             work.qpos[qpos_addresses],
             dtype=np.float64,
         ).copy(),

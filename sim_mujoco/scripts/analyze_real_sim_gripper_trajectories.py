@@ -22,7 +22,7 @@ import mujoco  # noqa: E402
 import numpy as np  # noqa: E402
 import pyarrow.parquet as pq  # noqa: E402
 
-from sim_mujoco.joint_mapping import raw_arm_state_to_mujoco_qpos  # noqa: E402
+from simulation.robot.joint_mapping import raw_arm_state_to_mujoco_qpos  # noqa: E402
 
 
 PICK_TASK_PREFIX = "pick up "
@@ -43,7 +43,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--robot-xml",
         type=Path,
-        default=PROJECT_ROOT / "sim_mujoco/assets/xarm6/xarm6_pick_scene.xml",
+        default=PROJECT_ROOT / "simulation/assets/xarm6/xarm6_pick_scene.xml",
     )
     parser.add_argument("--gripper-q01", type=float, required=True)
     parser.add_argument("--gripper-q99", type=float, required=True)

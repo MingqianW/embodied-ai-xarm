@@ -6,11 +6,10 @@ import mujoco
 import numpy as np
 import pytest
 
-from sim_mujoco.gripper_mapping import (
-    gripper_state_to_raw,
-    raw_gripper_to_sim_slide,
-    sim_slide_to_raw_gripper,
-)
+from simulation.configuration import load_simulation_config
+from simulation.robot.legacy_gripper import legacy_slide_m_to_raw_hardware
+from simulation.robot.legacy_gripper import read_legacy_slide_raw_position
+from simulation.robot.legacy_gripper import raw_hardware_to_legacy_slide_m
 from sim_mujoco.scripts.run_friction_ablation import (
     FROZEN_MODEL,
     PAD_FRICTION_A,
@@ -65,20 +64,20 @@ def test_fixed_ab_conditions_preserve_nonfriction_physics() -> None:
 
 @requires_frozen_split_pad_model
 def test_legacy_slide_mapping_round_trip_and_state() -> None:
-    from sim_mujoco.remote_policy_observation import load_camera_config
-
-    config = load_camera_config(CONFIG_PATH)
+    config = load_simulation_config(CONFIG_PATH)
     model = mujoco.MjModel.from_xml_path(str(FROZEN_MODEL))
     data = mujoco.MjData(model)
     for raw in (50.0, 200.0, 500.0, 845.0):
-        slide = raw_gripper_to_sim_slide(raw, config)
-        reconstructed = sim_slide_to_raw_gripper(slide, config)
+        slide = raw_hardware_to_legacy_slide_m(raw, config)
+        reconstructed = legacy_slide_m_to_raw_hardware(slide, config)
         assert np.isclose(reconstructed, raw, atol=1e-6)
     joint_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, "left_finger_slide")
-    data.qpos[int(model.jnt_qposadr[joint_id])] = raw_gripper_to_sim_slide(
+    data.qpos[int(model.jnt_qposadr[joint_id])] = raw_hardware_to_legacy_slide_m(
         200.0, config
     )
-    assert np.isclose(gripper_state_to_raw(model, data, config), 200.0, atol=1e-6)
+    assert np.isclose(
+        read_legacy_slide_raw_position(model, data, config), 200.0, atol=1e-6
+    )
 
 
 @requires_frozen_split_pad_model

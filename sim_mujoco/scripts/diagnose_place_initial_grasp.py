@@ -19,7 +19,7 @@ from sim_mujoco.data_generation.collection import (  # noqa: E402
     _validate_place_initial_grasp,
 )
 from sim_mujoco.data_generation.config import load_pipeline_config  # noqa: E402
-from sim_mujoco.environment import MuJoCoEnvironment  # noqa: E402
+from simulation.environment import MuJoCoEnvironment  # noqa: E402
 
 
 def main() -> None:

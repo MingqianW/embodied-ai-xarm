@@ -19,23 +19,19 @@ from typing import Any
 import mujoco
 import numpy as np
 
-from sim_mujoco.gripper_mapping import (
-    gripper_state_to_raw,
-    menagerie_ctrl_to_raw_target,
-    raw_gripper_to_menagerie_ctrl,
-    raw_gripper_to_sim_slide,
-    sim_slide_to_raw_gripper,
-)
-from sim_mujoco.joint_mapping import (
+from simulation.robot.gripper import read_raw_gripper_position
+from simulation.robot.gripper_mapping import actuator_ctrl_rad_to_raw_hardware
+from simulation.robot.gripper_mapping import raw_hardware_to_actuator_ctrl_rad
+from simulation.robot.legacy_gripper import raw_hardware_to_legacy_slide_m
+from simulation.robot.legacy_gripper import legacy_slide_m_to_raw_hardware
+from simulation.robot.joint_mapping import (
     mujoco_qpos_to_raw_arm_state,
     raw_arm_state_to_mujoco_qpos,
 )
-from sim_mujoco.remote_policy_observation import (
-    ARM_JOINT_NAMES,
-    DEFAULT_CAMERA_CONFIG_PATH,
-    joint_qpos,
-    load_camera_config,
-)
+from simulation.robot.model import ARM_JOINT_NAMES
+from simulation.robot.model import joint_position
+from simulation.resources import DEFAULT_CAMERA_CONFIG_PATH
+from simulation.configuration import load_simulation_config
 
 
 POLICY_DOF = 7
@@ -44,7 +40,7 @@ ARM_DOF = 6
 
 @lru_cache(maxsize=4)
 def _mapping_config(path: str) -> dict[str, Any]:
-    return load_camera_config(Path(path))
+    return load_simulation_config(Path(path))
 
 
 def _config(camera_config_path: Path = DEFAULT_CAMERA_CONFIG_PATH) -> dict[str, Any]:
@@ -69,7 +65,7 @@ def gripper_raw_from_mujoco(
     """Return the simulated linkage state in the real policy convention."""
 
     return float(
-        gripper_state_to_raw(
+        read_raw_gripper_position(
             model,
             data,
             _config(camera_config_path),
@@ -89,8 +85,8 @@ def mujoco_gripper_target_from_raw(
         raise ValueError("raw gripper target contains NaN or Inf")
     config = _config(camera_config_path)
     if "sim_slide_min_m" in config.get("gripper_mapping", {}):
-        return float(raw_gripper_to_sim_slide(value, config))
-    return float(raw_gripper_to_menagerie_ctrl(value, config))
+        return float(raw_hardware_to_legacy_slide_m(value, config))
+    return float(raw_hardware_to_actuator_ctrl_rad(value, config))
 
 
 def policy_state_from_mujoco(
@@ -102,7 +98,7 @@ def policy_state_from_mujoco(
     """Build the exact 7D policy state using named MuJoCo joints."""
 
     arm_qpos = np.asarray(
-        [joint_qpos(model, data, name) for name in ARM_JOINT_NAMES],
+        [joint_position(model, data, name) for name in ARM_JOINT_NAMES],
         dtype=np.float64,
     )
     arm_raw = mujoco_qpos_to_raw_arm_state(arm_qpos)
@@ -141,9 +137,9 @@ def policy_action_from_mujoco_target(
     arm_raw = mujoco_qpos_to_raw_arm_state(internal_target[:ARM_DOF])
     config = _config(camera_config_path)
     if "sim_slide_min_m" in config.get("gripper_mapping", {}):
-        gripper_raw = sim_slide_to_raw_gripper(float(internal_target[ARM_DOF]), config)
+        gripper_raw = legacy_slide_m_to_raw_hardware(float(internal_target[ARM_DOF]), config)
     else:
-        gripper_raw = menagerie_ctrl_to_raw_target(
+        gripper_raw = actuator_ctrl_rad_to_raw_hardware(
             float(internal_target[ARM_DOF]), config
         )
     return np.concatenate((arm_raw, [gripper_raw])).astype(np.float32)
