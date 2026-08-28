@@ -1,0 +1,8 @@
+{
+  "model_id": "D",
+  "training_config": "pi05_xarm_d_simonly_v3_1x",
+  "checkpoint_root": "/work/nvme/bfmk/mw89/openpi_checkpoints/pi05_xarm/xarm_pi05_base_simonly_v3_1x_15001_v1",
+  "manager_step": 15000,
+  "norm_asset_id": "local/xarm_mujoco_clean_multitask_stable_v3_simnorm_v1",
+  "description": "π0.5 base, stable-v3 simulation only, fresh simulation-only normalization"
+}

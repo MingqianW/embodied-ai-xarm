@@ -1,0 +1,33 @@
+version: 1
+base_camera:
+  frame: world
+  position: [1.476, -0.389, 0.516]
+  target: [0.375, -0.15200000000000002, 0.09]
+  roll_deg: 1.8000000000000114
+  fovy_deg: 29.2
+wrist_camera:
+  parent_body: gripper_base
+  position: [0.07, 0.006, 0.087]
+  target: [0.002, -0.001, 0.307]
+  roll_deg: -92.7
+  fovy_deg: 108.7
+gripper_mapping:
+  raw_closed: 50.0
+  raw_open: 845.0
+  model: xarm_four_bar_legacy_slide_diagnostic_only
+  driver_max_position: 850.0
+  driver_units_per_radian: 1000.0
+  sim_pad_inner_offset_m: 0.0025
+  sim_slide_min_m: 0.006
+  sim_slide_max_m: 0.047
+render:
+  native_width: 640
+  native_height: 480
+  policy_width: 224
+  policy_height: 224
+  preprocessing: resize_with_pad
+metadata:
+  status: frozen_legacy_split_pad_diagnostic_only
+  source: sim_mujoco/config/camera_calibration.yaml
+  camera_parameters_changed: false
+  production_camera_calibration_modified: false
