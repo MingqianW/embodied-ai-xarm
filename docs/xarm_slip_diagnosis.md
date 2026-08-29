@@ -2,8 +2,7 @@
 
 This workflow diagnoses object motion relative to the gripper without changing
 formal task scoring or policy observations. Historical evaluation outputs are
-read-only. Every diagnostic run must use a new root below
-`/work/nvme/bfmk/mw89/mujoco_outputs/policy_evaluation/slip_diagnostics`.
+read-only. Every diagnostic run must use a new output root.
 
 ## What is measured
 
@@ -49,25 +48,17 @@ a global RNG stream. A c5 run should therefore reproduce the historical prefix
 up to the original success point, subject to normal hardware/runtime
 determinism.
 
-## Primary c5 reproduction
+## Trace capture
 
-Do not submit without explicit approval. The Slurm wrapper uses one GH200 and
-starts an identity-checked localhost OpenPI server.
+Use the canonical `python -m evaluation.sim.cli` entry point documented in
+`docs/formal_xarm_model_evaluation.md`, with `XARM_SLIP_TRACE=1`. Optional
+`XARM_SLIP_TRACE_POST_SUCCESS_SECONDS` and
+`XARM_SLIP_TRACE_DIAGNOSTIC_LATCH_RAW` settings remain strictly diagnostic:
+the evaluator freezes the scientific result before post-success continuation.
 
-```bash
-cd /u/mw89/repos/embodied-ai-xarm
-OUTPUT_ROOT=/work/nvme/bfmk/mw89/mujoco_outputs/policy_evaluation/slip_diagnostics/B_red_block_seed50000_c5 \
-MODEL_SPEC=/u/mw89/repos/embodied-ai-xarm/configs/evaluation/sim/models/B.json \
-TASK=red_block \
-SEED=50000 \
-EXECUTE_CHUNK_STEPS=5 \
-POST_SUCCESS_SECONDS=2.0 \
-sbatch slurm/xarm_eval/diagnose_slip.sbatch
-```
-
-Use separate `..._c2` and `..._c1` output roots with
-`EXECUTE_CHUNK_STEPS=2` and `1`. Never reuse or resume one diagnostic root for
-a different setting.
+There is no separate diagnostic experiment launcher. Any comparison that
+changes protocol settings must use an explicitly versioned protocol and new
+output root; it must not be described as a formal-protocol result.
 
 ## Data-only analysis
 
@@ -75,7 +66,7 @@ After all three jobs complete:
 
 ```bash
 cd /u/mw89/repos/embodied-ai-xarm
-/u/mw89/repos/openpi/.venv/bin/python sim_mujoco/scripts/analyze_xarm_slip_trace.py \
+python -m diagnostics.simulation.gripper.analyze_trace \
   --trace c5=/work/nvme/bfmk/mw89/mujoco_outputs/policy_evaluation/slip_diagnostics/B_red_block_seed50000_c5/models/B/tasks/red_block/seed_50000/slip_trace.csv \
   --trace c2=/work/nvme/bfmk/mw89/mujoco_outputs/policy_evaluation/slip_diagnostics/B_red_block_seed50000_c2/models/B/tasks/red_block/seed_50000/slip_trace.csv \
   --trace c1=/work/nvme/bfmk/mw89/mujoco_outputs/policy_evaluation/slip_diagnostics/B_red_block_seed50000_c1/models/B/tasks/red_block/seed_50000/slip_trace.csv \

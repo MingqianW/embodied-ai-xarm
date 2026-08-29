@@ -5,10 +5,10 @@ fine-tuning OpenPI policies, and reproducing the task in MuJoCo or Isaac Sim.
 
 ## Repository Layout
 
-- `data_collection/` and `scripts/`: real-robot collection and dataset tools.
+- `data/`: canonical real and simulated data conversion, validation, and tools.
+- `diagnostics/`: maintained read-only simulation and real-simulation checks.
 - `docs/`: task specifications and workflow documentation.
-- `fine_tune/`: raw-data checks, LeRobot conversion, and OpenPI helpers.
-- `sim_mujoco/`: xArm 6 scene generation, camera calibration, and tests.
+- `sim_mujoco/`: compatibility launchers and local MuJoCo support files.
 - `sim_isaac/`: local Isaac Sim asset preparation, scene/cameras, policy
   runners, evaluation, and diagnostics.
 - `evaluation/`: shared contracts, formal MuJoCo evaluation, and the explicit
@@ -45,5 +45,5 @@ from Git. Fine-tuning scripts default to
 `configs/data/real/xarm_data_config.json` to use another location.
 
 See `docs/step1_data_collection.md`, `docs/step2_openpi_finetuning.md`,
-`simulation/calibration/README.md`, and
+`diagnostics/simulation/camera/README.md`, and
 `docs/ISAAC_SIM_SETUP.md` for the detailed workflows.

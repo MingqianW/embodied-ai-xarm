@@ -112,13 +112,12 @@ Offline/unit tests:
 tests/test_remote_policy_pipeline.py
 ```
 
-Existing local validation scripts:
+Maintained local validation:
 
 ```text
-sim_mujoco/scripts/test_local_observation.py
-sim_mujoco/scripts/test_dual_cameras.py
-sim_mujoco/scripts/test_gripper_control.py
-sim_mujoco/scripts/test_xarm6_control.py
+tests/simulation/
+tests/diagnostics/
+python -m diagnostics.simulation.camera.cli --help
 ```
 
 Generated outputs:

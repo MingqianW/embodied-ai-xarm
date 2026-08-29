@@ -8,7 +8,7 @@ from typing import Any
 
 
 CONFIG_PATH = Path(__file__).resolve().parents[2] / "configs/data/real/xarm_data_config.json"
-DEFAULT_RAW_DATA_ROOT = Path("fine_tune/data/xarm_pi05_data/raw")
+DEFAULT_RAW_DATA_ROOT = "fine_tune/data/xarm_pi05_data/raw"
 
 
 def repo_root() -> Path:

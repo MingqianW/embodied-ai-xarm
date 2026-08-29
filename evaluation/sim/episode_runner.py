@@ -34,9 +34,9 @@ from evaluation.sim.representative_videos import (
 from evaluation.sim.rng import policy_rng_seed
 from evaluation.sim.slip_trace import SlipTraceRecorder
 from evaluation.sim.slip_trace import SlipTraceSettings
-from sim_mujoco.gripper_slip_diagnostics import CommandContext
-from sim_mujoco.gripper_slip_diagnostics import PhysicsTraceRecorder
-from sim_mujoco.gripper_slip_diagnostics import reconstruct_network_action
+from diagnostics.simulation.gripper.trace import CommandContext
+from diagnostics.simulation.gripper.trace import PhysicsTraceRecorder
+from diagnostics.simulation.gripper.trace import reconstruct_network_action
 from evaluation.sim.success import FormalTaskEvaluator
 from evaluation.sim.success import validate_initial_place_grasp
 from simulation.robot.control import apply_safe_control_target

@@ -12,7 +12,6 @@ from simulation.robot.gripper_mapping import actuator_ctrl_rad_to_raw_hardware
 from simulation.robot.gripper_mapping import raw_hardware_to_actuator_ctrl_rad
 from simulation.resources import DEFAULT_MODEL_PATH
 from simulation.configuration import load_simulation_config
-from sim_mujoco.scripts.run_menagerie_gripper_validation import _close_renderer
 
 
 def named_id(model: mujoco.MjModel, object_type: mujoco.mjtObj, name: str) -> int:
@@ -83,24 +82,6 @@ class MenagerieGripperIntegrationTests(unittest.TestCase):
                 mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_JOINT, name),
                 -1,
             )
-
-    def test_renderer_cleanup_supports_installed_mujoco_api(self) -> None:
-        class Freeable:
-            def __init__(self) -> None:
-                self.freed = False
-
-            def free(self) -> None:
-                self.freed = True
-
-        class LegacyRenderer:
-            def __init__(self) -> None:
-                self._mjr_context = Freeable()
-                self._gl_context = Freeable()
-
-        renderer = LegacyRenderer()
-        _close_renderer(renderer)
-        self.assertTrue(renderer._mjr_context.freed)
-        self.assertTrue(renderer._gl_context.freed)
 
     def test_raw_ctrl_round_trip_and_kinematic_aperture_are_monotonic(self) -> None:
         data = mujoco.MjData(self.model)
