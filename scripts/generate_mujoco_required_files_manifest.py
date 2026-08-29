@@ -101,8 +101,8 @@ CATEGORIES: dict[str, list[str]] = {
     ],
     "dataset_tooling": [
         "data/real/conversion/convert_xarm_raw_to_lerobot.py",
-        "fine_tune/xarm_lerobot_writer.py",
-        "fine_tune/smoke_test_openpi_xarm_dataset.py",
+        "data/common/lerobot_writer.py",
+        "training/validation/openpi_smoke.py",
         "sim_mujoco/scripts/convert_mujoco_to_lerobot.py",
         "sim_mujoco/scripts/validate_mujoco_lerobot_dataset.py",
         "sim_mujoco/scripts/validate_real_raw_sim_data.py",

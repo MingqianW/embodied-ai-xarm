@@ -5,7 +5,7 @@ targets. It reproduces the training-side preprocessing, normalizes actions with
 the supplied norm_stats.json, then reports the largest abs(normalized) values.
 
 Example:
-    python fine_tune/check_lerobot_openpi_outliers.py \
+    python tools/datasets/check_lerobot_openpi_outliers.py \
         --openpi-root "$HOME/repos/openpi" \
         --config-name pi05_xarm \
         --norm-stats "$HOME/repos/openpi/assets/pi05_xarm/local/xarm_pi05_20260703/norm_stats.json" \

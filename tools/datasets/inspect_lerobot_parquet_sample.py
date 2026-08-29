@@ -1,12 +1,12 @@
 """Inspect one sample from a processed LeRobot parquet dataset.
 
 Examples:
-    python fine_tune/inspect_lerobot_parquet_sample.py
+    python tools/datasets/inspect_lerobot_parquet_sample.py
 
-    python fine_tune/inspect_lerobot_parquet_sample.py \
+    python tools/datasets/inspect_lerobot_parquet_sample.py \
         --dataset-root "$HF_LEROBOT_HOME/local/xarm_pi05_data"
 
-    python fine_tune/inspect_lerobot_parquet_sample.py \
+    python tools/datasets/inspect_lerobot_parquet_sample.py \
         --parquet /path/to/chunk.parquet \
         --row 5
 """
@@ -582,3 +582,4 @@ def main() -> None:
     print("Inspection completed successfully.")
 
 if __name__ == "__main__":
+    main()

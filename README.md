@@ -15,6 +15,8 @@ fine-tuning OpenPI policies, and reproducing the task in MuJoCo or Isaac Sim.
   safety/review boundary for the existing real-robot runtime.
 - `policy_runtime/`: simulator-independent OpenPI observations, transport,
   action safety, logs, and recording primitives.
+- `training/`: canonical dataset identities, real/simulation mixing,
+  normalization selection, OpenPI adapter, experiment configs, and preflight.
 - `third_party/openpi/`: OpenPI Git submodule.
 - `third_party/xarm_ros2/`: vendored xArm ROS 2 descriptions and meshes.
 
@@ -40,10 +42,12 @@ The root data-collection environment is described by `environment.yml` and
 
 Raw demonstrations, converted datasets, local environments, calibration
 renders, and machine-specific path configuration are intentionally excluded
-from Git. Fine-tuning scripts default to
+from Git. Existing workspaces may still use the ignored legacy raw-data path
 `fine_tune/data/xarm_pi05_data/raw`; pass `--raw-root` or create an ignored
-`configs/data/real/xarm_data_config.json` to use another location.
+`configs/data/real/xarm_data_config.json` to select another location. No
+tracked training implementation remains under `fine_tune/`.
 
-See `docs/step1_data_collection.md`, `docs/step2_openpi_finetuning.md`,
+See `docs/step1_data_collection.md`, `docs/training/openpi_finetuning.md`,
+`docs/training/README.md`,
 `diagnostics/simulation/camera/README.md`, and
 `docs/ISAAC_SIM_SETUP.md` for the detailed workflows.

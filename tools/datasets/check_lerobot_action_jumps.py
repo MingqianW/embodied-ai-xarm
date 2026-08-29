@@ -5,10 +5,10 @@ huge normalized OpenPI target because one action dimension has a tiny q01/q99
 range.
 
 Examples:
-    python fine_tune/check_lerobot_action_jumps.py \
+    python tools/datasets/check_lerobot_action_jumps.py \
       --dataset-root ~/.cache/huggingface/lerobot/local/xarm_pickup_v260624
 
-    python fine_tune/check_lerobot_action_jumps.py \
+    python tools/datasets/check_lerobot_action_jumps.py \
       --dataset-root ~/.cache/huggingface/lerobot/local/xarm_pickup_v260624 \
       --norm-stats ~/projects/openpi_xarm/openpi/assets/pi05_xarm_full_finetune/local/xarm_pickup_v260624/norm_stats.json \
       --action-horizon 10 \

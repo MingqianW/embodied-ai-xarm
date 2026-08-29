@@ -25,7 +25,7 @@ REPORT_TEXT="$LOG_ROOT/TEST_REPORT.txt"
   sim_mujoco/data_collection \
   simulation/environment.py \
   simulation/scene \
-  fine_tune/xarm_lerobot_writer.py \
+  data/common/lerobot_writer.py \
   tests 2>&1 | tee "$REPORT_TEXT"
 
 git diff --check 2>&1 | tee -a "$REPORT_TEXT"

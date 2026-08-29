@@ -3,10 +3,10 @@
 Dry-run is the default. Pass --apply to modify the dataset.
 
 Examples:
-    python fine_tune/trim_lerobot_edges.py
-    python fine_tune/trim_lerobot_edges.py --first 25 --last 25 --apply
-    python fine_tune/trim_lerobot_edges.py --dataset-root "$HF_LEROBOT_HOME/local/xarm_pi05_data" --apply
-    python fine_tune/trim_lerobot_edges.py --apply --trash-dir /content/drive/MyDrive/embodied_ai_xarm/trim_backup
+    python tools/datasets/trim_lerobot_edges.py
+    python tools/datasets/trim_lerobot_edges.py --first 25 --last 25 --apply
+    python tools/datasets/trim_lerobot_edges.py --dataset-root "$HF_LEROBOT_HOME/local/xarm_pi05_data" --apply
+    python tools/datasets/trim_lerobot_edges.py --apply --trash-dir /content/drive/MyDrive/embodied_ai_xarm/trim_backup
 
 The script removes the selected episode parquet files and matching media files,
 then updates meta/episodes*.jsonl and common totals in meta/info.json. If a

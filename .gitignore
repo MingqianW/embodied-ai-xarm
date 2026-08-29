@@ -45,6 +45,8 @@ Desktop.ini
 xarm_colab_payload.zip
 fine_tune/xarm_data_config.json
 fine_tune/third_party/
+# Preserve existing local raw archives while retiring the tracked fine_tune package.
+/fine_tune/data/
 .env
 .env.*
 

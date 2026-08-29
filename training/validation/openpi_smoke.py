@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import dataclasses
 import json
 import os
 from pathlib import Path
@@ -12,7 +11,10 @@ from typing import Any
 
 import numpy as np
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
 OPENPI_ROOT = Path(
     os.environ.get("OPENPI_ROOT", PROJECT_ROOT / "third_party" / "openpi")
 ).resolve()
@@ -60,60 +62,17 @@ def smoke(args: argparse.Namespace) -> dict[str, Any]:
     os.environ["HF_LEROBOT_HOME"] = str(dataset_dir.parent)
     loader_repo_id = dataset_dir.name
 
-    from typing_extensions import override
-
     import openpi.models.model as model
     import openpi.models.pi0_config as pi0_config
     import openpi.policies.libero_policy as libero_policy
     import openpi.training.config as config
     import openpi.training.data_loader as data_loader
     import openpi.transforms as transforms
+    from training.openpi.data_config import make_xarm_data_config_class
 
-    @dataclasses.dataclass(frozen=True)
-    class LeRobotXArmDataConfig(config.DataConfigFactory):
-        use_delta_joint_actions: bool = True
-
-        @override
-        def create(
-            self,
-            assets_dirs: Path,
-            model_config: model.BaseModelConfig,
-        ) -> config.DataConfig:
-            repack = transforms.Group(
-                inputs=[
-                    transforms.RepackTransform(
-                        {
-                            "observation/image": "image",
-                            "observation/wrist_image": "wrist_image",
-                            "observation/state": "state",
-                            "actions": "actions",
-                            "prompt": "prompt",
-                        }
-                    )
-                ]
-            )
-            data_transforms = transforms.Group(
-                inputs=[
-                    libero_policy.LiberoInputs(
-                        model_type=model_config.model_type
-                    )
-                ],
-                outputs=[libero_policy.LiberoOutputs()],
-            )
-            if self.use_delta_joint_actions:
-                delta_mask = transforms.make_bool_mask(6, -1)
-                data_transforms = data_transforms.push(
-                    inputs=[transforms.DeltaActions(delta_mask)],
-                    outputs=[transforms.AbsoluteActions(delta_mask)],
-                )
-            model_transforms = config.ModelTransformFactory()(model_config)
-            return dataclasses.replace(
-                self.create_base_config(assets_dirs, model_config),
-                repack_transforms=repack,
-                data_transforms=data_transforms,
-                model_transforms=model_transforms,
-                action_sequence_keys=("actions",),
-            )
+    LeRobotXArmDataConfig = make_xarm_data_config_class(
+        config, model, libero_policy, transforms
+    )
 
     model_config = pi0_config.Pi0Config(
         pi05=True,

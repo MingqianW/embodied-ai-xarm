@@ -423,7 +423,7 @@ def _run_openpi_batch_smoke(
 ) -> dict[str, Any]:
     command = [
         str(python),
-        str(PROJECT_ROOT / "fine_tune" / "smoke_test_openpi_xarm_dataset.py"),
+        str(PROJECT_ROOT / "training" / "validation" / "openpi_smoke.py"),
         "--dataset-dir",
         str(dataset_dir),
         "--repo-id",

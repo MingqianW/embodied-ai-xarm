@@ -5,7 +5,7 @@ fields OpenPI expects from a LeRobot dataset:
 
     image, wrist_image, state, actions, task
 
-For compatibility with the current fine_tune/openpi_xarm_config.py snippet, the
+For compatibility with the canonical training OpenPI adapter, the
 JSONL export also includes `prompt` as an alias of `task`.
 
 If `lerobot` is installed, it also writes a real LeRobotDataset using

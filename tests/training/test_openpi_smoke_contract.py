@@ -1,6 +1,6 @@
 import pytest
 
-from fine_tune.smoke_test_openpi_xarm_dataset import _expected_image_shape
+from training.validation.openpi_smoke import _expected_image_shape
 
 
 def test_openpi_smoke_uses_framework_specific_image_layout():

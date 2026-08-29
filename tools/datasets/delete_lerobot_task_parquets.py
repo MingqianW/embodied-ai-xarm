@@ -3,12 +3,12 @@
 This is intentionally dry-run by default. Pass --apply to modify the dataset.
 
 Examples:
-    python fine_tune/delete_lerobot_task_parquets.py
-    python fine_tune/delete_lerobot_task_parquets.py --task "pick up the red pepper"
-    python fine_tune/delete_lerobot_task_parquets.py --episode-index 45 --episode-index 146 --apply
-    python fine_tune/delete_lerobot_task_parquets.py --task-file tasks_to_delete.txt --apply
-    python fine_tune/delete_lerobot_task_parquets.py --task-contains largest --task-contains smallest --apply
-    python fine_tune/delete_lerobot_task_parquets.py --blocked-word largest --blocked-word smallest
+    python tools/datasets/delete_lerobot_task_parquets.py
+    python tools/datasets/delete_lerobot_task_parquets.py --task "pick up the red pepper"
+    python tools/datasets/delete_lerobot_task_parquets.py --episode-index 45 --episode-index 146 --apply
+    python tools/datasets/delete_lerobot_task_parquets.py --task-file tasks_to_delete.txt --apply
+    python tools/datasets/delete_lerobot_task_parquets.py --task-contains largest --task-contains smallest --apply
+    python tools/datasets/delete_lerobot_task_parquets.py --blocked-word largest --blocked-word smallest
 
 After deletion, remaining episodes are reindexed to 0..N-1 by default because
 some LeRobot loaders derive expected parquet paths from contiguous episode
