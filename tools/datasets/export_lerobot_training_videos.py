@@ -13,19 +13,6 @@ import numpy as np
 import pyarrow.parquet as pq
 
 
-DATASETS = {
-    "stable_v3": Path(
-        "/work/nvme/bfmk/mw89/mujoco_datasets/local/xarm_mujoco_clean_multitask_stable_v3"
-    ),
-    "stable_v4_10x": Path(
-        "/work/nvme/bfmk/mw89/mujoco_datasets/local/xarm_mujoco_clean_multitask_stable_v4_10x_real"
-    ),
-}
-DEFAULT_OUTPUT = Path(
-    "/work/nvme/bfmk/mw89/exports/mujoco_training_videos/per_task_2episodes_v1"
-)
-
-
 def _safe_name(value: str) -> str:
     return re.sub(r"[^a-z0-9]+", "_", value.lower()).strip("_")
 
@@ -35,7 +22,10 @@ def _read_jsonl(path: Path) -> list[dict]:
 
 
 def _selection(dataset_root: Path, per_task: int) -> list[dict]:
-    tasks = {int(row["task_index"]): str(row["task"]) for row in _read_jsonl(dataset_root / "meta/tasks.jsonl")}
+    tasks = {
+        int(row["task_index"]): str(row["task"])
+        for row in _read_jsonl(dataset_root / "meta/tasks.jsonl")
+    }
     episodes = _read_jsonl(dataset_root / "meta/episodes.jsonl")
     by_task: dict[str, list[dict]] = defaultdict(list)
     for row in episodes:
@@ -61,7 +51,12 @@ def _selection(dataset_root: Path, per_task: int) -> list[dict]:
 
 
 def _parquet_path(dataset_root: Path, episode_index: int) -> Path:
-    return dataset_root / "data" / f"chunk-{episode_index // 1000:03d}" / f"episode_{episode_index:06d}.parquet"
+    return (
+        dataset_root
+        / "data"
+        / f"chunk-{episode_index // 1000:03d}"
+        / f"episode_{episode_index:06d}.parquet"
+    )
 
 
 def _decode(image: dict, *, label: str) -> np.ndarray:
@@ -87,7 +82,12 @@ def _write_episode(dataset_root: Path, item: dict, output: Path, fps: int) -> di
         first_wrist = cv2.resize(first_wrist, (first_base.shape[1], first_base.shape[0]))
     height, width = first_base.shape[:2]
     output.parent.mkdir(parents=True, exist_ok=True)
-    writer = cv2.VideoWriter(str(output), cv2.VideoWriter_fourcc(*"mp4v"), float(fps), (width * 2, height))
+    writer = cv2.VideoWriter(
+        str(output),
+        cv2.VideoWriter_fourcc(*"mp4v"),
+        float(fps),
+        (width * 2, height),
+    )
     if not writer.isOpened():
         raise RuntimeError(f"Cannot open MP4 writer: {output}")
     try:
@@ -103,12 +103,24 @@ def _write_episode(dataset_root: Path, item: dict, output: Path, fps: int) -> di
         writer.release()
     if not output.is_file() or output.stat().st_size == 0:
         raise RuntimeError(f"Video output is missing or empty: {output}")
-    return {**item, "source_parquet": str(parquet_path), "video": str(output), "bytes": output.stat().st_size}
+    return {
+        **item,
+        "source_parquet": str(parquet_path),
+        "video": str(output),
+        "bytes": output.stat().st_size,
+    }
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
+    parser.add_argument(
+        "--dataset",
+        action="append",
+        required=True,
+        metavar="NAME=PATH",
+        help="Named LeRobot dataset; repeat for every source to export.",
+    )
+    parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--per-task", type=int, default=2)
     parser.add_argument("--fps", type=int, default=10)
     parser.add_argument("--dry-run", action="store_true")
@@ -117,18 +129,31 @@ def main() -> None:
         raise ValueError("This approved export is fixed at two episodes per task")
     if args.fps <= 0:
         raise ValueError("--fps must be positive")
+    datasets: dict[str, Path] = {}
+    for value in args.dataset:
+        if "=" not in value:
+            raise ValueError(f"Dataset must be NAME=PATH, got {value!r}")
+        name, raw_path = value.split("=", 1)
+        if not name or name in datasets:
+            raise ValueError(f"Dataset name must be non-empty and unique: {name!r}")
+        datasets[name] = Path(raw_path).expanduser().resolve()
     output = args.output.resolve()
     if output.exists():
         raise FileExistsError(f"Refusing to overwrite existing export root: {output}")
-    selection = {name: _selection(root, args.per_task) for name, root in DATASETS.items()}
+    selection = {name: _selection(root, args.per_task) for name, root in datasets.items()}
     if args.dry_run:
         print(json.dumps({"output": str(output), "selection": selection}, indent=2))
         return
     written = []
-    for name, dataset_root in DATASETS.items():
+    for name, dataset_root in datasets.items():
         for item in selection[name]:
             filename = f"episode_{item['episode_index']:06d}_combined.mp4"
-            video = output / name / f"task_{item['task_index']:02d}_{_safe_name(item['task'])}" / filename
+            video = (
+                output
+                / name
+                / f"task_{item['task_index']:02d}_{_safe_name(item['task'])}"
+                / filename
+            )
             written.append(_write_episode(dataset_root, item, video, args.fps))
     manifest = {
         "schema_version": 1,

@@ -118,7 +118,7 @@ def write_final_handoff(config: PipelineConfig) -> Path:
 3. Branch: `{branch}`
 4. Local commit: `{commit}`
 5. Original problems: hard-coded mixed-prompt/distractor plan, short Pick streak acceptance, and a fixed-to-free Place pepper identity swap.
-6. Architecture: typed YAML config plus registry, scene runtime, separate Pick/Place controllers, canonical stability validators, recorder, atomic manifest, converter, strict audits, artifact writer, and self-contained Slurm phases.
+6. Architecture: typed YAML config plus registry, scene runtime, separate Pick/Place controllers, canonical stability validators, recorder, atomic manifest, converter, strict audits, artifact writer, and thin cluster workflows.
 7. Files in the focused commit: {', '.join(f'`{name}`' for name in changed if name) or '(inspect Git commit)'}.
 8. Public CLI: `python -m data.sim.generation.cli {{generate,convert,audit,inspect}} ...`.
 9. Versioned config: `{config.path}`.
@@ -170,12 +170,12 @@ The user authorized replacement of only the four exact roots for `{config.datase
 
 ```bash
 cd {repository}
-{repository_root()}/slurm/simulation_data/offline_tests.sbatch  # submit with sbatch
-sbatch {repository}/slurm/simulation_data/smoke.sbatch
-sbatch {repository}/slurm/simulation_data/full_generation.sbatch
-sbatch {repository}/slurm/simulation_data/conversion.sbatch
-sbatch {repository}/slurm/simulation_data/final_audit.sbatch
+python -m data.sim.generation.cli inspect --config {config.path}
 ```
+
+Scheduling and cluster dependencies intentionally live outside this canonical
+data package. Consult the repository's current deployment documentation before
+submitting compute work.
 
 Resume after disconnect:
 

@@ -6,10 +6,10 @@ camera_config: simulation/config/camera_calibration.yaml
 task_scene_config: simulation/config/task_scenes.yaml
 
 outputs:
-  raw: /work/nvme/bfmk/mw89/mujoco_datasets/raw/xarm_mujoco_clean_multitask_stable_v3
-  converted: /work/nvme/bfmk/mw89/mujoco_datasets/local/xarm_mujoco_clean_multitask_stable_v3
-  smoke: /work/nvme/bfmk/mw89/mujoco_datasets/smoke/xarm_mujoco_clean_multitask_stable_v3
-  log: /work/nvme/bfmk/mw89/logs/xarm_mujoco_clean_multitask_stable_v3
+  raw: ${XARM_WORK_ROOT}/mujoco_datasets/raw/xarm_mujoco_clean_multitask_stable_v3
+  converted: ${XARM_WORK_ROOT}/mujoco_datasets/local/xarm_mujoco_clean_multitask_stable_v3
+  smoke: ${XARM_WORK_ROOT}/mujoco_datasets/smoke/xarm_mujoco_clean_multitask_stable_v3
+  log: ${XARM_WORK_ROOT}/logs/xarm_mujoco_clean_multitask_stable_v3
 
 collection:
   action_hz: 10

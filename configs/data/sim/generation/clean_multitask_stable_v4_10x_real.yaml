@@ -9,10 +9,10 @@ overwrite_existing_outputs: false
 camera_config: simulation/config/camera_calibration.yaml
 task_scene_config: simulation/config/task_scenes.yaml
 outputs:
-  raw: /work/nvme/bfmk/mw89/mujoco_datasets/raw/xarm_mujoco_clean_multitask_stable_v4_10x_real
-  converted: /work/nvme/bfmk/mw89/mujoco_datasets/local/xarm_mujoco_clean_multitask_stable_v4_10x_real
-  smoke: /work/nvme/bfmk/mw89/mujoco_datasets/smoke/xarm_mujoco_clean_multitask_stable_v4_10x_real
-  log: /work/nvme/bfmk/mw89/logs/xarm_mujoco_clean_multitask_stable_v4_10x_real
+  raw: ${XARM_WORK_ROOT}/mujoco_datasets/raw/xarm_mujoco_clean_multitask_stable_v4_10x_real
+  converted: ${XARM_WORK_ROOT}/mujoco_datasets/local/xarm_mujoco_clean_multitask_stable_v4_10x_real
+  smoke: ${XARM_WORK_ROOT}/mujoco_datasets/smoke/xarm_mujoco_clean_multitask_stable_v4_10x_real
+  log: ${XARM_WORK_ROOT}/logs/xarm_mujoco_clean_multitask_stable_v4_10x_real
 collection:
   action_hz: 10
   object_xy_range_m: 0.02

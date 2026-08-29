@@ -37,7 +37,11 @@ def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model-spec", type=Path, required=True)
     parser.add_argument("--protocol", type=Path, default=default_protocol_path())
-    parser.add_argument("--output-root", type=Path, required=True)
+    parser.add_argument(
+        "--output-root",
+        type=Path,
+        help="Must match the protocol output root; defaults to that exact root.",
+    )
     parser.add_argument("--openpi-root", type=Path, default=Path(os.environ.get("OPENPI_ROOT", "/u/mw89/repos/openpi")))
     parser.add_argument("--embodied-ai-root", type=Path, default=PROJECT_ROOT)
     parser.add_argument("--host", default="127.0.0.1")
@@ -55,7 +59,9 @@ def _parser() -> argparse.ArgumentParser:
 
 def _resolve(args: argparse.Namespace) -> tuple[Any, Any, dict[str, Any]]:
     protocol = load_protocol(args.protocol)
-    if args.output_root.expanduser().resolve() != protocol.output_root:
+    if args.output_root is None:
+        args.output_root = protocol.output_root
+    elif args.output_root.expanduser().resolve() != protocol.output_root:
         raise ValueError(
             f"Output root {args.output_root.expanduser().resolve()} differs from the protocol's "
             f"isolated formal output root {protocol.output_root}"

@@ -12,18 +12,16 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from data.sim.generation.plans import AUTHORIZED_ROOTS
-REJECTED_ROOTS = frozenset(
-    Path(value)
-    for value in (
-        "/",
-        "/work",
-        "/work/nvme",
-        "/work/nvme/bfmk",
-        "/work/nvme/bfmk/mw89",
-    )
-)
-LOG_PARENT = Path("/work/nvme/bfmk/mw89/logs")
+from data.sim.generation.plans import AUTHORIZED_ROOTS, work_root
+
+
+def _parents_including(path: Path) -> frozenset[Path]:
+    resolved = path.resolve(strict=False)
+    return frozenset((resolved, *resolved.parents))
+
+
+REJECTED_ROOTS = _parents_including(work_root())
+LOG_PARENT = work_root() / "logs"
 
 
 def validate_authorized_root(path: Path) -> Path:

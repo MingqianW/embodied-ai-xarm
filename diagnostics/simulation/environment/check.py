@@ -14,18 +14,31 @@ from pathlib import Path
 from typing import Any
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from sim_mujoco.paths import (
-    active_model_path,
+from simulation.resources import (  # noqa: E402
     camera_config_path,
-    mujoco_dataset_root,
-    mujoco_output_root,
+    model_path,
     repository_root,
     task_config_path,
 )
+
+
+def _output_root() -> Path:
+    value = os.environ.get("MUJOCO_OUTPUT_ROOT")
+    root = (
+        Path(value).expanduser()
+        if value
+        else repository_root() / "sim_mujoco" / "output"
+    )
+    return root.resolve()
+
+
+def _dataset_root() -> Path:
+    value = os.environ.get("MUJOCO_DATASET_ROOT")
+    return (Path(value).expanduser() if value else _output_root() / "datasets").resolve()
 
 
 def _version(distribution: str) -> str | None:
@@ -42,7 +55,7 @@ def _result(name: str, status: str, detail: Any) -> dict[str, Any]:
 def run_checks(*, require_egl: bool = False) -> dict[str, Any]:
     checks: list[dict[str, Any]] = []
     root = repository_root()
-    model_path = active_model_path()
+    active_model = model_path()
     camera_path = camera_config_path()
     task_path = task_config_path()
 
@@ -75,7 +88,7 @@ def run_checks(*, require_egl: bool = False) -> dict[str, Any]:
 
     for name, path in {
         "repository_root": root,
-        "active_mjcf": model_path,
+        "active_mjcf": active_model,
         "camera_config": camera_path,
         "task_config": task_path,
     }.items():
@@ -138,7 +151,7 @@ def run_checks(*, require_egl: bool = False) -> dict[str, Any]:
     try:
         import mujoco
 
-        model = mujoco.MjModel.from_xml_path(str(model_path))
+        model = mujoco.MjModel.from_xml_path(str(active_model))
         data = mujoco.MjData(model)
         renderer = mujoco.Renderer(model, height=64, width=64)
         renderer.update_scene(data, camera="base_camera")
@@ -172,8 +185,8 @@ def run_checks(*, require_egl: bool = False) -> dict[str, Any]:
             )
 
     for name, directory in {
-        "output_root": mujoco_output_root(),
-        "dataset_root": mujoco_dataset_root(),
+        "output_root": _output_root(),
+        "dataset_root": _dataset_root(),
     }.items():
         try:
             directory.mkdir(parents=True, exist_ok=True)

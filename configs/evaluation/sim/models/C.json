@@ -1,7 +1,7 @@
 {
   "model_id": "C",
   "training_config": "pi05_xarm_full_real_full_sim_trajectory_shuffle",
-  "checkpoint_root": "/work/nvme/bfmk/mw89/openpi_checkpoints/pi05_xarm/xarm_pi05_base_full_real_full_sim_trajectory_shuffle_15001_v1",
+  "checkpoint_root": "${XARM_WORK_ROOT}/openpi_checkpoints/pi05_xarm/xarm_pi05_base_full_real_full_sim_trajectory_shuffle_15001_v1",
   "manager_step": 15000,
   "norm_asset_id": "xarm_pi05_real_v4sim_10x",
   "description": "π0.5 base, real plus stable-v4 simulation, trajectory-level shuffle preserving temporal order"

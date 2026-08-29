@@ -104,5 +104,6 @@ not a generic current launcher.
 OpenPI owns checkpoint contents, optimizer state, metrics, and W&B behavior.
 The project wrapper writes the resolved project config into the run directory.
 Root ignore rules exclude checkpoints, logs, W&B state, and generated data.
-Slurm files remain under `slurm/` for Phase 7; Phase 6 changed only stale code
-paths required by the reorganization and added no cluster architecture.
+`cluster/` owns Slurm resources, environment setup, submission, and run
+provenance. Its training workflows call this package's public CLI; they do not
+reimplement datasets, mixing, preflight, or OpenPI adapter behavior.

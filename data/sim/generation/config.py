@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import os
 from pathlib import Path
 from typing import Any
 
 import yaml
 
 from data.common.task_identity import TASKS, TASK_BY_ID
-from data.sim.generation.plans import expected_counts, expected_roots
+from data.sim.generation.plans import expected_counts, expected_roots, work_root
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
@@ -115,7 +116,11 @@ def _mapping(value: Any, name: str) -> dict[str, Any]:
 
 
 def _absolute_path(value: Any, name: str, *, relative_to: Path) -> Path:
-    path = Path(str(value)).expanduser()
+    expanded = str(value).replace("${XARM_WORK_ROOT}", str(work_root()))
+    expanded = os.path.expandvars(expanded)
+    if "$" in expanded or "%" in expanded:
+        raise ValueError(f"{name} contains an unresolved environment variable: {value}")
+    path = Path(expanded).expanduser()
     if not path.is_absolute():
         path = relative_to / path
     resolved = path.resolve(strict=False)

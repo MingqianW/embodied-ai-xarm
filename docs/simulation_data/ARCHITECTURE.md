@@ -14,7 +14,7 @@ flowchart LR
   A --> C[Shared LeRobot writer]
   C --> D[Converted audit]
   D --> H[Final handoff]
-  J[Self-contained Slurm phases] --> S
+  J[Thin cluster workflows] --> S
   J --> A
   J --> C
   J --> D
@@ -58,8 +58,8 @@ flowchart LR
   invariants for raw, smoke, and converted outputs.
 - `safety.py`, `status.py`, and `reporting.py` own exact-root replacement,
   permissions, resumable phase state, audit prose, and handoff state.
-- `slurm/simulation_data/` contains phase entry points; task definitions never
-  live in Slurm scripts.
+- `cluster/` contains resource profiles and thin phase orchestration; task
+  definitions and scientific validation never live in Slurm scripts.
 
 ## State machines
 

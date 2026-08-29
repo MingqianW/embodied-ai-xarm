@@ -6,6 +6,7 @@ from dataclasses import asdict
 from dataclasses import dataclass
 import hashlib
 import json
+import os
 from pathlib import Path
 import sys
 from typing import Any
@@ -34,7 +35,14 @@ class ModelSpec:
 def load_model_spec(path: Path) -> ModelSpec:
     path = Path(path).expanduser().resolve()
     raw = json.loads(path.read_text(encoding="utf-8"))
-    root = Path(str(raw["checkpoint_root"])).expanduser()
+    root_value = str(raw["checkpoint_root"]).replace(
+        "${XARM_WORK_ROOT}",
+        os.environ.get("XARM_WORK_ROOT", "/work/nvme/bfmk/mw89"),
+    )
+    root_value = os.path.expandvars(root_value)
+    if "$" in root_value or "%" in root_value:
+        raise ValueError("Model checkpoint_root contains an unresolved environment variable")
+    root = Path(root_value).expanduser()
     if not root.is_absolute():
         root = path.parent / root
     spec = ModelSpec(

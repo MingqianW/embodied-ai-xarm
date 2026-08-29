@@ -43,12 +43,12 @@
     "joint_noise_rad": 0.01
   },
   "paths": {
-    "camera_config": "/u/mw89/repos/embodied-ai-xarm/simulation/config/camera_calibration.yaml",
-    "task_scene_config": "/u/mw89/repos/embodied-ai-xarm/simulation/config/task_scenes.yaml",
-    "robot_xml": "/u/mw89/repos/embodied-ai-xarm/simulation/assets/xarm6/xarm6_pick_scene.xml"
+    "camera_config": "${XARM_REPOSITORY}/simulation/config/camera_calibration.yaml",
+    "task_scene_config": "${XARM_REPOSITORY}/simulation/config/task_scenes.yaml",
+    "robot_xml": "${XARM_REPOSITORY}/simulation/assets/xarm6/xarm6_pick_scene.xml"
   },
   "outputs": {
-    "formal_output_root": "/work/nvme/bfmk/mw89/mujoco_outputs/policy_evaluation/pi05_abc_15000_six_task_all_videos_v1"
+    "formal_output_root": "${XARM_WORK_ROOT}/mujoco_outputs/policy_evaluation/pi05_abc_15000_six_task_all_videos_v1"
   },
   "video": {
     "video_policy": "all",

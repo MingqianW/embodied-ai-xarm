@@ -2,7 +2,21 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
+
+
+DEFAULT_WORK_ROOT = Path("/work/nvme/bfmk/mw89")
+
+
+def work_root() -> Path:
+    """Return the explicitly configured data root, preserving the DeltaAI default."""
+
+    return Path(os.environ.get("XARM_WORK_ROOT", str(DEFAULT_WORK_ROOT))).expanduser()
+
+
+def _root(*parts: str) -> Path:
+    return work_root().joinpath(*parts)
 
 
 DATASET_PLANS = {
@@ -17,10 +31,10 @@ DATASET_PLANS = {
         },
         "roots": frozenset(
             {
-                Path("/work/nvme/bfmk/mw89/mujoco_datasets/raw/xarm_mujoco_clean_multitask_stable_v3"),
-                Path("/work/nvme/bfmk/mw89/mujoco_datasets/local/xarm_mujoco_clean_multitask_stable_v3"),
-                Path("/work/nvme/bfmk/mw89/mujoco_datasets/smoke/xarm_mujoco_clean_multitask_stable_v3"),
-                Path("/work/nvme/bfmk/mw89/logs/xarm_mujoco_clean_multitask_stable_v3"),
+                _root("mujoco_datasets", "raw", "xarm_mujoco_clean_multitask_stable_v3"),
+                _root("mujoco_datasets", "local", "xarm_mujoco_clean_multitask_stable_v3"),
+                _root("mujoco_datasets", "smoke", "xarm_mujoco_clean_multitask_stable_v3"),
+                _root("logs", "xarm_mujoco_clean_multitask_stable_v3"),
             }
         ),
     },
@@ -35,10 +49,10 @@ DATASET_PLANS = {
         },
         "roots": frozenset(
             {
-                Path("/work/nvme/bfmk/mw89/mujoco_datasets/raw/xarm_mujoco_clean_multitask_stable_v4_10x_real"),
-                Path("/work/nvme/bfmk/mw89/mujoco_datasets/local/xarm_mujoco_clean_multitask_stable_v4_10x_real"),
-                Path("/work/nvme/bfmk/mw89/mujoco_datasets/smoke/xarm_mujoco_clean_multitask_stable_v4_10x_real"),
-                Path("/work/nvme/bfmk/mw89/logs/xarm_mujoco_clean_multitask_stable_v4_10x_real"),
+                _root("mujoco_datasets", "raw", "xarm_mujoco_clean_multitask_stable_v4_10x_real"),
+                _root("mujoco_datasets", "local", "xarm_mujoco_clean_multitask_stable_v4_10x_real"),
+                _root("mujoco_datasets", "smoke", "xarm_mujoco_clean_multitask_stable_v4_10x_real"),
+                _root("logs", "xarm_mujoco_clean_multitask_stable_v4_10x_real"),
             }
         ),
     },

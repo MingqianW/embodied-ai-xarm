@@ -37,9 +37,12 @@ mocap lock, gravity changes, or per-step teleporting.
 The v3 canonical reset uses a `0.012 m` simulated gripper half-width and a
 TCP-to-pepper translation of `[0, 0, -0.030] m`. The convex contact profile is
 enabled only for this Place task while the four visible lobes stay unchanged.
-The canonical 20-seed diagnostic passed 20/20 seeds with maximum relative drift
-between 0.55 and 0.84 mm and at least four gripper contacts per sample. Re-run
-`place_grasp_sweep.sbatch` after any geometry, actuator, or reset change.
+The historical 20-seed diagnostic passed 20/20 seeds with maximum relative
+drift between 0.55 and 0.84 mm and at least four gripper contacts per sample.
+There is no supported current sweep launcher: after geometry, actuator, or
+reset changes, run the canonical simulation tests and physics-consistency
+diagnostic, and add a maintained diagnostics-package entry point if a new sweep
+is scientifically required.
 
 ## Place body identity mismatch
 

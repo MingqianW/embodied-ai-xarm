@@ -14,7 +14,7 @@ and prevents the new architecture from laundering one-off tools into core code.
 | project presentation | EXPERIMENT | moved to `docs/experiments/training/` |
 | historical training migration reports | MIGRATION / scientific history | moved to `docs/experiments/migrations/training/` |
 | nested data ignore | LEGACY | deleted after root ignore protected the existing untracked archive location |
-| simulation-data sbatch files | CLUSTER_WRAPPER / DATA | retained for Phase 7; only stale writer path updated |
+| simulation-data sbatch files | CLUSTER_WRAPPER / DATA | subsequently consolidated and retired in Phase 7; current orchestration is documented in `cluster/README.md` |
 
 The old tracked config snippet defined the xArm repack mapping, six-joint delta
 mask, absolute gripper, Pi0.5 dimensions, three real-only configs, and explicit

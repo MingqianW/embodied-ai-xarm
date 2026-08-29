@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import asdict
 from dataclasses import dataclass
 import json
+import os
 from pathlib import Path
 from typing import Any
 
@@ -12,6 +13,7 @@ from data.common.task_identity import TASKS
 from evaluation.common.contracts import EvaluationTask
 from simulation.resources import camera_config_path
 from simulation.resources import model_path
+from simulation.resources import repository_root
 from simulation.resources import task_config_path
 
 FORMAL_PROTOCOL_VERSION = "xarm-pi05-formal-evaluation-v1"
@@ -99,7 +101,17 @@ def default_protocol_path() -> Path:
 
 
 def _absolute_path(value: str, *, config_path: Path) -> Path:
-    path = Path(value).expanduser()
+    expanded = str(value).replace(
+        "${XARM_REPOSITORY}",
+        os.environ.get("XARM_REPOSITORY", str(repository_root())),
+    ).replace(
+        "${XARM_WORK_ROOT}",
+        os.environ.get("XARM_WORK_ROOT", "/work/nvme/bfmk/mw89"),
+    )
+    expanded = os.path.expandvars(expanded)
+    if "$" in expanded or "%" in expanded:
+        raise ValueError(f"Protocol path contains an unresolved environment variable: {value}")
+    path = Path(expanded).expanduser()
     if not path.is_absolute():
         path = config_path.parent / path
     return path.resolve()
@@ -257,12 +269,16 @@ def validate_protocol(protocol: FormalProtocol) -> None:
         )
     ):
         raise FileNotFoundError("Formal protocol camera, task, and XML files must exist")
-    authorized_output_parent = Path("/work/nvme/bfmk/mw89").resolve(strict=False)
+    authorized_output_parent = Path(
+        os.environ.get("XARM_WORK_ROOT", "/work/nvme/bfmk/mw89")
+    ).expanduser().resolve(strict=False)
     if (
         protocol.output_root == authorized_output_parent
         or authorized_output_parent not in protocol.output_root.parents
     ):
-        raise ValueError("Formal evaluation output root must be under /work/nvme/bfmk/mw89")
+        raise ValueError(
+            f"Formal evaluation output root must be under {authorized_output_parent}"
+        )
     # Catch accidental divergence from canonical path resolution before a job
     # spends GPU time loading a policy.
     expected_paths = (camera_config_path(), task_config_path(), model_path())

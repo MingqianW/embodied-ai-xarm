@@ -262,27 +262,22 @@ cd /u/mw89/repos/embodied-ai-xarm
   --openpi-root /u/mw89/repos/openpi
 ```
 
-The generic Slurm entry point is
-`/u/mw89/repos/openpi/slurm/xarm_eval/evaluate_model.sbatch`. It requires
-`MODEL_SPEC` and `OUTPUT_ROOT`, starts a localhost policy server with a unique
-port, verifies the identity handshake, enables fail-on-invalid via the protocol,
-and terminates the server on exit. Create the Slurm log directory once before
-the first submission:
-
-```bash
-mkdir -p /work/nvme/bfmk/mw89/logs/openpi_real_sim
-```
+The repository-owned Slurm entry point is the `formal-sim-evaluation` workflow
+in `cluster/`. It is intentionally a thin client of an already-running,
+provenance-configured OpenPI server. Starting that upstream server remains a
+manual external OpenPI operation because this repository does not own a
+validated canonical server launcher. Supply its reachable host explicitly;
+localhost is not assumed across separately scheduled jobs.
 
 The checked-in smoke protocol uses the same task, camera, safety, c5/i50, and
-RNG semantics but two seeds and a separate output root. Submit it manually only
-after the static checks pass:
+RNG semantics but two seeds and a separate output root. Generate and inspect the
+Slurm command only after the server and static checks are ready:
 
 ```bash
-mkdir -p /work/nvme/bfmk/mw89/logs/openpi_real_sim
-MODEL_SPEC=/u/mw89/repos/embodied-ai-xarm/configs/evaluation/sim/models/A.json \
-OUTPUT_ROOT=/work/nvme/bfmk/mw89/mujoco_outputs/policy_evaluation/pi05_abc_15000_smoke_stable_hold_v2 \
-PROTOCOL=/u/mw89/repos/embodied-ai-xarm/configs/evaluation/sim/protocols/formal_xarm_pi05_eval_smoke_v2.json \
-sbatch /u/mw89/repos/openpi/slurm/xarm_eval/evaluate_model.sbatch
+python -m cluster.cli submit formal-sim-evaluation --dry-run \
+  --param model_spec=configs/evaluation/sim/models/A.json \
+  --param protocol=configs/evaluation/sim/protocols/formal_xarm_pi05_eval_smoke_v2.json \
+  --param host=POLICY_SERVER_HOST
 ```
 
 Do not modify the formal protocol or reuse smoke output roots.
@@ -292,10 +287,10 @@ and its separate output root. It preserves every episode video rather than
 category representatives:
 
 ```bash
-MODEL_SPEC=/u/mw89/repos/embodied-ai-xarm/configs/evaluation/sim/models/A.json \
-OUTPUT_ROOT=/work/nvme/bfmk/mw89/mujoco_outputs/policy_evaluation/pi05_abc_15000_six_task_stable_hold_all_videos_v2 \
-PROTOCOL=/u/mw89/repos/embodied-ai-xarm/configs/evaluation/sim/protocols/formal_xarm_pi05_eval_video_all_v2.json \
-sbatch /u/mw89/repos/openpi/slurm/xarm_eval/evaluate_model.sbatch
+python -m cluster.cli submit formal-sim-evaluation --dry-run \
+  --param model_spec=configs/evaluation/sim/models/A.json \
+  --param protocol=configs/evaluation/sim/protocols/formal_xarm_pi05_eval_video_all_v2.json \
+  --param host=POLICY_SERVER_HOST
 ```
 
 This is a distinct output identity; do not mix it with the
@@ -305,7 +300,7 @@ The v1 formal, smoke, and all-video protocol files are retained for historical
 results that used the former three-check lift rule without a post-success hold.
 Do not resume or combine those outputs with v2.
 
-## Legacy entry points — do not use for new A/B/C evaluation
+## Historical entry points — do not use for new A/B/C evaluation
 
 - `slurm/pi05_xarm_abc_six_task_eval.sbatch`
 - `slurm/pi05_xarm_abc_six_task_smoke.sbatch`
@@ -314,6 +309,7 @@ Do not resume or combine those outputs with v2.
 - `evaluation/sim/legacy/run_remote_policy_closed_loop.py`
 - historical `summarize_xarm_abc*_evaluation.py` scripts
 
-They are retained for reproducibility of historical results. They include old
-checkpoint identities, output layouts, and/or legacy result schemas and are not
-valid formal launchers for the new A/B/C models.
+The former Slurm launchers are available only through Git history. The Python
+legacy modules remain for result reproducibility. They include old checkpoint
+identities, output layouts, and/or legacy result schemas and are not valid
+formal launchers for the new A/B/C models.

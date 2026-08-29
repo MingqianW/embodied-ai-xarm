@@ -55,7 +55,7 @@ that its driver libraries are visible before changing Python packages.
 Run:
 
 ```bash
-python scripts/check_deltaai_mujoco_environment.py --require-egl
+python -m diagnostics.simulation.environment.check --require-egl
 python sim_mujoco/scripts/smoke_test_headless_render.py
 ```
 

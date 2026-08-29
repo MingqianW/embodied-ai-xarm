@@ -116,7 +116,7 @@ CATEGORIES: dict[str, list[str]] = {
         "pytest.ini",
         "environment/mujoco_deltaai_requirements.txt",
         "environment/mujoco_deltaai_environment.md",
-        "scripts/check_deltaai_mujoco_environment.py",
+        "diagnostics/simulation/environment/check.py",
         "scripts/generate_mujoco_required_files_manifest.py",
         "sim_mujoco/README.md",
         "sim_mujoco/DATA_COLLECTION.md",
