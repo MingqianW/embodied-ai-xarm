@@ -80,3 +80,11 @@ uv run python -u "$XARM_REPOSITORY/evaluation/real/legacy/run_pi_original.py"
 The legacy script is retained only for historical comparison and reproduction.
 It immediately connects to the hard-coded robot IP, uses a hard-coded config
 and checkpoint.
+
+run below code in lab pc:
+
+```bash
+cd /home/xingyu/pi_0.5/openpi
+
+uv run python -u /home/xingyu/pipeline/run_pi_xarm.py
+```
