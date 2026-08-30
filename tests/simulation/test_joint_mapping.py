@@ -39,12 +39,10 @@ class JointMappingTests(unittest.TestCase):
             )
 
     def test_raw_frame_matches_recorded_controller_flange_position(self) -> None:
+        from data.real.config import get_raw_data_root
+
         log_path = (
-            PROJECT_ROOT
-            / "fine_tune"
-            / "data"
-            / "xarm_pi05_data"
-            / "raw"
+            get_raw_data_root()
             / "pick_up_the_red_block"
             / "episode_000"
             / "robot_log.csv"

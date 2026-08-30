@@ -3,15 +3,10 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-
-PROJECT_ROOT = Path(__file__).resolve().parents[4]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
 
 from data.sim.generation.legacy.episode_recorder import (
     EpisodeRecorder,
@@ -19,7 +14,7 @@ from data.sim.generation.legacy.episode_recorder import (
     RAW_SCHEMA_VERSION,
     REAL_TRAINING_PROMPT,
 )
-from sim_mujoco.paths import mujoco_dataset_root
+from data.sim.paths import dataset_root
 from data.sim.generation.oracle import (
     OracleConfig,
     ScriptedOracleController,
@@ -32,7 +27,7 @@ from data.sim.generation.acceptance import (
 from simulation.environment import MuJoCoEnvironment
 
 
-DEFAULT_OUTPUT = mujoco_dataset_root() / "xarm_mujoco_red_block_raw"
+DEFAULT_OUTPUT = dataset_root() / "xarm_mujoco_red_block_raw"
 RUN_CONFIG_NAME = "run_config.json"
 MANIFEST_NAME = "manifest.json"
 RUN_SCHEMA_VERSION = "xarm_mujoco_collection_run_v1"

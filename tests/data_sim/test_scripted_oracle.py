@@ -4,7 +4,7 @@ import unittest
 
 import numpy as np
 
-from data.sim.generation.ik import solve_site_pose
+from simulation.robot.ik import solve_site_pose
 from data.sim.generation.oracle import (
     OracleConfig,
     OracleStage,

@@ -16,6 +16,22 @@ from policy_runtime.safety import validate_action_chunk
 from policy_runtime.schemas import SafetyResult
 
 
+# xArm6 position limits in radians, from the vendored official xArm ROS 2
+# description at third_party/xarm_ros2/xarm_description/urdf/xarm6/xarm6.urdf.xacro.
+# Site-specific reduced-mode limits may be supplied by the caller when stricter.
+XARM6_JOINT_LIMITS_RAD = np.asarray(
+    [
+        [-2.0 * np.pi, 2.0 * np.pi],
+        [-2.059, 2.0944],
+        [-3.927, 0.19198],
+        [-2.0 * np.pi, 2.0 * np.pi],
+        [-1.69297, np.pi],
+        [-2.0 * np.pi, 2.0 * np.pi],
+    ],
+    dtype=np.float32,
+)
+
+
 @dataclass(frozen=True)
 class RealExecutionAuthorization:
     operator_present: bool
@@ -67,4 +83,3 @@ def validate_real_action_chunk(
         np.asarray(joint_limits, dtype=np.float32),
         config,
     )
-

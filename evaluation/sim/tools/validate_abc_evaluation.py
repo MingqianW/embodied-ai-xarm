@@ -6,11 +6,6 @@ import argparse
 import json
 import os
 from pathlib import Path
-import sys
-
-PROJECT_ROOT = Path(__file__).resolve().parents[3]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
 
 from evaluation.common.models import load_model_spec  # noqa: E402
 from evaluation.common.models import validate_abc_comparison_specs  # noqa: E402

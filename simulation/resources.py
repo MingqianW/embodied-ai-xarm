@@ -84,3 +84,13 @@ def task_config_path(environ: Mapping[str, str] | None = None) -> Path:
         DEFAULT_TASK_CONFIG_PATH,
         environ=environ,
     )
+
+
+def output_root(environ: Mapping[str, str] | None = None) -> Path:
+    """Return the runtime output root for simulation-facing tools."""
+
+    return _from_environment(
+        "MUJOCO_OUTPUT_ROOT",
+        repository_root(environ) / "outputs" / "simulation",
+        environ=environ,
+    )

@@ -1,12 +1,6 @@
-"""Reusable configuration-driven MuJoCo dataset generation pipeline."""
+"""Reusable configuration-driven MuJoCo dataset generation pipeline.
 
-from data.common.task_identity import TASKS, canonical_prompt, resolve_task_id
-from data.sim.generation.config import PipelineConfig, load_pipeline_config
-
-__all__ = [
-    "PipelineConfig",
-    "TASKS",
-    "canonical_prompt",
-    "load_pipeline_config",
-    "resolve_task_id",
-]
+Public entrypoints live in their concrete modules and in
+``data.sim.generation.cli``; importing the package has no dependency side
+effects.
+"""

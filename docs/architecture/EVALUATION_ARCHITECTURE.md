@@ -61,10 +61,10 @@ and mocks. It must never connect to or move a physical robot.
 ## Adjacent ownership
 
 - `policy_runtime/` owns policy transport, observations/actions, reusable action
-  safety, and logging primitives. A compatibility module preserves imports of
-  the older result helpers, whose implementation now lives in evaluation.
+  safety, and logging primitives. Evaluation result ownership remains entirely
+  under `evaluation/`.
 - `simulation/` owns MuJoCo models, reset/runtime, observations, and robot
   control.
-- standalone physics/gripper experiments remain under `sim_mujoco/` until the
-  later diagnostics phase; Phase 4 changes only their evaluation imports.
-
+- `diagnostics/` owns maintained physics, camera, environment, and gripper
+  checks; operator-facing evaluation utilities live under
+  `evaluation/sim/tools/`.

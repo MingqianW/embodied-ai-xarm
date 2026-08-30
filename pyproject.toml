@@ -1,0 +1,13 @@
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+norecursedirs = [
+    ".git",
+    ".pytest_cache",
+    ".pytest-tmp-*",
+    "third_party",
+]
+markers = [
+    "isaac: requires a working Isaac Sim runtime and launcher",
+    "integration: exercises simulator or external process integration",
+    "policy_server: requires a reachable OpenPI policy server",
+]

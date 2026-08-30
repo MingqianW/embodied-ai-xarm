@@ -12,9 +12,6 @@ from typing import Any
 import numpy as np
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
-
 OPENPI_ROOT = Path(
     os.environ.get("OPENPI_ROOT", PROJECT_ROOT / "third_party" / "openpi")
 ).resolve()
@@ -224,7 +221,7 @@ def main() -> None:
     parser.add_argument(
         "--assets-dir",
         type=Path,
-        default=PROJECT_ROOT / "sim_mujoco" / "output" / "openpi_smoke_assets",
+        default=PROJECT_ROOT / "outputs" / "training" / "openpi_smoke_assets",
     )
     parser.add_argument("--output-json", type=Path, required=True)
     args = parser.parse_args()

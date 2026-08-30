@@ -407,7 +407,7 @@ def main() -> None:
     parser.add_argument(
         "--output-dir",
         type=str,
-        default="fine_tune/data/xarm_pi05_data/lerobot",
+        default="datasets/real/lerobot",
         help="Converted dataset directory.",
     )
     parser.add_argument(
@@ -462,7 +462,7 @@ def main() -> None:
     output_dir = _path_arg(
         args.output_dir,
         arg_name="--output-dir",
-        default=Path("fine_tune/data/xarm_pi05_data/lerobot"),
+        default=Path("datasets/real/lerobot"),
     )
     manifest_path = _path_arg(args.manifest_path, arg_name="--manifest-path")
     if output_dir is None:

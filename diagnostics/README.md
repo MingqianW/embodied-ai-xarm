@@ -9,7 +9,7 @@ exception to read-only operation and writes only simulation camera calibration.
 | Area | Maintained entry point | Boundary |
 | --- | --- | --- |
 | Compiled physics | `python -m diagnostics.simulation.physics.consistency` | Exact generation/evaluation comparison; no rendering or stepping |
-| Evaluation trace | `diagnostics.simulation.gripper.trace` | Stable measurement primitive used by formal evaluation |
+| Evaluation trace | `simulation.instrumentation.trace` | Simulation-owned measurement primitive; diagnostics keeps a compatibility import |
 | Slip analysis | `python -m diagnostics.simulation.gripper.analyze_trace` | Data-only analysis of completed CSV traces |
 | Camera calibration | `python -m diagnostics.simulation.camera.cli` | Offline raw-image/render checks; only `fit` writes simulation camera config |
 | Real-sim gripper | `python -m diagnostics.real_sim.gripper.behavior` | Offline state/label comparison with explicit identifiability limits |

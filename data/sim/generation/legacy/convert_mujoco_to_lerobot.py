@@ -5,15 +5,10 @@ from __future__ import annotations
 import argparse
 import json
 import shutil
-import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-
-PROJECT_ROOT = Path(__file__).resolve().parents[4]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
 
 from data.common.lerobot_writer import write_xarm_lerobot_dataset
 from data.sim.generation.legacy.lerobot_adapter import (
@@ -24,11 +19,11 @@ from data.sim.generation.legacy.lerobot_adapter import (
     read_json,
     validate_temporal_alignment,
 )
-from sim_mujoco.paths import mujoco_dataset_root
+from data.sim.paths import dataset_root
 
 
-DEFAULT_INPUT = mujoco_dataset_root() / "xarm_mujoco_red_block_raw"
-DEFAULT_OUTPUT = mujoco_dataset_root() / "xarm_mujoco_red_block_lerobot"
+DEFAULT_INPUT = dataset_root() / "xarm_mujoco_red_block_raw"
+DEFAULT_OUTPUT = dataset_root() / "xarm_mujoco_red_block_lerobot"
 DEFAULT_REPO_ID = "MingqianW/xarm_mujoco_red_block_v1"
 MANIFEST_RELATIVE_PATH = Path("meta") / "mujoco_conversion_manifest.json"
 

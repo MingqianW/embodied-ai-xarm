@@ -9,7 +9,11 @@ from datetime import datetime
 from pathlib import Path
 import numpy as np
 
+from data.common.schema import XARM_STATE_COLUMNS
 from evaluation.real.safety import RealExecutionAuthorization
+from evaluation.real.safety import XARM6_JOINT_LIMITS_RAD
+from evaluation.real.safety import validate_real_action_chunk
+from policy_runtime.safety import SafetyConfig
 
 OPENPI_SOURCE_ROOT = Path(
     os.environ.get("OPENPI_SOURCE_ROOT", "/home/xingyu/pi_0.5/openpi/src")
@@ -20,15 +24,8 @@ REAL_WORLD_SOURCE_ROOT = Path(
 
 
 RAW_DATA_ROOT = Path(os.environ.get("XARM_RAW_ROOT", "/home/xingyu/xarm_pi05_data/raw"))
-STATE_COLUMNS = (
-    "j1_rad",
-    "j2_rad",
-    "j3_rad",
-    "j4_rad",
-    "j5_rad",
-    "j6_rad",
-    "gripper_mm",
-)
+STATE_COLUMNS = XARM_STATE_COLUMNS
+DEFAULT_REAL_SAFETY_CONFIG = SafetyConfig(max_joint_delta_rad=0.1)
 
 
 def _load_external_runtime():
@@ -285,14 +282,15 @@ def safe_execute_actions(
     robot,
     actions,
     max_steps=2,
-    max_joint_delta=0.1,
+    max_joint_delta=DEFAULT_REAL_SAFETY_CONFIG.max_joint_delta_rad,
     joint_speed=0.25,
     joint_acc=1.0,
-    gripper_min=50.0,
-    gripper_max=845.0,
+    gripper_min=DEFAULT_REAL_SAFETY_CONFIG.gripper_min,
+    gripper_max=DEFAULT_REAL_SAFETY_CONFIG.gripper_max,
     gripper_speed=1500,
     dt=0.01,
     authorization=None,
+    joint_limits=None,
 ):
     """
     Execute first few actions from the model.
@@ -310,9 +308,6 @@ def safe_execute_actions(
         raise PermissionError("RealExecutionAuthorization is required before robot motion")
     authorization.require()
 
-    api = get_xarm_api(robot)
-
-
     actions = np.asarray(actions, dtype=np.float32)
 
 
@@ -326,15 +321,43 @@ def safe_execute_actions(
     if gripper_min >= gripper_max:
         raise ValueError("gripper_min must be below gripper_max")
 
-
-    print("Executing action chunk shape:", actions.shape)
-
-
     n = min(max_steps, actions.shape[0])
+    limits = (
+        XARM6_JOINT_LIMITS_RAD
+        if joint_limits is None
+        else np.asarray(joint_limits, dtype=np.float32)
+    )
+    current_joints_deg = np.asarray(
+        robot.get_current_joint(), dtype=np.float32
+    ).reshape(-1)[:6]
+    current_joints = np.deg2rad(current_joints_deg).astype(np.float32)
+    current_gripper = float(np.asarray(robot.get_gripper_state()).reshape(-1)[0])
+    current_state = np.concatenate(
+        [current_joints, np.asarray([current_gripper], dtype=np.float32)]
+    )
+    validation = validate_real_action_chunk(
+        actions[:n, :7],
+        current_state=current_state,
+        joint_limits=limits,
+        authorization=authorization,
+        config=SafetyConfig(
+            max_joint_delta_rad=max_joint_delta,
+            gripper_min=gripper_min,
+            gripper_max=gripper_max,
+        ),
+    )
+    if not validation.accepted:
+        raise ValueError(f"Unsafe real action chunk rejected: {validation.reason}")
+    validated_actions = validation.actions
+    if validation.messages:
+        print("Real action safety adjustments:", *validation.messages, sep="\n  ")
+
+    api = get_xarm_api(robot)
+    print("Executing validated action chunk shape:", validated_actions.shape)
 
 
     for i in range(n):
-        a = actions[i]
+        a = validated_actions[i]
 
 
         if a.shape[0] < 7:
@@ -345,31 +368,15 @@ def safe_execute_actions(
         target_gripper = float(a[6])
 
 
-        current_joints_deg = np.asarray(robot.get_current_joint(), dtype=np.float32).reshape(-1)[:6]
-        current_joints = np.deg2rad(current_joints_deg).astype(np.float32)
-
-
-        # Safety: do not allow a huge joint jump in one command.
-        joint_delta = target_joints - current_joints
-        joint_delta = np.clip(joint_delta, -max_joint_delta, max_joint_delta)
-        safe_joints = current_joints + joint_delta
-
-
-        target_gripper = float(np.clip(target_gripper, gripper_min, gripper_max))
-
-
         print(f"[EXEC {i}]")
-        print("  current_joints_deg:", current_joints_deg)
-        print("  current_joints_rad:", current_joints)
-        print("  raw target_joints:", target_joints)
-        print("  safe_joints:", safe_joints)
+        print("  validated target_joints:", target_joints)
         print("  target_gripper:", target_gripper)
 
 
         # Move joints.
         try:
             ret = api.set_servo_angle(
-                angle=safe_joints.tolist(),
+                angle=target_joints.tolist(),
                 is_radian=True,
                 speed=joint_speed,
                 mvacc=joint_acc,
@@ -377,7 +384,7 @@ def safe_execute_actions(
             )
         except TypeError:
             ret = api.set_servo_angle(
-                angle=safe_joints.tolist(),
+                angle=target_joints.tolist(),
                 is_radian=True,
                 speed=joint_speed,
                 wait=False, 
@@ -603,6 +610,106 @@ def _parser():
     return parser
 
 
+def _run_policy_prompt_loop(robot, cameras, policy) -> None:
+    while True:
+        prompt = input("prompt> ").strip()
+        if prompt in ("quit", "exit", "q"):
+            break
+        if not prompt:
+            continue
+
+        example, _ = build_policy_example(robot, cameras, prompt)
+        actions = np.asarray(policy.infer(example)["actions"], dtype=np.float32)
+
+        print("Type:", type(actions))
+        print("Shape:", actions.shape)
+        print("Actions:", actions)
+
+        execute = input("Run closed-loop rollout on robot? [y/N] ").strip().lower()
+        if execute == "y":
+            authorization = _confirm_motion_authorization()
+            cycles_text = input("Number of observe/infer/execute cycles [25]: ").strip()
+            cycles = int(cycles_text) if cycles_text else 25
+            steps_text = input("Actions to execute per inference [2]: ").strip()
+            execute_steps = int(steps_text) if steps_text else 2
+            trajectory_records = run_receding_horizon(
+                robot,
+                cameras,
+                policy,
+                prompt,
+                cycles=cycles,
+                execute_steps=execute_steps,
+                max_joint_delta=DEFAULT_REAL_SAFETY_CONFIG.max_joint_delta_rad,
+                joint_speed=0.25,
+                joint_acc=1.0,
+                gripper_min=DEFAULT_REAL_SAFETY_CONFIG.gripper_min,
+                gripper_max=DEFAULT_REAL_SAFETY_CONFIG.gripper_max,
+                gripper_speed=1500,
+                dt=0.01,
+                authorization=authorization,
+            )
+            save_raw_trajectory(trajectory_records, prompt=prompt)
+        else:
+            print("Not executing actions.")
+
+
+def _cleanup_hardware(robot, cameras) -> list[str]:
+    """Release acquired resources in reverse order without short-circuiting."""
+
+    errors: list[str] = []
+    if cameras is not None:
+        try:
+            cameras.stop(wait=True)
+        except Exception as exc:  # external cleanup must not block robot cleanup
+            errors.append(f"camera cleanup failed: {exc}")
+    if robot is not None:
+        try:
+            robot.disconnect()
+        except Exception as exc:  # report after all cleanup attempts
+            errors.append(f"robot cleanup failed: {exc}")
+    return errors
+
+
+def _run_hardware_session(
+    training_config,
+    policy_config,
+    robot_factory,
+    camera_factory,
+    *,
+    session_runner=_run_policy_prompt_loop,
+) -> None:
+    robot = None
+    cameras = None
+    try:
+        robot = robot_factory(
+            interface=os.environ.get("XARM_ROBOT_IP", "192.168.1.209")
+        )
+        print("Robot connected")
+
+        cameras = camera_factory()
+        cameras.start(wait=True)
+        print(f"Cameras ready: {cameras.is_ready}")
+        print(f"Number of active cameras: {cameras.n_cameras}")
+
+        # Policy loading is protected because robot and cameras are live here.
+        config = training_config.get_config("pi05_xarm_full_finetune")
+        checkpoint_dir = os.environ.get(
+            "XARM_POLICY_CHECKPOINT", "/home/xingyu/pi_0.5/openpi/checkpoint/25000"
+        )
+        policy = policy_config.create_trained_policy(config, checkpoint_dir)
+        print("Policy loaded")
+        session_runner(robot, cameras, policy)
+    finally:
+        original_exception_active = sys.exc_info()[0] is not None
+        cleanup_errors = _cleanup_hardware(robot, cameras)
+        if cleanup_errors:
+            message = "; ".join(cleanup_errors)
+            if original_exception_active:
+                print(f"WARNING: {message}", file=sys.stderr)
+            else:
+                raise RuntimeError(message)
+
+
 def main():
     args = _parser().parse_args()
     if not args.allow_hardware:
@@ -611,76 +718,12 @@ def main():
             "then pass --allow-hardware only at the supervised robot station."
         )
     training_config, policy_config, XARM6, MultiRealsense = _load_external_runtime()
-    # 1. connect robot
-    robot = XARM6(interface=os.environ.get("XARM_ROBOT_IP", "192.168.1.209"))
-    print("Robot connected")
-
-
-    # 2. start cameras
-    cameras = MultiRealsense()
-    cameras.start(wait=True)
-    print(f"Cameras ready: {cameras.is_ready}")
-    print(f"Number of active cameras: {cameras.n_cameras}")
-
-
-    # 3. load model
-    config = training_config.get_config("pi05_xarm_full_finetune")
-    checkpoint_dir = os.environ.get(
-        "XARM_POLICY_CHECKPOINT", "/home/xingyu/pi_0.5/openpi/checkpoint/25000"
+    _run_hardware_session(
+        training_config,
+        policy_config,
+        XARM6,
+        MultiRealsense,
     )
-    policy = policy_config.create_trained_policy(config, checkpoint_dir)
-    print("Policy loaded")
-
-
-    try:
-        while True:
-            prompt = input("prompt> ").strip()
-            if prompt in ("quit", "exit", "q"):
-                break
-            if not prompt:
-                continue
-
-
-            example, _ = build_policy_example(robot, cameras, prompt)
-            actions = np.asarray(policy.infer(example)["actions"], dtype=np.float32)
-
-
-            print("Type:", type(actions))
-            print("Shape:", actions.shape)
-            print("Actions:", actions)
-
-
-            execute = input("Run closed-loop rollout on robot? [y/N] ").strip().lower()
-            if execute == "y":
-                authorization = _confirm_motion_authorization()
-                cycles_text = input("Number of observe/infer/execute cycles [25]: ").strip()
-                cycles = int(cycles_text) if cycles_text else 25
-                steps_text = input("Actions to execute per inference [2]: ").strip()
-                execute_steps = int(steps_text) if steps_text else 2
-                trajectory_records = run_receding_horizon(
-                    robot,
-                    cameras,
-                    policy,
-                    prompt,
-                    cycles=cycles,
-                    execute_steps=execute_steps,
-                    max_joint_delta=0.1,
-                    joint_speed=0.25,
-                    joint_acc=1.0,
-                    gripper_min=50.0,
-                    gripper_max=845.0,
-                    gripper_speed=1500,
-                    dt=0.01,
-                    authorization=authorization,
-                )
-                save_raw_trajectory(trajectory_records, prompt=prompt)
-            else:
-                print("Not executing actions.")
-
-
-    finally:
-        cameras.stop(wait=True)
-        robot.disconnect()
 
 
 

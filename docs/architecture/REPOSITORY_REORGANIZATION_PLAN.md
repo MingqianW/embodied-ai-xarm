@@ -84,7 +84,7 @@ contracts/validators at a lower layer inside `data/sim/generation/`.
 
 | Concern | Current implementation |
 | --- | --- |
-| Primary collector | Not tracked. `docs/xArm_data_collection_command.md` invokes an external `real_world/collect_async_gripper_optimized.py` |
+| Primary collector | Not tracked. `docs/commands/real_world_data_collection.md` invokes an external `real_world/collect_async_gripper_optimized.py` |
 | Tracked raw-data support | `fine_tune/xarm_data_config.py`, `check_xarm_raw_quality.py`, `calculate_xarm_demo_time.py`, `rename_xarm_raw_task.py` |
 | Conversion | `fine_tune/convert_xarm_raw_to_lerobot.py` |
 | Canonical writer | `fine_tune/xarm_lerobot_writer.py` |
@@ -390,7 +390,7 @@ The exact camera set is:
 | `docs/formal_xarm_model_evaluation.md` | `docs/evaluation/sim/formal_xarm_model_evaluation.md` | `git mv` |
 | `docs/xarm_slip_diagnosis.md` | `docs/experiments/diagnostics/xarm_slip_diagnosis.md` | `git mv` |
 | `docs/step2_openpi_finetuning.md` | `docs/training/openpi_finetuning.md` | `git mv` |
-| `docs/xArm_data_collection_command.md` | `docs/data/real_collection_command.md` | `git mv`; retain external dependency warning |
+| `docs/commands/real_world_data_collection.md` | `docs/commands/real_world_data_collection.md` | Consolidated command reference; retain external dependency warning |
 | `docs/data_collection_tracker.md`, `docs/training_data_tracker_260626.md`, `docs/training_data_tracker_260703.md` | `docs/experiments/data_collection/` | `git mv` individually |
 | `docs/real_robot_model_eval_log_260626.md` | `docs/experiments/evaluation/real_robot_model_eval_log_260626.md` | `git mv` |
 | `docs/mujoco_migration/` | `docs/experiments/migrations/mujoco/` | `git mv` directory |
@@ -507,7 +507,7 @@ These are prerequisites, not reasons to weaken or delete tests.
 | Current simulation data | all seven `docs/simulation_data/*` files, `sim_mujoco/DATA_COLLECTION.md`, `data_collection_tracker.md` |
 | Current evaluation | `formal_xarm_model_evaluation.md` |
 | Current training | `step2_openpi_finetuning.md` |
-| Real collection | `xArm_data_collection_command.md` (must clearly mark external collector), dated training-data trackers |
+| Real collection | `commands/real_world_data_collection.md` (must clearly mark external collector), dated training-data trackers |
 | Real evaluation experiment record | `real_robot_model_eval_log_260626.md` |
 | Migration/handoff record | all `docs/mujoco_migration/*` and `docs/training_migration/*` |
 | Generated report snapshot | migration validation/audit/manifest JSON+Markdown and training audit/distribution/post-evaluation JSON+Markdown |

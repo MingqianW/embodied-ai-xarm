@@ -9,15 +9,10 @@ from http.server import ThreadingHTTPServer
 import json
 import mimetypes
 from pathlib import Path
-import sys
 import threading
 from typing import Any
 from urllib.parse import unquote
 from urllib.parse import urlparse
-
-PROJECT_ROOT = Path(__file__).resolve().parents[3]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
 
 from evaluation.sim.human_review import FAILURE_REASONS  # noqa: E402
 from evaluation.sim.human_review import PRIMARY_LABELS  # noqa: E402

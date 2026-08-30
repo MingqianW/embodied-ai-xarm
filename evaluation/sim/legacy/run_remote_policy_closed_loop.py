@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -11,10 +10,6 @@ import mujoco
 import numpy as np
 from PIL import Image
 
-
-PROJECT_ROOT = Path(__file__).resolve().parents[3]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
 
 from policy_runtime.remote_policy_client import (  # noqa: E402
     PolicyTimeoutError,
@@ -29,10 +24,8 @@ from simulation.robot.control import (  # noqa: E402
     validate_policy_actions,
 )
 from simulation.physics.collision import collision_diagnostics  # noqa: E402
-from evaluation.sim.legacy.remote_policy_evaluation import (  # noqa: E402
-    VideoRecorder,
-    write_json,
-)
+from evaluation.sim.video import VideoRecorder  # noqa: E402
+from evaluation.sim.legacy.remote_policy_evaluation import write_json  # noqa: E402
 from simulation.resources import DEFAULT_CAMERA_CONFIG_PATH  # noqa: E402
 from simulation.resources import DEFAULT_MODEL_PATH  # noqa: E402
 from simulation.robot.model import arm_actuator_ctrl_limits  # noqa: E402
@@ -48,10 +41,10 @@ from simulation.scene import (  # noqa: E402
     resolve_task,
     task_names,
 )
-from sim_mujoco.paths import mujoco_output_root  # noqa: E402
+from simulation.resources import output_root  # noqa: E402
 
 
-DEFAULT_OUTPUT_DIR = mujoco_output_root() / "remote_policy_closed_loop"
+DEFAULT_OUTPUT_DIR = output_root() / "remote_policy_closed_loop"
 MAX_EXECUTE_CHUNK_STEPS = DEFAULT_ACTION_HORIZON
 
 

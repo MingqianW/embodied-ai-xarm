@@ -43,8 +43,6 @@ Desktop.ini
 
 # Local data and machine-specific configuration
 xarm_colab_payload.zip
-fine_tune/xarm_data_config.json
-fine_tune/third_party/
 # Preserve existing local raw archives while retiring the tracked fine_tune package.
 /fine_tune/data/
 .env
@@ -57,9 +55,14 @@ fine_tune/third_party/
 /data/**/recordings/
 /data/**/logs/
 /datasets/
+/outputs/
 /checkpoints/
 /videos/
 /logs/
+/artifacts/
+/reports/
+# Preserve user-owned runtime artifacts from pre-canonical workspaces only.
+# No project source remains under sim_mujoco/.
 sim_mujoco/datasets/
 sim_mujoco/logs/
 *.mp4

@@ -4,11 +4,11 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from sim_mujoco.paths import mujoco_dataset_root
-from sim_mujoco.paths import mujoco_output_root
+from data.sim.paths import dataset_root
 from simulation.resources import camera_config_path
 from simulation.resources import gripper_config_path
 from simulation.resources import model_path
+from simulation.resources import output_root
 from simulation.resources import repository_root
 from simulation.resources import task_config_path
 
@@ -58,8 +58,8 @@ class MuJoCoPathTests(unittest.TestCase):
             "MUJOCO_DATASET_ROOT": str(dataset),
         }
         self.assertEqual(repository_root(environ), root.resolve())
-        self.assertEqual(mujoco_output_root(environ), output.resolve())
-        self.assertEqual(mujoco_dataset_root(environ), dataset.resolve())
+        self.assertEqual(output_root(environ), output.resolve())
+        self.assertEqual(dataset_root(environ), dataset.resolve())
         self.assertEqual(
             model_path(environ),
             Path(__file__).resolve().parents[2]
@@ -67,6 +67,18 @@ class MuJoCoPathTests(unittest.TestCase):
             / "assets"
             / "xarm6"
             / "xarm6_pick_scene.xml",
+        )
+
+    def test_repository_override_lazily_relocates_runtime_fallbacks(self) -> None:
+        root = Path.cwd() / "relocated-repository"
+        environ = {"EMBODIED_AI_ROOT": str(root)}
+        self.assertEqual(
+            output_root(environ),
+            (root / "outputs" / "simulation").resolve(),
+        )
+        self.assertEqual(
+            dataset_root(environ),
+            (root / "datasets" / "simulation").resolve(),
         )
 
 

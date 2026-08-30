@@ -30,10 +30,10 @@ and `roll_deg` rotates the image around its optical axis.
 
 ## Reproduce
 
-Activate an environment containing the packages pinned in
-`../../../sim_mujoco/constraints.txt`, then run from the repository root. Raw
-data is resolved through `data.real.config`, including the ignored local
-`configs/data/real/xarm_data_config.json` override.
+Activate an environment containing the simulation dependencies documented in
+`../../../environment/mujoco_deltaai_requirements.txt`, then run from the
+repository root. Raw data is resolved through `data.real.config`, including the
+ignored local `configs/data/real/xarm_data_config.json` override.
 
 ```powershell
 python -m diagnostics.simulation.camera.cli discover

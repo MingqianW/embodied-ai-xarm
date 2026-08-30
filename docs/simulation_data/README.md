@@ -41,10 +41,16 @@ v3 roots in the config, rejects symlinks and parent/sibling paths, writes a
 pre-overwrite inventory outside the replaced root, and records an overwrite
 marker. No sibling dataset or earlier version is eligible.
 
+Exact copy-and-run commands for both the verified Windows local workflow and
+the formal DeltaAI/Slurm workflow are maintained in
+[simulation_data_generation.md](../commands/simulation_data_generation.md).
+
 ## Documentation
 
 - [ARCHITECTURE.md](ARCHITECTURE.md): components and extension points
 - [TASKS_AND_PROMPTS.md](TASKS_AND_PROMPTS.md): IDs, prompts, and aliases
 - [DATASET_SCHEMA.md](DATASET_SCHEMA.md): raw and converted contracts
+- [simulation_data_generation.md](../commands/simulation_data_generation.md):
+  local and DeltaAI commands
 - [DELTA_AI_RUNBOOK.md](DELTA_AI_RUNBOOK.md): exact cluster commands
 - [TROUBLESHOOTING.md](TROUBLESHOOTING.md): diagnosis and safe recovery

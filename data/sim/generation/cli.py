@@ -25,6 +25,7 @@ from data.sim.generation.reporting import (
 from data.sim.generation.safety import (
     apply_group_permissions,
     path_inventory,
+    permission_policy,
     replace_authorized_roots,
     validate_authorized_root,
 )
@@ -126,7 +127,10 @@ def main() -> None:
         )
     elif args.command == "permissions":
         apply_group_permissions(args.paths)
-        result = {"paths": [str(validate_authorized_root(path)) for path in args.paths]}
+        result = {
+            "paths": [str(validate_authorized_root(path)) for path in args.paths],
+            "permission_policy": permission_policy(),
+        }
     elif args.command == "status":
         repository = repository_root()
         branch = subprocess.run(

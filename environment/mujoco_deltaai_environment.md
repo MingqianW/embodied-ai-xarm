@@ -56,7 +56,7 @@ Run:
 
 ```bash
 python -m diagnostics.simulation.environment.check --require-egl
-python sim_mujoco/scripts/smoke_test_headless_render.py
+python -m diagnostics.simulation.environment.headless_render
 ```
 
 The checker never contacts an OpenPI server.

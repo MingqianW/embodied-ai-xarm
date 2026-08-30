@@ -22,7 +22,7 @@ from data.sim.generation.legacy.lerobot_adapter import (
     validate_temporal_alignment,
 )
 from data.sim.generation.legacy.convert_mujoco_to_lerobot import convert
-from sim_mujoco.scripts.validate_mujoco_lerobot_dataset import (
+from data.sim.generation.tools.validate_lerobot_dataset import (
     EXPECTED_FEATURES,
     _selected_raw_episodes,
 )

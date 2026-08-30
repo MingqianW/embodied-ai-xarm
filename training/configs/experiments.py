@@ -24,7 +24,7 @@ class CheckpointMode(str, Enum):
 
 
 @dataclass(frozen=True)
-class ModelSpec:
+class OpenPIModelConfig:
     family: str = "pi0.5"
     pi05: bool = True
     action_dim: int = 32
@@ -108,7 +108,7 @@ class ExperimentConfig:
     normalization: NormalizationSpec
     checkpoint: CheckpointSpec
     optimization: OptimizationSpec
-    model: ModelSpec = ModelSpec()
+    model: OpenPIModelConfig = OpenPIModelConfig()
     launch_support: LaunchSupport = LaunchSupport.VENDORED_OPENPI
     historical_alias: str | None = None
     evidence: tuple[str, ...] = ()
@@ -192,7 +192,7 @@ SIM_RED_BLOCK_EP198 = DatasetSpec(
 )
 
 
-BASE_MODEL = ModelSpec()
+BASE_MODEL = OpenPIModelConfig()
 BASE_WEIGHTS = CheckpointSpec(CheckpointMode.BASE_WEIGHTS, PI05_BASE_PARAMS)
 DEFAULT_LR = LRScheduleSpec()
 DEFAULT_OPTIMIZER = OptimizerSpec()
@@ -209,7 +209,7 @@ def _base(
     save_interval: int,
     ema_decay: float | None = 0.999,
     wandb: bool = True,
-    model: ModelSpec = BASE_MODEL,
+    model: OpenPIModelConfig = BASE_MODEL,
     lr: LRScheduleSpec = DEFAULT_LR,
     launch_support: LaunchSupport = LaunchSupport.VENDORED_OPENPI,
     historical_alias: str | None = None,

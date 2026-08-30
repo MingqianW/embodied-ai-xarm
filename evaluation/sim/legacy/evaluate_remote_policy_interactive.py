@@ -1,24 +1,19 @@
 from __future__ import annotations
 
 import argparse
-import sys
 import time
 from pathlib import Path
 from typing import Any
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[3]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
-
 from evaluation.sim.legacy.remote_policy_evaluation import (
     LABELS,
     read_episodes_csv,
-    replay_video,
     validate_label,
     write_json,
     write_summary,
 )
+from evaluation.sim.video import replay_video
 from evaluation.sim.legacy.run_remote_policy_closed_loop import (
     MAX_EXECUTE_CHUNK_STEPS,
     EpisodeConfig,
@@ -26,10 +21,10 @@ from evaluation.sim.legacy.run_remote_policy_closed_loop import (
     validate_execute_chunk_steps,
 )
 from simulation.scene import task_names
-from sim_mujoco.paths import mujoco_output_root
+from simulation.resources import output_root
 
 
-DEFAULT_OUTPUT_ROOT = mujoco_output_root() / "human_evaluation"
+DEFAULT_OUTPUT_ROOT = output_root() / "human_evaluation"
 
 
 def run_id() -> str:

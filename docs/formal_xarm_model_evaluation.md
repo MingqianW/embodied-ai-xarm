@@ -152,7 +152,7 @@ Historical v1 result files can be reclassified without simulation and without
 modifying them:
 
 ```bash
-python evaluation/sim/tools/reclassify_failures.py \
+python -m evaluation.sim.tools.reclassify_failures \
   --root /work/nvme/bfmk/mw89/mujoco_outputs/policy_evaluation/pi05_abc_15000_smoke_v1
 ```
 
@@ -169,7 +169,7 @@ Human review is an independent artifact layer. It never changes automated
 
    ```bash
    cd /u/mw89/repos/embodied-ai-xarm
-   /u/mw89/repos/openpi/.venv/bin/python evaluation/sim/tools/build_human_review_manifest.py \
+   /u/mw89/repos/openpi/.venv/bin/python -m evaluation.sim.tools.build_human_review_manifest \
      --evaluation-root /work/nvme/bfmk/mw89/mujoco_outputs/policy_evaluation/pi05_abc_15000_six_task_stable_hold_v2 \
      --review-seed 20260808 \
      --mode full
@@ -186,7 +186,7 @@ Human review is an independent artifact layer. It never changes automated
    by its API.
 
    ```bash
-   /u/mw89/repos/openpi/.venv/bin/python evaluation/sim/tools/review_human_videos.py \
+   /u/mw89/repos/openpi/.venv/bin/python -m evaluation.sim.tools.review_human_videos \
      --review-root /work/nvme/bfmk/mw89/mujoco_outputs/policy_evaluation/pi05_abc_15000_six_task_stable_hold_v2/human_review/full_seed_20260808
    ```
 
@@ -201,7 +201,7 @@ Human review is an independent artifact layer. It never changes automated
 3. After all reviewable items are decided, unblind and summarize:
 
    ```bash
-   /u/mw89/repos/openpi/.venv/bin/python evaluation/sim/tools/summarize_human_review.py \
+   /u/mw89/repos/openpi/.venv/bin/python -m evaluation.sim.tools.summarize_human_review \
      --review-root /work/nvme/bfmk/mw89/mujoco_outputs/policy_evaluation/pi05_abc_15000_six_task_stable_hold_v2/human_review/full_seed_20260808
    ```
 
@@ -255,7 +255,7 @@ Norm BC in B/C:
 
 ```bash
 cd /u/mw89/repos/embodied-ai-xarm
-/u/mw89/repos/openpi/.venv/bin/python evaluation/sim/tools/validate_abc_evaluation.py \
+/u/mw89/repos/openpi/.venv/bin/python -m evaluation.sim.tools.validate_abc_evaluation \
   --model-spec configs/evaluation/sim/models/A.json \
   --model-spec configs/evaluation/sim/models/B.json \
   --model-spec configs/evaluation/sim/models/C.json \

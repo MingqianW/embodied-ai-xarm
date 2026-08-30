@@ -19,7 +19,7 @@ On WSL, Linux, or Codespaces the path may differ. First locate the repository
 root by finding:
 
 ```text
-sim_mujoco/
+simulation/
 third_party/openpi/
 tests/
 ```
@@ -91,13 +91,13 @@ simulation/robot/gripper_mapping.py
 Single real-observation inference test:
 
 ```text
-sim_mujoco/scripts/test_remote_policy_mujoco.py
+evaluation/sim/tools/test_remote_policy_mujoco.py
 ```
 
 Dry-loop validation:
 
 ```text
-tools/evaluation_sim/run_remote_policy_dry_loop.py
+evaluation/sim/tools/run_remote_policy_dry_loop.py
 ```
 
 Safe closed-loop runner:
@@ -109,7 +109,7 @@ evaluation/sim/legacy/run_remote_policy_closed_loop.py
 Offline/unit tests:
 
 ```text
-tests/test_remote_policy_pipeline.py
+tests/evaluation_sim/test_remote_policy_pipeline.py
 ```
 
 Maintained local validation:
@@ -123,7 +123,7 @@ python -m diagnostics.simulation.camera.cli --help
 Generated outputs:
 
 ```text
-sim_mujoco/output/
+outputs/simulation/
 ```
 
 This directory is ignored by Git.
@@ -375,21 +375,22 @@ Run syntax checks:
 & "D:\miniconda\envs\mujoco-pi\python.exe" -m py_compile `
   ".\simulation\observation\policy.py" `
   ".\simulation\robot\control.py" `
-  ".\sim_mujoco\scripts\test_remote_policy_mujoco.py" `
-  ".\sim_mujoco\scripts\run_remote_policy_dry_loop.py" `
-  ".\sim_mujoco\scripts\run_remote_policy_closed_loop.py"
+  ".\evaluation\sim\tools\test_remote_policy_mujoco.py" `
+  ".\evaluation\sim\tools\run_remote_policy_dry_loop.py" `
+  ".\evaluation\sim\legacy\run_remote_policy_closed_loop.py"
 ```
 
 Run offline tests:
 
 ```powershell
-& "D:\miniconda\envs\mujoco-pi\python.exe" -m unittest tests.test_remote_policy_pipeline
+& "D:\miniconda\envs\mujoco-pi\python.exe" -m pytest `
+  tests/evaluation_sim/test_remote_policy_pipeline.py
 ```
 
 Expected:
 
 ```text
-11 tests OK
+13 passed
 ```
 
 ## 8. Single Real-Observation Inference
@@ -397,8 +398,8 @@ Expected:
 Run:
 
 ```powershell
-& "D:\miniconda\envs\mujoco-pi\python.exe" `
-  ".\sim_mujoco\scripts\test_remote_policy_mujoco.py"
+& "D:\miniconda\envs\mujoco-pi\python.exe" -m `
+  evaluation.sim.tools.test_remote_policy_mujoco
 ```
 
 Expected validation:
@@ -415,17 +416,17 @@ validation checks: PASS
 Expected outputs:
 
 ```text
-sim_mujoco/output/remote_policy_test/base_model_input.png
-sim_mujoco/output/remote_policy_test/wrist_model_input.png
-sim_mujoco/output/remote_policy_test/result.json
-sim_mujoco/output/remote_policy_test/validation_report.txt
+outputs/simulation/remote_policy_test/base_model_input.png
+outputs/simulation/remote_policy_test/wrist_model_input.png
+outputs/simulation/remote_policy_test/result.json
+outputs/simulation/remote_policy_test/validation_report.txt
 ```
 
 Open the model inputs on Windows:
 
 ```powershell
-Invoke-Item ".\sim_mujoco\output\remote_policy_test\base_model_input.png"
-Invoke-Item ".\sim_mujoco\output\remote_policy_test\wrist_model_input.png"
+Invoke-Item ".\outputs\simulation\remote_policy_test\base_model_input.png"
+Invoke-Item ".\outputs\simulation\remote_policy_test\wrist_model_input.png"
 ```
 
 Check:
@@ -444,8 +445,8 @@ This script must not execute actions.
 Run five iterations without applying policy actions:
 
 ```powershell
-& "D:\miniconda\envs\mujoco-pi\python.exe" `
-  ".\sim_mujoco\scripts\run_remote_policy_dry_loop.py" `
+& "D:\miniconda\envs\mujoco-pi\python.exe" -m `
+  evaluation.sim.tools.run_remote_policy_dry_loop `
   --host 127.0.0.1 `
   --port 18000 `
   --prompt "pick up the object" `
@@ -473,7 +474,7 @@ Stop on:
 Review outputs under:
 
 ```text
-sim_mujoco/output/remote_policy_dry_loop/
+outputs/simulation/remote_policy_dry_loop/
 ```
 
 ## 10. Safe Closed-Loop Simulation
@@ -481,8 +482,8 @@ sim_mujoco/output/remote_policy_dry_loop/
 Initial visible run, with 10 policy updates:
 
 ```powershell
-& "D:\miniconda\envs\mujoco-pi\python.exe" `
-  ".\sim_mujoco\scripts\run_remote_policy_closed_loop.py" `
+& "D:\miniconda\envs\mujoco-pi\python.exe" -m `
+  evaluation.sim.legacy.run_remote_policy_closed_loop `
   --host 127.0.0.1 `
   --port 18000 `
   --prompt "pick up the object" `
@@ -525,8 +526,8 @@ Stop with `Ctrl+C`.
 Headless smoke test:
 
 ```powershell
-& "D:\miniconda\envs\mujoco-pi\python.exe" `
-  ".\sim_mujoco\scripts\run_remote_policy_closed_loop.py" `
+& "D:\miniconda\envs\mujoco-pi\python.exe" -m `
+  evaluation.sim.legacy.run_remote_policy_closed_loop `
   --headless `
   --max-policy-steps 3 `
   --execute-chunk-steps 1 `
@@ -541,7 +542,7 @@ This configuration has already passed on the validated setup.
 List recent step directories:
 
 ```powershell
-Get-ChildItem ".\sim_mujoco\output\remote_policy_closed_loop" |
+Get-ChildItem ".\outputs\simulation\remote_policy_closed_loop" |
   Sort-Object LastWriteTime -Descending |
   Select-Object -First 5 Name, LastWriteTime
 ```
@@ -549,7 +550,7 @@ Get-ChildItem ".\sim_mujoco\output\remote_policy_closed_loop" |
 Search for clipping or errors:
 
 ```powershell
-Get-ChildItem ".\sim_mujoco\output\remote_policy_closed_loop" -Recurse -Filter diagnostics.json |
+Get-ChildItem ".\outputs\simulation\remote_policy_closed_loop" -Recurse -Filter diagnostics.json |
   Select-String -Pattern '"clipped": true|NaN|Infinity|error|exception'
 ```
 
@@ -630,7 +631,7 @@ graphical forwarding mechanism is configured.
 Headless smoke command:
 
 ```bash
-python evaluation/sim/legacy/run_remote_policy_closed_loop.py \
+python -m evaluation.sim.legacy.run_remote_policy_closed_loop \
   --headless \
   --max-policy-steps 3 \
   --execute-chunk-steps 1 \
@@ -762,8 +763,8 @@ On the validated Windows setup:
 ```powershell
 cd "D:\2026 summer project\embodied-ai-xarm"
 
-& "D:\miniconda\envs\mujoco-pi\python.exe" `
-  ".\sim_mujoco\scripts\run_remote_policy_closed_loop.py" `
+& "D:\miniconda\envs\mujoco-pi\python.exe" -m `
+  evaluation.sim.legacy.run_remote_policy_closed_loop `
   --host 127.0.0.1 `
   --port 18000 `
   --prompt "pick up the object" `
@@ -778,7 +779,7 @@ On a Codespace or headless Linux environment:
 ```bash
 export MUJOCO_GL=egl
 
-python evaluation/sim/legacy/run_remote_policy_closed_loop.py \
+python -m evaluation.sim.legacy.run_remote_policy_closed_loop \
   --host 127.0.0.1 \
   --port 18000 \
   --prompt "pick up the object" \

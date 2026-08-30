@@ -4,6 +4,10 @@ All Slurm submission now goes through `cluster.cli`. The generic job script
 contains no task, dataset, evaluation, or training logic; each workflow invokes
 the canonical package CLI shown by `cluster.cli show`.
 
+For a single copy-and-run command reference covering both Windows local and
+DeltaAI generation, see
+[simulation_data_generation.md](../commands/simulation_data_generation.md).
+
 ## Configure and audit
 
 The checked-in defaults preserve the original DeltaAI deployment:

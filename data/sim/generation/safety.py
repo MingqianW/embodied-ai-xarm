@@ -15,6 +15,40 @@ from typing import Any
 from data.sim.generation.plans import AUTHORIZED_ROOTS, work_root
 
 
+DELTA_GROUP = "delta_bfmk"
+DELTA_GROUP_PERMISSION_POLICY = "delta_group"
+WINDOWS_LOCAL_PERMISSION_POLICY = "windows_inherited_acl"
+
+
+def permission_policy() -> str:
+    """Return the host-specific output permission policy.
+
+    Windows has no POSIX group database or ``chown`` implementation compatible
+    with the DeltaAI deployment policy. Local outputs therefore retain their
+    inherited Windows ACLs. POSIX hosts remain strict about the shared DeltaAI
+    group used by canonical cluster runs.
+    """
+
+    return (
+        WINDOWS_LOCAL_PERMISSION_POLICY
+        if os.name == "nt"
+        else DELTA_GROUP_PERMISSION_POLICY
+    )
+
+
+def _require_delta_group() -> None:
+    """Fail before output replacement when the required POSIX group is absent."""
+
+    try:
+        import grp
+    except ImportError as exc:  # pragma: no cover - defensive non-POSIX guard
+        raise RuntimeError("POSIX group lookup is unavailable on this host") from exc
+    try:
+        grp.getgrnam(DELTA_GROUP)
+    except KeyError as exc:
+        raise RuntimeError(f"Required group {DELTA_GROUP} does not exist") from exc
+
+
 def _parents_including(path: Path) -> frozenset[Path]:
     resolved = path.resolve(strict=False)
     return frozenset((resolved, *resolved.parents))
@@ -89,6 +123,9 @@ def replace_authorized_roots(
     resolved = [validate_authorized_root(path) for path in paths]
     if len(set(resolved)) != len(resolved):
         raise ValueError("Duplicate output roots are not allowed")
+    policy = permission_policy()
+    if policy == DELTA_GROUP_PERMISSION_POLICY:
+        _require_delta_group()
     timestamp = datetime.now(timezone.utc).isoformat()
     rows = [path_inventory(path) for path in resolved]
     inventory = _write_preoverwrite_inventory(rows, timestamp)
@@ -97,21 +134,19 @@ def replace_authorized_roots(
         if path.exists():
             shutil.rmtree(path)
         path.mkdir(parents=True, exist_ok=False)
-        os.chmod(path, 0o2770)
-        try:
-            shutil.chown(path, group="delta_bfmk")
-        except LookupError as exc:
-            raise RuntimeError("Required group delta_bfmk does not exist") from exc
-        if shutil.which("setfacl"):
-            subprocess.run(
-                [
-                    "setfacl",
-                    "-m",
-                    "d:g:delta_bfmk:rx,d:m::rwx",
-                    str(path),
-                ],
-                check=True,
-            )
+        if policy == DELTA_GROUP_PERMISSION_POLICY:
+            os.chmod(path, 0o2770)
+            shutil.chown(path, group=DELTA_GROUP)
+            if shutil.which("setfacl"):
+                subprocess.run(
+                    [
+                        "setfacl",
+                        "-m",
+                        f"d:g:{DELTA_GROUP}:rx,d:m::rwx",
+                        str(path),
+                    ],
+                    check=True,
+                )
         marker = {
             "schema_version": 1,
             "overwritten_utc": timestamp,
@@ -120,6 +155,7 @@ def replace_authorized_roots(
             "config_path": str(Path(config_path).resolve()),
             "removed_and_recreated_path": str(path),
             "preoverwrite_inventory": str(inventory),
+            "permission_policy": policy,
         }
         (path / "OVERWRITE_MARKER.json").write_text(
             json.dumps(marker, indent=2) + "\n", encoding="utf-8"
@@ -129,25 +165,32 @@ def replace_authorized_roots(
         "timestamp": timestamp,
         "paths": [str(path) for path in resolved],
         "preoverwrite_inventory": str(inventory),
+        "permission_policy": policy,
     }
 
 
 def apply_group_permissions(paths: list[Path]) -> None:
     resolved = [validate_authorized_root(path) for path in paths]
+    policy = permission_policy()
+    if policy == DELTA_GROUP_PERMISSION_POLICY:
+        _require_delta_group()
     for root in resolved:
         if not root.exists():
             raise FileNotFoundError(root)
+        if policy == WINDOWS_LOCAL_PERMISSION_POLICY:
+            print(f"WINDOWS_INHERITED_ACL path={root}")
+            continue
         for current, dirnames, filenames in os.walk(root, followlinks=False):
             directory = Path(current)
-            shutil.chown(directory, group="delta_bfmk")
+            shutil.chown(directory, group=DELTA_GROUP)
             os.chmod(directory, os.stat(directory).st_mode | stat.S_IRGRP | stat.S_IXGRP | stat.S_ISGID)
             for name in filenames:
                 path = directory / name
                 if path.is_symlink():
                     continue
-                shutil.chown(path, group="delta_bfmk")
+                shutil.chown(path, group=DELTA_GROUP)
                 os.chmod(path, os.stat(path).st_mode | stat.S_IRGRP)
-    if shutil.which("setfacl"):
+    if policy == DELTA_GROUP_PERMISSION_POLICY and shutil.which("setfacl"):
         for root in resolved:
             for current, dirnames, _ in os.walk(root, followlinks=False):
                 for directory in (Path(current), *(Path(current) / name for name in dirnames)):
@@ -155,7 +198,7 @@ def apply_group_permissions(paths: list[Path]) -> None:
                         [
                             "setfacl",
                             "-m",
-                            "d:g:delta_bfmk:rx,d:m::rwx",
+                            f"d:g:{DELTA_GROUP}:rx,d:m::rwx",
                             str(directory),
                         ],
                         check=True,

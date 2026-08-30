@@ -149,7 +149,14 @@ class TestOutputSafetyAndManifest:
         (authorized / "old.txt").write_text("preserved in inventory only", encoding="utf-8")
         monkeypatch.setattr(safety, "AUTHORIZED_ROOTS", frozenset({authorized}))
         monkeypatch.setattr(safety, "LOG_PARENT", tmp_path / "logs")
-        monkeypatch.setattr(safety.shutil, "chown", lambda *args, **kwargs: None)
+        monkeypatch.setattr(
+            safety, "permission_policy", lambda: safety.WINDOWS_LOCAL_PERMISSION_POLICY
+        )
+        monkeypatch.setattr(
+            safety.shutil,
+            "chown",
+            lambda *args, **kwargs: pytest.fail("Windows local mode must not chown"),
+        )
         monkeypatch.setattr(safety.shutil, "which", lambda name: None)
         with pytest.raises(ValueError):
             safety.replace_authorized_roots(
@@ -158,7 +165,10 @@ class TestOutputSafetyAndManifest:
         result = safety.replace_authorized_roots(
             [authorized], overwrite=True, git_sha="abc", config_path=CONFIG_PATH
         )
-        assert json.loads((authorized / "OVERWRITE_MARKER.json").read_text())["git_sha"] == "abc"
+        marker = json.loads((authorized / "OVERWRITE_MARKER.json").read_text())
+        assert marker["git_sha"] == "abc"
+        assert marker["permission_policy"] == safety.WINDOWS_LOCAL_PERMISSION_POLICY
+        assert result["permission_policy"] == safety.WINDOWS_LOCAL_PERMISSION_POLICY
         assert Path(result["preoverwrite_inventory"]).is_file()
         assert "old.txt" not in {path.name for path in authorized.iterdir()}
 
@@ -172,6 +182,48 @@ class TestOutputSafetyAndManifest:
         monkeypatch.setattr(safety, "AUTHORIZED_ROOTS", frozenset({authorized_link}))
         with pytest.raises(ValueError, match="symbolic link"):
             safety.validate_authorized_root(authorized_link)
+
+    def test_missing_delta_group_fails_before_existing_output_is_removed(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        authorized = tmp_path / "authorized"
+        authorized.mkdir()
+        existing = authorized / "existing.txt"
+        existing.write_text("keep", encoding="utf-8")
+        monkeypatch.setattr(safety, "AUTHORIZED_ROOTS", frozenset({authorized}))
+        monkeypatch.setattr(
+            safety, "permission_policy", lambda: safety.DELTA_GROUP_PERMISSION_POLICY
+        )
+
+        def missing_group() -> None:
+            raise RuntimeError("Required group delta_bfmk does not exist")
+
+        monkeypatch.setattr(safety, "_require_delta_group", missing_group)
+        with pytest.raises(RuntimeError, match="delta_bfmk"):
+            safety.replace_authorized_roots(
+                [authorized], overwrite=True, git_sha="abc", config_path=CONFIG_PATH
+            )
+        assert existing.read_text(encoding="utf-8") == "keep"
+
+    def test_windows_permission_pass_preserves_inherited_acl(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        authorized = tmp_path / "authorized"
+        authorized.mkdir()
+        (authorized / "file.txt").write_text("data", encoding="utf-8")
+        monkeypatch.setattr(safety, "AUTHORIZED_ROOTS", frozenset({authorized}))
+        monkeypatch.setattr(
+            safety, "permission_policy", lambda: safety.WINDOWS_LOCAL_PERMISSION_POLICY
+        )
+        monkeypatch.setattr(
+            safety.shutil,
+            "chown",
+            lambda *args, **kwargs: pytest.fail("Windows local mode must not chown"),
+        )
+
+        safety.apply_group_permissions([authorized])
+
+        assert (authorized / "file.txt").read_text(encoding="utf-8") == "data"
 
     def test_atomic_manifest_write_and_partial_default(self, tmp_path: Path) -> None:
         path = tmp_path / "manifest.json"

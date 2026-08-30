@@ -15,7 +15,7 @@ from data.sim.generation.state_conversion import (
     policy_action_from_mujoco_target,
     policy_state_from_mujoco,
 )
-from data.sim.generation.ik import IKSolution, solve_site_pose
+from simulation.robot.ik import IKSolution, solve_site_pose
 from data.sim.generation.config import (
     PickVerificationConfig,
     PlaceVerificationConfig,

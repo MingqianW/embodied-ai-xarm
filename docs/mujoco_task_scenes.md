@@ -14,7 +14,8 @@ The source of truth is:
 ## Raw-data correspondence
 
 The object selection and initial layouts were derived from the first
-`realsense_0` frames under `fine_tune/data/xarm_pi05_data/raw`.
+`realsense_0` frames in the externally collected real dataset configured by
+`data.real.config`.
 
 | MuJoCo task | Raw-data task | Active scene |
 | --- | --- | --- |
@@ -33,14 +34,35 @@ physical props.
 ## Preview every scene
 
 ```powershell
-& "D:\miniconda\envs\mujoco-pi\python.exe" `
-  ".\sim_mujoco\scripts\render_task_scenes.py" `
-  --task all `
-  --seed 0
+python -m simulation.tools.render_task_scenes --task all --seed 0
 ```
 
 The command writes native base and wrist images plus initial-condition metadata
-under `sim_mujoco/output/task_scene_preview/<task>/`.
+under `$MUJOCO_OUTPUT_ROOT/task_scene_preview/<task>/`, or
+`outputs/simulation/task_scene_preview/<task>/` when the variable is unset.
+
+## Interactive local control
+
+The interactive tool controls only the simulated xArm and never connects to
+real hardware. Omit `--task` for a numbered task menu, or select a canonical
+task directly:
+
+```powershell
+python -m simulation.tools.teleoperate_pick
+
+python -m simulation.tools.teleoperate_pick `
+  --task place_red_pepper_in_ring `
+  --seed 3 `
+  --scene-variant clean
+```
+
+Click the MuJoCo viewer before using the keyboard. Arrow keys move the TCP in
+X/Y, Page Up/Page Down move Z, and O/C open or close the gripper. X resets the
+same seed, N advances to the next seed, M prints task and collision metrics,
+1-6 switch among canonical tasks, and Escape exits. Scene randomization can be
+adjusted with `--object-xy-range-m`, `--object-yaw-range-deg`, and
+`--joint-noise-rad`; use `--scene-variant distractors` to activate the task's
+configured distractors.
 
 ## Inspect collision geometry
 
@@ -49,11 +71,10 @@ collision geometry. The STL meshes are visual-only. The gripper base, fingers,
 table, floor, and task objects also participate in collision detection.
 
 ```powershell
-& "D:\miniconda\envs\mujoco-pi\python.exe" `
-  ".\sim_mujoco\scripts\render_task_scenes.py" `
+python -m simulation.tools.render_task_scenes `
   --task red_block `
   --show-collisions `
-  --output-dir ".\sim_mujoco\output\collision_preview"
+  --output-dir ".\outputs\simulation\collision_preview"
 ```
 
 The generated `overview_collisions.png` hides the visual arm meshes and shows
@@ -71,8 +92,7 @@ Robot-object contacts remain allowed because they are required for grasping.
 ## Run one task
 
 ```powershell
-& "D:\miniconda\envs\mujoco-pi\python.exe" `
-  ".\sim_mujoco\scripts\run_remote_policy_closed_loop.py" `
+python -m evaluation.sim.legacy.run_remote_policy_closed_loop `
   --task largest_block `
   --max-policy-steps 10 `
   --execute-chunk-steps 1
@@ -97,8 +117,7 @@ under `initial_conditions.base_robot_visibility`.
 ## Evaluate the full task suite
 
 ```powershell
-& "D:\miniconda\envs\mujoco-pi\python.exe" `
-  ".\sim_mujoco\scripts\evaluate_remote_policy_interactive.py" `
+python -m evaluation.sim.legacy.evaluate_remote_policy_interactive `
   --task all `
   --episodes 10 `
   --max-policy-steps 80 `

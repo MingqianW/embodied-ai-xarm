@@ -3,8 +3,16 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from diagnostics.simulation.gripper.trace import inverse_quantile_normalize
-from diagnostics.simulation.gripper.trace import reconstruct_network_action
+from simulation.instrumentation.trace import inverse_quantile_normalize
+from simulation.instrumentation.trace import reconstruct_network_action
+
+
+def test_diagnostics_trace_compatibility_import_uses_neutral_owner() -> None:
+    from diagnostics.simulation.gripper.trace import (
+        reconstruct_network_action as compatibility_import,
+    )
+
+    assert compatibility_import is reconstruct_network_action
 
 
 def test_inverse_quantile_normalization_endpoints() -> None:

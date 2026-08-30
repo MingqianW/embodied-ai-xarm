@@ -13,32 +13,14 @@ from importlib import import_module, metadata
 from pathlib import Path
 from typing import Any
 
-
-PROJECT_ROOT = Path(__file__).resolve().parents[3]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
-
+from data.sim.paths import dataset_root  # noqa: E402
 from simulation.resources import (  # noqa: E402
     camera_config_path,
     model_path,
+    output_root,
     repository_root,
     task_config_path,
 )
-
-
-def _output_root() -> Path:
-    value = os.environ.get("MUJOCO_OUTPUT_ROOT")
-    root = (
-        Path(value).expanduser()
-        if value
-        else repository_root() / "sim_mujoco" / "output"
-    )
-    return root.resolve()
-
-
-def _dataset_root() -> Path:
-    value = os.environ.get("MUJOCO_DATASET_ROOT")
-    return (Path(value).expanduser() if value else _output_root() / "datasets").resolve()
 
 
 def _version(distribution: str) -> str | None:
@@ -185,8 +167,8 @@ def run_checks(*, require_egl: bool = False) -> dict[str, Any]:
             )
 
     for name, directory in {
-        "output_root": _output_root(),
-        "dataset_root": _dataset_root(),
+        "output_root": output_root(),
+        "dataset_root": dataset_root(),
     }.items():
         try:
             directory.mkdir(parents=True, exist_ok=True)

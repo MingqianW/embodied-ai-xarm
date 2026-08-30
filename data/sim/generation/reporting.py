@@ -41,8 +41,8 @@ def write_initial_audit(config: PipelineConfig) -> Path:
 
 ## Findings before refactoring
 
-1. The retained `data/sim/generation/legacy/collect_oracle_data.py` workflow was a red-block-only collector.
-2. The retained `data/sim/generation/legacy/collect_real_raw_sim_data.py` workflow supported six tasks, but its plan and prompts were hard-coded and included distractor splits.
+1. The retained pre-versioned red-block recorder/converter was single-task only.
+2. The removed six-task predecessor (available in Git history) hard-coded its plan and prompts and included distractor splits.
 3. Prompt mappings mixed underscore folder labels with natural-language prompts.
 4. Pick success used a 5 cm lift and a three-policy-step streak.
 5. Pick `VERIFY` could complete early from that short streak; it did not execute a mandatory 20-step stability window.
@@ -56,7 +56,7 @@ def write_initial_audit(config: PipelineConfig) -> Path:
 
 ## Integrated design
 
-The versioned package separates the registry, typed config, scene setup, Pick and Place controllers, shared validators, recording, seed/retry state, manifests, conversion, audits, artifacts, status, permissions, and Slurm orchestration. The camera YAML above remains authoritative.
+The versioned package separates the registry, typed config, scene setup, Pick and Place controllers, shared validators, recording, seed/retry state, manifests, conversion, audits, artifacts, status, and permissions. Cluster orchestration is external to this package. The camera YAML above remains authoritative.
 """
     path.write_text(text, encoding="utf-8")
     return path
@@ -114,14 +114,13 @@ def write_final_handoff(config: PipelineConfig) -> Path:
 ## Repository and implementation
 
 1. Repository: `{repository}`
-2. Branch: `sim-pipeline-camera-sync-20260806`
-3. Branch: `{branch}`
-4. Local commit: `{commit}`
-5. Original problems: hard-coded mixed-prompt/distractor plan, short Pick streak acceptance, and a fixed-to-free Place pepper identity swap.
-6. Architecture: typed YAML config plus registry, scene runtime, separate Pick/Place controllers, canonical stability validators, recorder, atomic manifest, converter, strict audits, artifact writer, and thin cluster workflows.
-7. Files in the focused commit: {', '.join(f'`{name}`' for name in changed if name) or '(inspect Git commit)'}.
-8. Public CLI: `python -m data.sim.generation.cli {{generate,convert,audit,inspect}} ...`.
-9. Versioned config: `{config.path}`.
+2. Branch: `{branch}`
+3. Local commit: `{commit}`
+4. Original problems: hard-coded mixed-prompt/distractor plan, short Pick streak acceptance, and a fixed-to-free Place pepper identity swap.
+5. Architecture: typed YAML config plus registry, scene runtime, separate Pick/Place controllers, canonical stability validators, recorder, atomic manifest, converter, strict audits, and artifact writer.
+6. Files in the focused commit: {', '.join(f'`{name}`' for name in changed if name) or '(inspect Git commit)'}.
+7. Public CLI: `python -m data.sim.generation.cli {{generate,convert,audit,inspect}} ...`.
+8. Versioned config: `{config.path}`.
 
 ## Tasks, prompts, and clean plan
 
@@ -176,15 +175,6 @@ python -m data.sim.generation.cli inspect --config {config.path}
 Scheduling and cluster dependencies intentionally live outside this canonical
 data package. Consult the repository's current deployment documentation before
 submitting compute work.
-
-Resume after disconnect:
-
-```bash
-cat {log / 'CODEX_STATUS.md'}
-squeue -u mw89
-sacct -j JOB_ID --format=JobID,JobName%32,State,Elapsed,ExitCode
-tail -n 100 {log / 'slurm'}/JOB_LOG
-```
 """
     path = log / "FINAL_HANDOFF.md"
     path.write_text(text, encoding="utf-8")

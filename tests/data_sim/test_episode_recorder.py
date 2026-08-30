@@ -172,10 +172,10 @@ class EpisodeRecorderTests(unittest.TestCase):
         )
 
     def test_metadata_separates_training_and_debug_fields(self) -> None:
+        from simulation.resources import output_root
+
         metadata_path = (
-            Path(__file__).resolve().parents[1]
-            / "sim_mujoco"
-            / "output"
+            output_root()
             / "collection_smoke_one"
             / "episodes"
             / "episode_000000"

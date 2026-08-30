@@ -6,13 +6,9 @@ import argparse
 import json
 import os
 from pathlib import Path
-import sys
 from typing import Any
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
-
 from policy_runtime.remote_policy_client import RemotePolicyClient  # noqa: E402
 from policy_runtime.remote_policy_client import RemotePolicyConfig  # noqa: E402
 from evaluation.sim.config import default_protocol_path  # noqa: E402

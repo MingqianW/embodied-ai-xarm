@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Rename a raw xArm task folder and update episode metadata.
 
-This updates the raw layout used by the other fine_tune utilities:
+This updates the raw layout consumed by the canonical real-data utilities:
 
     raw/<task>/episode_xxx/meta.json
 
@@ -10,6 +10,9 @@ Example:
     python -m data.real.tools.rename_xarm_raw_task \
         --old-task pick_up_blue_block \
         --new-task pick_up_blue_cube
+
+The default invocation is a preview. Pass ``--apply`` only after reviewing the
+reported rename/move and metadata operations.
 
 If Windows refuses to rename the folder because it is locked by another
 process, use --copy to create the renamed raw task folder and update the copied
@@ -205,7 +208,11 @@ def main() -> None:
         action="store_true",
         help="Copy old-task to new-task and update copied metadata, leaving the original task folder untouched.",
     )
-    parser.add_argument("--dry-run", action="store_true", help="Print planned changes without writing files.")
+    parser.add_argument(
+        "--apply",
+        action="store_true",
+        help="Apply the previewed filesystem and metadata changes. The default is dry-run.",
+    )
     args = parser.parse_args()
 
     if args.merge and args.copy:
@@ -217,7 +224,7 @@ def main() -> None:
         new_task=args.new_task,
         merge=args.merge,
         copy=args.copy,
-        dry_run=args.dry_run,
+        dry_run=not args.apply,
     )
 
 

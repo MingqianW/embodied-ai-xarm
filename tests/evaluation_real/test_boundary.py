@@ -10,6 +10,7 @@ from evaluation.common.human_review import HumanReviewRecord
 from evaluation.real.results import as_common_result
 from evaluation.real.results import build_real_episode_result
 from evaluation.real.run_policy import main
+from evaluation.real.run_policy import _run_hardware_session
 from evaluation.real.run_policy import safe_execute_actions
 from evaluation.real.safety import RealExecutionAuthorization
 from evaluation.real.safety import validate_real_action_chunk
@@ -88,6 +89,184 @@ def test_real_action_validation_is_offline_and_clips_existing_conventions() -> N
     assert result.actions.shape == (1, 7)
     assert result.actions[0, 0] == pytest.approx(0.1)
     assert result.actions[0, 6] == pytest.approx(845)
+
+
+def test_real_execution_uses_limit_validated_target_before_sdk_command() -> None:
+    limits = np.asarray([[-1.0, 1.0]] * 6, dtype=np.float32)
+    current = np.asarray([0.98, 0, 0, 0, 0, 0], dtype=np.float32)
+
+    class FakeApi:
+        def __init__(self) -> None:
+            self.commands = []
+
+        def set_servo_angle(self, **kwargs):
+            self.commands.append(kwargs["angle"])
+            return 0
+
+        def set_gripper_position(self, *args, **kwargs):
+            return 0
+
+    class FakeRobot:
+        def __init__(self) -> None:
+            self.api = FakeApi()
+
+        def get_current_joint(self):
+            return np.rad2deg(current)
+
+        def get_gripper_state(self):
+            return 500.0
+
+    robot = FakeRobot()
+    requested = np.asarray([[1.98, 0, 0, 0, 0, 0, 500]], dtype=np.float32)
+    delta_only_target = current[0] + 0.1
+    assert delta_only_target > limits[0, 1]
+
+    safe_execute_actions(
+        robot,
+        requested,
+        max_steps=1,
+        max_joint_delta=0.1,
+        joint_limits=limits,
+        dt=0.0001,
+        authorization=_authorization(authorized=True),
+    )
+
+    assert len(robot.api.commands) == 1
+    assert robot.api.commands[0][0] == pytest.approx(limits[0, 1])
+
+
+class _LifecycleRobot:
+    def __init__(self, events: list[str], *, cleanup_fails: bool = False) -> None:
+        self.events = events
+        self.cleanup_fails = cleanup_fails
+
+    def disconnect(self) -> None:
+        self.events.append("robot.disconnect")
+        if self.cleanup_fails:
+            raise RuntimeError("robot cleanup")
+
+
+class _LifecycleCamera:
+    is_ready = True
+    n_cameras = 2
+
+    def __init__(
+        self,
+        events: list[str],
+        *,
+        start_fails: bool = False,
+        cleanup_fails: bool = False,
+    ) -> None:
+        self.events = events
+        self.start_fails = start_fails
+        self.cleanup_fails = cleanup_fails
+
+    def start(self, *, wait: bool) -> None:
+        self.events.append("camera.start")
+        if self.start_fails:
+            raise RuntimeError("camera start")
+
+    def stop(self, *, wait: bool) -> None:
+        self.events.append("camera.stop")
+        if self.cleanup_fails:
+            raise RuntimeError("camera cleanup")
+
+
+class _TrainingConfig:
+    def __init__(self, events: list[str]) -> None:
+        self.events = events
+
+    def get_config(self, name: str):
+        self.events.append("training.get_config")
+        return {"name": name}
+
+
+class _PolicyConfig:
+    def __init__(self, events: list[str], *, fails: bool = False) -> None:
+        self.events = events
+        self.fails = fails
+
+    def create_trained_policy(self, config, checkpoint):
+        self.events.append("policy.load")
+        if self.fails:
+            raise RuntimeError("policy load")
+        return object()
+
+
+def test_hardware_lifecycle_robot_factory_failure_acquires_nothing() -> None:
+    events = []
+
+    def robot_factory(**kwargs):
+        events.append("robot.create")
+        raise RuntimeError("robot create")
+
+    with pytest.raises(RuntimeError, match="robot create"):
+        _run_hardware_session(
+            _TrainingConfig(events),
+            _PolicyConfig(events),
+            robot_factory,
+            lambda: pytest.fail("camera must not be created"),
+        )
+    assert events == ["robot.create"]
+
+
+def test_hardware_lifecycle_camera_factory_failure_cleans_robot() -> None:
+    events = []
+
+    def camera_factory():
+        events.append("camera.create")
+        raise RuntimeError("camera create")
+
+    with pytest.raises(RuntimeError, match="camera create"):
+        _run_hardware_session(
+            _TrainingConfig(events),
+            _PolicyConfig(events),
+            lambda **kwargs: _LifecycleRobot(events),
+            camera_factory,
+        )
+    assert events == ["camera.create", "robot.disconnect"]
+
+
+def test_hardware_lifecycle_camera_start_failure_cleans_reverse_order() -> None:
+    events = []
+    with pytest.raises(RuntimeError, match="camera start"):
+        _run_hardware_session(
+            _TrainingConfig(events),
+            _PolicyConfig(events),
+            lambda **kwargs: _LifecycleRobot(events),
+            lambda: _LifecycleCamera(events, start_fails=True),
+        )
+    assert events == ["camera.start", "camera.stop", "robot.disconnect"]
+
+
+def test_hardware_lifecycle_policy_load_failure_cleans_reverse_order() -> None:
+    events = []
+    with pytest.raises(RuntimeError, match="policy load"):
+        _run_hardware_session(
+            _TrainingConfig(events),
+            _PolicyConfig(events, fails=True),
+            lambda **kwargs: _LifecycleRobot(events),
+            lambda: _LifecycleCamera(events),
+        )
+    assert events[-2:] == ["camera.stop", "robot.disconnect"]
+
+
+def test_hardware_lifecycle_runtime_failure_preserves_original_and_continues_cleanup() -> None:
+    events = []
+
+    def fail_runtime(robot, cameras, policy):
+        events.append("runtime")
+        raise RuntimeError("runtime failure")
+
+    with pytest.raises(RuntimeError, match="runtime failure"):
+        _run_hardware_session(
+            _TrainingConfig(events),
+            _PolicyConfig(events),
+            lambda **kwargs: _LifecycleRobot(events, cleanup_fails=True),
+            lambda: _LifecycleCamera(events, cleanup_fails=True),
+            session_runner=fail_runtime,
+        )
+    assert events[-3:] == ["runtime", "camera.stop", "robot.disconnect"]
 
 
 def test_real_entrypoint_refuses_hardware_by_default(monkeypatch) -> None:

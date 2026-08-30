@@ -8,10 +8,12 @@ from typing import Any
 import numpy as np
 
 from policy_runtime.episode_logging import write_json
-from policy_runtime.schemas import POLICY_SCHEMA_VERSION
 
 
 LABELS = ("success", "failure", "invalid")
+# Frozen persisted format for the pre-formal evaluation documents. This is
+# intentionally evaluation-owned and must not track policy transport versions.
+LEGACY_EVALUATION_SCHEMA_VERSION = "1.0"
 
 
 @dataclass
@@ -31,7 +33,7 @@ class EpisodeEvaluation:
     video_path: str | None = None
     config_snapshot: dict[str, Any] = field(default_factory=dict)
     label: str | None = None
-    schema_version: str = POLICY_SCHEMA_VERSION
+    schema_version: str = LEGACY_EVALUATION_SCHEMA_VERSION
 
     def validate(self) -> None:
         if self.label is not None and self.label not in LABELS:
@@ -76,7 +78,7 @@ def summarize_episode_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
         return None if not values else float(np.mean(values))
 
     return {
-        "schema_version": POLICY_SCHEMA_VERSION,
+        "schema_version": LEGACY_EVALUATION_SCHEMA_VERSION,
         "attempted_episodes": attempted,
         "labeled_episodes": len(labeled),
         "successes": successes,
