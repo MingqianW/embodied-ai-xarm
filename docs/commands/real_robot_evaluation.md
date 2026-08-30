@@ -10,6 +10,37 @@ it connects with hard-coded settings and has fewer safety and logging checks.
 
 Note that the original runner is may not be the latest version of the lab's original runner. Please check the `/home/xingyu/pipeline/run_pi_xarm.py` script on the lab computer for the most up-to-date version of the original runner.
 
+## Required external code and checkpoint
+
+Confirm that these paths exist on the lab computer before starting either
+runner:
+
+```text
+/home/xingyu/pi_0.5/openpi
+/home/xingyu/robot/xarm-calibrate-hanyang
+/home/xingyu/pi_0.5/openpi/checkpoint/{target_checkpoint}
+```
+
+The external OpenPI config file
+`/home/xingyu/pi_0.5/openpi/src/openpi/training/config.py` must include and
+register the customized training configuration `pi05_xarm_full_finetune`, which may varied depends on the checkpoint used.
+
+
+### Add the customized config to OpenPI
+
+The historical OpenPI integration config snippet is tracked at
+`training/openpi/legacy_openpi_xarm_config_snippet.py`. Inspect 
+
+Manually merge, rather than overwrite the OpenPI file:
+
+1. Add any missing imports listed at the top of the snippet.
+2. Add `LeRobotXArmDataConfig` before OpenPI's `_CONFIGS` list.
+3. Add the `pi05_xarm_full_finetune` `TrainConfig` entry inside `_CONFIGS`.
+
+The snippet also contains historical `pi05_xarm` and
+`pi05_xarm_colab_smoke` entries. 
+Verify the external registry after saving.
+
 ## Current improved runner
 
 Set the repository and external runtime
