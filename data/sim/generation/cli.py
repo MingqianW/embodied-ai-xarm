@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import subprocess
+from dataclasses import replace
 from pathlib import Path
 
 from data.sim.generation.audit import (
@@ -16,6 +17,9 @@ from data.sim.generation.audit import (
 )
 from data.sim.generation.collection import collect
 from data.sim.generation.config import load_pipeline_config, repository_root
+from data.sim.generation.config import GeneratorPlan
+from data.sim.generation.core.registry import default_generator_id, resolve_generator
+from data.common.task_identity import resolve_task_id
 from data.sim.generation.conversion import convert_dataset
 from data.sim.generation.manifest import atomic_write_json
 from data.sim.generation.reporting import (
@@ -52,6 +56,9 @@ def main() -> None:
     generate.add_argument("--overwrite", action="store_true")
     generate.add_argument("--resume", action="store_true")
     generate.add_argument("--smoke", action="store_true")
+    generate.add_argument("--task", help="canonical task ID for a direct single-task run")
+    generate.add_argument("--generator", help="generator ID for --task")
+    generate.add_argument("--episodes", type=int, help="episode count for --task")
 
     convert = subparsers.add_parser("convert")
     add_config(convert)
@@ -92,6 +99,25 @@ def main() -> None:
     args = parser.parse_args()
     config = _config(args)
     if args.command == "generate":
+        direct_values = (args.task, args.generator, args.episodes)
+        if any(value is not None for value in direct_values):
+            if args.task is None or args.episodes is None:
+                parser.error("direct generation requires --task and --episodes")
+            if args.episodes <= 0:
+                parser.error("--episodes must be positive")
+            if args.smoke:
+                parser.error("--task direct generation does not combine with --smoke")
+            task_id = resolve_task_id(args.task)
+            generator_id = args.generator or default_generator_id(task_id)
+            resolve_generator(task_id, generator_id)
+            selected = next(task for task in config.tasks if task.task_id == task_id)
+            selected = replace(
+                selected,
+                episodes=args.episodes,
+                clean_episodes=args.episodes,
+                generators=(GeneratorPlan(generator_id, args.episodes),),
+            )
+            config = replace(config, tasks=(selected,), outputs=replace(config.outputs, raw=args.output.resolve()))
         result = collect(
             config, args.output, overwrite=args.overwrite, resume=args.resume,
             smoke=args.smoke,
@@ -194,7 +220,15 @@ def main() -> None:
                 "camera_config": str(config.camera_config),
                 "total_episodes": config.total_episodes,
                 "tasks": [
-                    {"task_id": task.task_id, "prompt": task.prompt, "episodes": task.episodes}
+                    {
+                        "task_id": task.task_id,
+                        "prompt": task.prompt,
+                        "episodes": task.episodes,
+                        "generators": [
+                            {"generator_id": generator.generator_id, "episodes": generator.episodes}
+                            for generator in task.generators
+                        ],
+                    }
                     for task in config.tasks
                 ],
                 "outputs": {

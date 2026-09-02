@@ -64,6 +64,7 @@ More precisely:
 | Concept | Canonical owner |
 | --- | --- |
 | Task IDs and prompts | `data.common.task_identity` |
+| Canonical task implementation folders | `data/sim/generation/tasks/<task_id>/` |
 | 7D state/action schema | `data.common.schema` and `data.common.records` |
 | LeRobot serialization | `data.common.lerobot_writer` |
 | MuJoCo model and configuration | `simulation.resources` and `simulation/config/` |
@@ -80,6 +81,18 @@ Legacy modules under `data.sim.generation.legacy` and
 `evaluation.sim.legacy` retain validated pre-formal formats or behavior that
 current conversion/evaluation code still exercises. They are not aliases for
 removed top-level packages and may not become competing registries.
+
+## Canonical task-folder rule
+
+The six task IDs have one repository-wide implementation ownership point:
+`data/sim/generation/tasks/<task_id>/`. Every canonical task has that folder
+and a `generators/` child. Task-specific generation code belongs there; common
+physics, scenes, prompts, recording, acceptance, conversion, and task identity
+remain centralized. Simulation, evaluation, training, diagnostics, and real
+data modules consume the canonical IDs rather than creating mirrored task
+folders or a second task registry. Architecture tests verify the folders,
+registered generator modules, scene configuration, and formal protocol task
+sets together.
 
 ## Configuration and runtime products
 

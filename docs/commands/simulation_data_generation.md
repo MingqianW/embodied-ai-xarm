@@ -1,5 +1,40 @@
 # Simulation-data generation
 
+## Task generators
+
+Generation is task-centered: every canonical task owns one or more named
+generators, while MuJoCo execution, raw recording, acceptance, conversion, and
+LeRobot writing remain shared. The v3 and v4 configs omit `generators` and
+therefore resolve to their preserved defaults: `scripted_pick` for every Pick
+task and `direct_place` for `place_red_pepper_in_ring`.
+
+Use an explicit exact allocation when a task has more than one registered
+generator:
+
+```yaml
+tasks:
+  red_block:
+    # existing prompt, seed, object, and oracle fields stay unchanged
+    generators:
+      scripted_pick: {episodes: 150}
+      side_grasp: {episodes: 100}
+```
+
+The allocation must total that task's `episodes`. Each accepted raw episode and
+the collection manifest record `generator_id`, `generator_version`, task, and
+resolved seed. Add a generator by creating a task-owned factory under
+`data/sim/generation/tasks/<task>/generators/`, registering it explicitly in
+`core/registry.py`, then adding it to a config allocation.
+
+For a bounded direct run (the output still must be an authorized generation
+root):
+
+```powershell
+& $python -m data.sim.generation.cli generate `
+  --config $config --task red_block --generator scripted_pick --episodes 10 `
+  --output $smoke --overwrite
+```
+
 ## Windows local
 
 Run from the repository root. Do not set `MUJOCO_GL=egl` on Windows.

@@ -10,8 +10,8 @@ from typing import Any
 
 from policy_runtime.recording import VideoRecorder  # noqa: E402
 from data.sim.generation.oracle import (  # noqa: E402
+    OracleConfig,
     ScriptedOracleController,
-    oracle_config_for_task,
 )
 from data.sim.generation.acceptance import (  # noqa: E402
     accepted_oracle_episode,
@@ -37,13 +37,11 @@ def run_one_episode(
     environment.reset(seed=seed)
     controller = ScriptedOracleController(
         environment,
-        oracle_config_for_task(
-            environment.task,
+        OracleConfig(
+            task=environment.task,
             action_dt_s=0.1,
-            closed_gripper_raw=closed_gripper_raw,
-            grasp_tcp_offset_from_object_m=(
-                grasp_tcp_offset_from_object_m
-            ),
+            **({"closed_gripper_raw": closed_gripper_raw} if closed_gripper_raw is not None else {}),
+            **({"grasp_tcp_offset_from_object_m": grasp_tcp_offset_from_object_m} if grasp_tcp_offset_from_object_m is not None else {}),
         ),
     )
     recorder = (

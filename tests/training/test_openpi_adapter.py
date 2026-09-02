@@ -14,7 +14,12 @@ def test_openpi_probe_is_structured_even_when_runtime_dependencies_are_missing()
         assert result["reason"]
 
 
-def test_adapter_refuses_to_flatten_historical_multi_source_config() -> None:
+def test_adapter_no_longer_rejects_multi_source_config_before_openpi_import() -> None:
     config = get_experiment("pi05_xarm_real50_sim50_stratified")
-    with pytest.raises(OpenPIUnavailable, match="multi-LeRobot"):
-        build_openpi_train_config(config)
+    result = probe_openpi()
+    if result["available"]:
+        assert build_openpi_train_config(config).name == config.name
+    else:
+        with pytest.raises(OpenPIUnavailable) as exc_info:
+            build_openpi_train_config(config)
+        assert "multi-LeRobot" not in str(exc_info.value)

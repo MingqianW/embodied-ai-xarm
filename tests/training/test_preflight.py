@@ -39,7 +39,7 @@ def test_preflight_validates_local_contract_and_reports_external_assets(tmp_path
     assert report.passed
     assert any("local dataset metadata" in check for check in report.checks)
     assert not report.launch_ready
-    assert any("must be computed" in warning for warning in report.warnings)
+    assert any("will be computed" in check for check in report.checks)
 
 
 def test_preflight_rejects_wrong_state_shape(tmp_path: Path) -> None:
@@ -70,9 +70,9 @@ def test_preflight_rejects_incomplete_local_task_catalog(tmp_path: Path) -> None
     assert any("missing configured prompts" in error for error in report.errors)
 
 
-def test_historical_multi_source_preflight_is_honest_about_missing_adapter() -> None:
+def test_multi_source_preflight_has_no_external_adapter_blocker() -> None:
     config = get_experiment("pi05_xarm_real50_sim50_stratified")
     report = preflight(config, check_openpi=False)
     assert report.passed
     assert not report.launch_ready
-    assert any("external" in item for item in report.unresolved)
+    assert not any("external" in item for item in report.unresolved)

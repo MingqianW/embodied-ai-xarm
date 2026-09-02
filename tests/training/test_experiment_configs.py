@@ -78,8 +78,8 @@ def test_historical_abc_make_the_scientific_difference_explicit() -> None:
     assert c.historical_alias == "C" and c.mixing.mode is MixingMode.GLOBAL_TRAJECTORY_SHUFFLE
     assert b.datasets == c.datasets
     assert b.normalization == c.normalization
-    assert a.launch_support is LaunchSupport.EXTERNAL_MULTI_LEROBOT_ADAPTER
-    assert b.normalization.mode is NormalizationMode.PRECOMPUTED_ASSET
+    assert a.launch_support is LaunchSupport.VENDORED_OPENPI
+    assert b.normalization.mode is NormalizationMode.COMPUTE_FROM_DATASETS
 
 
 def test_sim_only_d_has_fresh_sim_normalization_identity() -> None:

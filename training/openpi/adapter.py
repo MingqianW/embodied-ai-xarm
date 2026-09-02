@@ -66,24 +66,17 @@ def build_openpi_train_config(
     checkpoint_base_dir: str = "./checkpoints",
     openpi_root: Path | None = None,
 ) -> Any:
-    """Construct a single-LeRobot OpenPI config with all relevant defaults explicit.
+    """Construct an OpenPI config; project loading may supply multiple datasets.
 
-    The vendored OpenPI loader cannot express A/B/C. Those configs remain fully
-    inspectable and sampler-testable, but this function refuses to flatten them
-    into a single repo because that would silently change the experiment.
+    The first repo id remains required by upstream ``DataConfig``. The caller
+    installs the project bridge, which resolves and selects every declared
+    dataset without flattening the configured mixing policy.
     """
 
-    if experiment.launch_support is LaunchSupport.EXTERNAL_MULTI_LEROBOT_ADAPTER:
-        raise OpenPIUnavailable(
-            f"{experiment.name} requires the historical external multi-LeRobot adapter; "
-            "vendored OpenPI supports one repo_id and cannot preserve this mixing policy"
-        )
     if experiment.launch_support is LaunchSupport.HISTORICAL_CONFIG_INCOMPLETE:
         raise OpenPIUnavailable(
             f"{experiment.name} cannot launch because its original optimization config is not tracked"
         )
-    if len(experiment.datasets.datasets) != 1:
-        raise OpenPIUnavailable("Vendored OpenPI construction requires exactly one dataset")
     modules = _imports(openpi_root)
     config = modules["config"]
     optimizer = modules["optimizer"]

@@ -91,37 +91,6 @@ class OracleConfig:
             raise ValueError("Stable Pick verification requires 20 steps at 0.1 s")
 
 
-RED_PEPPER_CLOSED_GRIPPER_RAW = 250.0
-RED_PEPPER_GRASP_TCP_OFFSET_M = -0.020
-
-
-def oracle_config_for_task(
-    task: str,
-    *,
-    action_dt_s: float,
-    closed_gripper_raw: float | None = None,
-    grasp_tcp_offset_from_object_m: float | None = None,
-) -> OracleConfig:
-    """Return an oracle configuration with explicit experimental overrides."""
-
-    values: dict[str, Any] = {
-        "task": task,
-        "action_dt_s": action_dt_s,
-    }
-    if task == "red_pepper":
-        values.update(
-            {
-                "closed_gripper_raw": RED_PEPPER_CLOSED_GRIPPER_RAW,
-                "grasp_tcp_offset_from_object_m": (RED_PEPPER_GRASP_TCP_OFFSET_M),
-            }
-        )
-    if closed_gripper_raw is not None:
-        values["closed_gripper_raw"] = float(closed_gripper_raw)
-    if grasp_tcp_offset_from_object_m is not None:
-        values["grasp_tcp_offset_from_object_m"] = float(grasp_tcp_offset_from_object_m)
-    return OracleConfig(**values)
-
-
 @dataclass(frozen=True)
 class StageTransition:
     action_step: int

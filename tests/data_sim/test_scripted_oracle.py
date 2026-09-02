@@ -8,10 +8,7 @@ from simulation.robot.ik import solve_site_pose
 from data.sim.generation.oracle import (
     OracleConfig,
     OracleStage,
-    RED_PEPPER_CLOSED_GRIPPER_RAW,
-    RED_PEPPER_GRASP_TCP_OFFSET_M,
     ScriptedOracleController,
-    oracle_config_for_task,
 )
 from data.sim.generation.acceptance import (
     simulation_is_finite,
@@ -120,40 +117,15 @@ class ScriptedOracleTests(unittest.TestCase):
             plans.append(np.asarray(actions))
         np.testing.assert_array_equal(plans[0], plans[1])
 
-    def test_oracle_parameter_overrides_are_explicit(self) -> None:
-        pepper_default = oracle_config_for_task(
-            "red_pepper",
-            action_dt_s=0.1,
-        )
-        pepper = oracle_config_for_task(
-            "red_pepper",
+    def test_generic_controller_parameters_are_explicit(self) -> None:
+        controller = OracleConfig(
+            task="red_pepper",
             action_dt_s=0.1,
             closed_gripper_raw=450.0,
             grasp_tcp_offset_from_object_m=0.005,
         )
-        block = oracle_config_for_task("red_block", action_dt_s=0.1)
-
-        self.assertEqual(
-            pepper_default.closed_gripper_raw,
-            RED_PEPPER_CLOSED_GRIPPER_RAW,
-        )
-        self.assertEqual(
-            pepper_default.grasp_tcp_offset_from_object_m,
-            RED_PEPPER_GRASP_TCP_OFFSET_M,
-        )
-        self.assertEqual(
-            pepper.closed_gripper_raw,
-            450.0,
-        )
-        self.assertEqual(pepper.grasp_tcp_offset_from_object_m, 0.005)
-        self.assertEqual(
-            block.closed_gripper_raw,
-            OracleConfig.closed_gripper_raw,
-        )
-        self.assertEqual(
-            block.grasp_tcp_offset_from_object_m,
-            OracleConfig.grasp_tcp_offset_from_object_m,
-        )
+        self.assertEqual(controller.closed_gripper_raw, 450.0)
+        self.assertEqual(controller.grasp_tcp_offset_from_object_m, 0.005)
 
 
 if __name__ == "__main__":

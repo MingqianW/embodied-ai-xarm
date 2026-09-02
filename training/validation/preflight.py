@@ -18,6 +18,7 @@ from data.common.schema import (
     XARM_STATE_SHAPE,
 )
 from training.configs.experiments import ExperimentConfig, LaunchSupport
+from training.datasets.resolution import DatasetResolutionError, resolve_dataset_paths
 from training.datasets.spec import DatasetSpec
 from training.mixing.sampler import SampleRef, sample_batches
 from training.mixing.strategies import MixingMode
@@ -153,7 +154,16 @@ def preflight(
     """Validate all locally knowable facts without model initialization/training."""
 
     report = PreflightReport(config.name)
-    paths = dataset_paths or {}
+    supplied_paths = dataset_paths or {}
+    unknown_ids = sorted(set(supplied_paths) - {dataset.dataset_id for dataset in config.datasets.datasets})
+    if unknown_ids:
+        report.errors.append(f"Unknown dataset path override(s): {unknown_ids}")
+    try:
+        paths = resolve_dataset_paths(config.datasets, supplied_paths, require_exists=False)
+    except DatasetResolutionError:
+        # Keep one clear unresolved message per source below, rather than
+        # collapsing all missing local paths into a single parser-style error.
+        paths = {dataset_id: Path(path) for dataset_id, path in supplied_paths.items()}
     report.checks.append("experiment dataclasses and source/mixing constraints")
     if config.unverified_fields:
         report.unresolved.extend(
@@ -162,7 +172,7 @@ def preflight(
         )
     _sampler_check(config, report)
     for dataset in config.datasets.datasets:
-        path = paths.get(dataset.dataset_id, dataset.local_path)
+        path = paths.get(dataset.dataset_id)
         if path is None:
             report.unresolved.append(
                 f"dataset {dataset.dataset_id} ({dataset.repo_id}) has no local path; remote resolution not attempted"
@@ -171,8 +181,8 @@ def preflight(
             _validate_local_dataset(Path(path), dataset, report)
     norm = config.normalization
     if norm.mode is NormalizationMode.COMPUTE_FROM_DATASETS:
-        report.warnings.append(
-            f"normalization asset {norm.asset_id!r} must be computed by OpenPI before training; preflight did not compute it"
+        report.checks.append(
+            f"normalization asset {norm.asset_id!r} will be computed from the selected physical dataset pool at train time"
         )
     elif norm.assets_dir and not norm.assets_dir.startswith(("gs://", "s3://")):
         norm_path = Path(norm.assets_dir) / norm.asset_id / "norm_stats.json"

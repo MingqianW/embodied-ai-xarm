@@ -71,3 +71,41 @@ def test_global_shuffle_preserves_frames_inside_each_trajectory() -> None:
         chunk = stream[offset : offset + 3]
         assert [item.frame_index for item in chunk] == [0, 1, 2]
     assert {item.source for item in stream} == {SourceBackend.REAL, SourceBackend.SIM}
+
+
+def test_named_sources_support_exact_composition_and_reproducible_order() -> None:
+    samples = [
+        SampleRef("human_a", "human_demo", index, 0) for index in range(3)
+    ] + [
+        SampleRef("synthetic_a", "synthetic", index, 0) for index in range(5)
+    ] + [
+        SampleRef("replay_a", "replay", index, 0) for index in range(2)
+    ]
+    strategy = MixingStrategy.per_source_batch(
+        {"human_demo": 2, "synthetic": 3, "replay": 1}, seed=23
+    )
+    first = sample_batches(samples, strategy, batch_size=6, num_batches=4)
+    second = sample_batches(samples, strategy, batch_size=6, num_batches=4)
+    assert first == second
+    for batch in first:
+        assert Counter(item.source for item in batch) == {
+            "human_demo": 2,
+            "synthetic": 3,
+            "replay": 1,
+        }
+
+
+def test_named_sources_support_weighted_stream_without_real_sim_special_case() -> None:
+    samples = [
+        SampleRef("human", "human_demo", index, 0) for index in range(2)
+    ] + [
+        SampleRef("synthetic", "synthetic", index, 0) for index in range(2)
+    ]
+    batches = sample_batches(
+        samples,
+        MixingStrategy.weighted_stream({"human_demo": 2, "synthetic": 3}, seed=1),
+        batch_size=5,
+        num_batches=3,
+    )
+    stream = [item.source for batch in batches for item in batch]
+    assert stream == (["human_demo", "human_demo", "synthetic", "synthetic", "synthetic"] * 3)

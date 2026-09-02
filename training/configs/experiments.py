@@ -118,15 +118,9 @@ class ExperimentConfig:
         if not self.name.strip():
             raise ValueError("experiment name cannot be empty")
         self.mixing.validate_for_batch_size(self.optimization.batch_size)
-        required = (
-            {self.mixing.source}
-            if self.mixing.source is not None
-            else {SourceBackend.REAL, SourceBackend.SIM}
-        )
+        required = set(self.mixing.required_sources)
         if not required.issubset(self.datasets.sources):
             raise ValueError("mixing strategy references a source absent from the dataset set")
-        if len(self.datasets.datasets) > 1 and self.launch_support is LaunchSupport.VENDORED_OPENPI:
-            raise ValueError("vendored OpenPI does not implement multi-LeRobot loading")
 
     def as_dict(self) -> dict[str, Any]:
         """Return JSON-serializable resolved scientific configuration."""
@@ -326,18 +320,14 @@ def _historical_multi(
         description,
         (REAL_20260703, sim),
         mixing,
-        NormalizationSpec(NormalizationMode.PRECOMPUTED_ASSET, norm_asset),
+        NormalizationSpec(NormalizationMode.COMPUTE_FROM_DATASETS, norm_asset),
         steps=15_001,
         save_interval=5_000,
-        launch_support=LaunchSupport.EXTERNAL_MULTI_LEROBOT_ADAPTER,
+        launch_support=LaunchSupport.VENDORED_OPENPI,
         historical_alias=alias,
         evidence=(
             f"configs/evaluation/sim/models/{alias}.json",
-            "The original external OpenPI config source is not tracked; only documented semantics are asserted.",
-        ),
-        unverified_fields=(
-            "optimization fields shown as project compatibility defaults",
-            "num_train_steps inferred from checkpoint manager 15000 and run suffix 15001",
+            "The project-owned deterministic multi-LeRobot bridge implements the documented mixing semantics.",
         ),
     )
 

@@ -10,6 +10,7 @@ from typing import Any
 import yaml
 
 from data.common.task_identity import TASKS, TASK_BY_ID
+from data.sim.generation.core.registry import default_generator_id, generator_ids_for_task
 from data.sim.generation.plans import expected_counts, expected_roots, work_root
 
 
@@ -20,6 +21,12 @@ def repository_root() -> Path:
     """Return the source checkout root independently of cwd/config location."""
 
     return REPOSITORY_ROOT
+
+
+@dataclass(frozen=True)
+class GeneratorPlan:
+    generator_id: str
+    episodes: int
 
 
 @dataclass(frozen=True)
@@ -34,6 +41,17 @@ class TaskPlan:
     required_active_objects: tuple[str, ...]
     closed_gripper_raw: float | None
     grasp_tcp_offset_from_object_m: float | None
+    generators: tuple[GeneratorPlan, ...]
+
+    def generator_for_episode(self, requested_episode_index: int) -> str:
+        if not 0 <= requested_episode_index < self.episodes:
+            raise IndexError(f"requested episode {requested_episode_index} outside {self.task_id} allocation")
+        offset = 0
+        for generator in self.generators:
+            if requested_episode_index < offset + generator.episodes:
+                return generator.generator_id
+            offset += generator.episodes
+        raise AssertionError("validated generator allocation did not cover task episodes")
 
 
 @dataclass(frozen=True)
@@ -148,6 +166,15 @@ def load_pipeline_config(path: Path) -> PipelineConfig:
     for definition in TASKS:
         row = _mapping(task_rows.get(definition.task_id), definition.task_id)
         oracle = _mapping(row.get("oracle") or {}, f"{definition.task_id}.oracle")
+        generators_row = row.get("generators")
+        if generators_row is None:
+            generators = (GeneratorPlan(default_generator_id(definition.task_id), int(row.get("episodes", -1))),)
+        else:
+            generators_map = _mapping(generators_row, f"{definition.task_id}.generators")
+            generators = tuple(
+                GeneratorPlan(str(generator_id), int(_mapping(value, f"{definition.task_id}.generators.{generator_id}").get("episodes", -1)))
+                for generator_id, value in generators_map.items()
+            )
         plan = TaskPlan(
             task_id=definition.task_id,
             prompt=str(row.get("prompt")),
@@ -169,6 +196,7 @@ def load_pipeline_config(path: Path) -> PipelineConfig:
                 if "grasp_tcp_offset_from_object_m" in oracle
                 else None
             ),
+            generators=generators,
         )
         if plan.prompt != definition.prompt:
             raise ValueError(
@@ -184,6 +212,14 @@ def load_pipeline_config(path: Path) -> PipelineConfig:
             raise ValueError(f"{plan.task_id} must contain only clean episodes")
         if plan.distractor_episodes != 0:
             raise ValueError(f"{plan.task_id} distractor episodes must be zero")
+        if not plan.generators or sum(generator.episodes for generator in plan.generators) != plan.episodes:
+            raise ValueError(f"{plan.task_id} generator episode allocations must exactly total episodes")
+        if len({generator.generator_id for generator in plan.generators}) != len(plan.generators):
+            raise ValueError(f"{plan.task_id} generator IDs must be unique per exact allocation")
+        known_generators = set(generator_ids_for_task(plan.task_id))
+        for generator in plan.generators:
+            if generator.episodes <= 0 or generator.generator_id not in known_generators:
+                raise ValueError(f"Unknown or invalid generator {generator.generator_id!r} for {plan.task_id}")
         if definition.kind == "pick":
             if (
                 plan.closed_gripper_raw is None
@@ -303,6 +339,9 @@ def validate_pipeline_config(config: PipelineConfig) -> None:
         raise ValueError("Smoke and representative video sampling must be enabled")
     if len({task.base_seed for task in config.tasks}) != len(config.tasks):
         raise ValueError("Every task requires a distinct base seed range")
+    for task in config.tasks:
+        if sum(generator.episodes for generator in task.generators) != task.episodes:
+            raise ValueError(f"Generator allocation mismatch for {task.task_id}")
     if config.pick.steps != 20 or config.pick.action_dt_s != 0.1:
         raise ValueError("Pick verification must be exactly 20 steps at 0.1 s")
     if config.place_initial.steps != 10 or config.place_initial.action_dt_s != 0.1:

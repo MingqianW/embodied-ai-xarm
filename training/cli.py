@@ -10,7 +10,9 @@ import sys
 from typing import Any
 
 from training.configs.experiments import EXPERIMENTS, get_experiment
+from training.datasets.resolution import DatasetResolutionError, resolve_dataset_paths
 from training.openpi.adapter import DEFAULT_OPENPI_ROOT, OpenPIUnavailable, build_openpi_train_config
+from training.openpi.mixed_loader import OpenPITrainingRuntime, ensure_mixed_normalization, install_mixed_loader
 from training.validation.preflight import preflight
 
 
@@ -55,6 +57,12 @@ def main(argv: list[str] | None = None) -> int:
     train.add_argument("--openpi-root", type=Path, default=DEFAULT_OPENPI_ROOT)
     train.add_argument("--assets-base-dir", default="./assets")
     train.add_argument("--checkpoint-base-dir", default="./checkpoints")
+    train.add_argument("--dataset-path", action="append", default=[], metavar="ID=PATH")
+    train.add_argument(
+        "--recompute-norm",
+        action="store_true",
+        help="replace an existing compute_from_datasets normalization asset after validating its selected pool",
+    )
     train.add_argument("--execute", action="store_true", help="required acknowledgement; launches training")
     args = parser.parse_args(argv)
     if args.command == "list":
@@ -80,6 +88,10 @@ def main(argv: list[str] | None = None) -> int:
         return 0 if report.passed else 2
     if not args.execute:
         parser.error("train requires --execute; use preflight first")
+    try:
+        dataset_paths = resolve_dataset_paths(config.datasets, _dataset_paths(args.dataset_path))
+    except (DatasetResolutionError, ValueError) as exc:
+        parser.error(str(exc))
     openpi_config = build_openpi_train_config(
         config,
         exp_name=args.exp_name,
@@ -87,10 +99,16 @@ def main(argv: list[str] | None = None) -> int:
         checkpoint_base_dir=args.checkpoint_base_dir,
         openpi_root=args.openpi_root,
     )
-    metadata_dir = Path(args.checkpoint_base_dir) / config.name / args.exp_name
+    runtime = OpenPITrainingRuntime(config, openpi_config, dataset_paths)
+    metadata_dir = Path(args.checkpoint_base_dir) / "_project_metadata" / config.name / args.exp_name
     metadata_dir.mkdir(parents=True, exist_ok=True)
     (metadata_dir / "project_resolved_config.json").write_text(_json(config.as_dict()), encoding="utf-8")
-    _load_train_module(args.openpi_root.resolve()).main(openpi_config)
+    (metadata_dir / "resolved_dataset_paths.json").write_text(
+        _json({dataset_id: str(path) for dataset_id, path in dataset_paths.items()}), encoding="utf-8"
+    )
+    ensure_mixed_normalization(runtime, recompute=args.recompute_norm)
+    with install_mixed_loader(runtime):
+        _load_train_module(args.openpi_root.resolve()).main(openpi_config)
     return 0
 
 

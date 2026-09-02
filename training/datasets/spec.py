@@ -5,9 +5,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from data.common.records import SourceBackend
 from data.common.schema import TRAINING_REQUIRED_KEYS
 from data.common.task_identity import TASK_BY_ID, resolve_task_id
+from training.mixing.strategies import SourceName, normalize_source_name
 
 
 CANONICAL_CONTRACT = "data.common:xarm_training_v1"
@@ -36,7 +36,7 @@ class DatasetSpec:
 
     dataset_id: str
     repo_id: str
-    source: SourceBackend
+    source: SourceName
     tasks: tuple[str, ...]
     revision: str | None = None
     local_path: Path | None = None
@@ -48,7 +48,7 @@ class DatasetSpec:
     def __post_init__(self) -> None:
         if not self.dataset_id.strip() or not self.repo_id.strip():
             raise ValueError("dataset_id and repo_id must be non-empty")
-        object.__setattr__(self, "source", SourceBackend(self.source))
+        object.__setattr__(self, "source", normalize_source_name(self.source))
         canonical_tasks = tuple(resolve_task_id(task) for task in self.tasks)
         if not canonical_tasks or len(set(canonical_tasks)) != len(canonical_tasks):
             raise ValueError("tasks must be a non-empty unique canonical task set")
@@ -83,12 +83,12 @@ class DatasetSet:
             raise ValueError("Dataset ids must be unique")
 
     @property
-    def sources(self) -> frozenset[SourceBackend]:
+    def sources(self) -> frozenset[SourceName]:
         return frozenset(dataset.source for dataset in self.datasets)
 
-    def for_source(self, source: SourceBackend) -> tuple[DatasetSpec, ...]:
-        source = SourceBackend(source)
-        return tuple(dataset for dataset in self.datasets if dataset.source is source)
+    def for_source(self, source: SourceName) -> tuple[DatasetSpec, ...]:
+        source = normalize_source_name(source)
+        return tuple(dataset for dataset in self.datasets if dataset.source == source)
 
     def by_id(self, dataset_id: str) -> DatasetSpec:
         for dataset in self.datasets:

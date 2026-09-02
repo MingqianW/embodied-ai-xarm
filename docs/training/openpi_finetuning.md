@@ -20,7 +20,7 @@ resolved config:
 
 ```bash
 python -m training.cli preflight pi05_xarm \
-  --dataset-path real_xarm_pi05_data=/path/to/lerobot/local/xarm_pi05_data
+  --dataset-path real_xarm_pi05_20260703=/path/to/real_dataset
 ```
 
 Preflight does not download data, compute normalization statistics, initialize
@@ -40,28 +40,39 @@ python -m training.validation.openpi_smoke \
 
 ## Training delegation
 
-Only single-LeRobot configs supported by the vendored OpenPI revision can be
-delegated directly:
+The command resolves every declared source independently and then delegates to
+OpenPI's existing model, transforms, optimizer, distributed execution, and
+checkpoint loop. The repository supplies only the deterministic named-source
+loader. A/B/C therefore remain configuration-only experiments:
+
+| Config | Mixing policy |
+| --- | --- |
+| `pi05_xarm_real50_sim50_stratified` | exactly 8 real + 8 sim frames in each global batch |
+| `pi05_xarm_real1_sim10_stratified` | deterministic 1:10 weighted sample stream |
+| `pi05_xarm_full_real_full_sim_trajectory_shuffle` | deterministic globally shuffled whole trajectories |
+
+For example, launch A with separate physical dataset roots:
 
 ```bash
-python -m training.cli train pi05_xarm \
-  --exp-name xarm_pi05_run \
+python -m training.cli preflight pi05_xarm_real50_sim50_stratified \
+  --dataset-path real_xarm_pi05_20260703=/datasets/real \
+  --dataset-path sim_mujoco_stable_v3_1x=/datasets/sim_v3
+
+python -m training.cli train pi05_xarm_real50_sim50_stratified \
+  --exp-name xarm_real50_sim50 \
+  --dataset-path real_xarm_pi05_20260703=/datasets/real \
+  --dataset-path sim_mujoco_stable_v3_1x=/datasets/sim_v3 \
   --assets-base-dir /work/assets \
   --checkpoint-base-dir /work/checkpoints \
   --execute
 ```
 
-`--execute` is mandatory. The wrapper writes
-`project_resolved_config.json` beside the run and then calls OpenPI's existing
-training loop; it does not implement an optimizer.
-
-Historical A/B/C configs are inspectable and their samplers are tested, but
-the vendored OpenPI commit has no multi-LeRobot loader. Their original focused
-loader existed only as untracked code in an external OpenPI checkout. The CLI
-therefore refuses to launch A/B/C rather than flattening datasets or changing
-sampling semantics. Restoring an execution-capable multi-LeRobot bridge needs
-the original validated implementation (or a separately validated replacement)
-and is recorded as technical debt.
+`--execute` is mandatory. `--dataset-path ID=PATH` can be repeated in any
+order; no source is inferred from another source's parent directory.
+`project_resolved_config.json` and the resolved paths are recorded under
+`CHECKPOINT_BASE/_project_metadata/`, so they never pre-create OpenPI's run
+directory. To replace a previously computed normalization asset intentionally,
+add `--recompute-norm`.
 
 ## Normalization and actions
 
@@ -72,6 +83,9 @@ state, leaves gripper dimension 6 absolute in the raw controller convention,
 and pads state/actions to the Pi0.5 action dimension of 32. Pi0.5 uses quantile
 normalization.
 
-Configs say whether statistics must be computed from exactly the declared
-dataset set, loaded from a named precomputed asset, or preserved from a resume
-checkpoint. The wrapper never silently recomputes or substitutes statistics.
+For `compute_from_datasets`, the bridge computes statistics once over each
+selected physical frame in the declared pool, rather than replaying a
+ratio-biased training stream. It writes a manifest alongside the OpenPI asset;
+an existing asset is reused only when that manifest matches the selected paths,
+metadata hashes, episode selection, and state/action semantics. Precomputed
+and resume-checkpoint assets are never silently replaced.
