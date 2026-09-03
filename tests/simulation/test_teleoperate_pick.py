@@ -12,9 +12,11 @@ from simulation.tools import teleoperate_pick
 def _state() -> teleoperate_pick.TeleoperationState:
     return teleoperate_pick.TeleoperationState(
         action=np.asarray([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 840.0]),
+        applied_action=np.asarray([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 840.0]),
         gripper_raw_limits=np.asarray([50.0, 845.0]),
         gripper_step_raw=25.0,
         cartesian_step_m=0.01,
+        max_arm_joint_speed_rad_s=0.5,
         seed=7,
     )
 
@@ -41,6 +43,24 @@ def test_gripper_keys_use_raw_hardware_units_and_clip() -> None:
     for _ in range(100):
         state.handle_key(glfw.KEY_C)
     assert state.action[6] == 50.0
+
+
+def test_arm_targets_are_slewed_but_gripper_remains_immediate() -> None:
+    applied = np.asarray([0.0, 0.1, -0.1, 0.0, 0.0, 0.0, 840.0])
+    desired = np.asarray([1.0, -1.0, 1.0, -1.0, 0.5, -0.5, 50.0])
+
+    next_action = teleoperate_pick._slew_arm_target(
+        applied,
+        desired,
+        period_s=0.02,
+        max_arm_joint_speed_rad_s=0.5,
+    )
+
+    np.testing.assert_allclose(
+        next_action[:6],
+        np.asarray([0.01, 0.09, -0.09, -0.01, 0.01, -0.01]),
+    )
+    assert next_action[6] == 50.0
 
 
 def test_motion_reset_seed_status_and_task_keys() -> None:
@@ -93,6 +113,17 @@ def test_one_control_step_runs_without_a_real_gui(monkeypatch) -> None:
         teleoperate_pick.mujoco.viewer,
         "launch_passive",
         lambda *args, **kwargs: FakeViewer(),
+    )
+    original_reset = teleoperate_pick.MuJoCoEnvironment.reset
+
+    def reset_without_policy_observation(*args, **kwargs):
+        assert kwargs["build_policy_observation"] is False
+        return original_reset(*args, **kwargs)
+
+    monkeypatch.setattr(
+        teleoperate_pick.MuJoCoEnvironment,
+        "reset",
+        reset_without_policy_observation,
     )
     args = teleoperate_pick.parse_args(
         [

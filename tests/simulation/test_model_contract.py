@@ -16,7 +16,7 @@ from simulation.tools import build_xarm6_pick_scene
 
 
 BASELINE_XML_SHA256 = (
-    "0fdec8fa8ec0de4ce0722482f00d52a06cdc86d89601513ed664ad2cc9be7954"
+    "e7d09d0d77a1956bce4ca796c1f07efb65d534d2d748699932c0ab4567b82810"
 )
 
 
@@ -39,6 +39,12 @@ class CanonicalModelContractTests(unittest.TestCase):
         self.assertEqual(float(model.opt.impratio), 10.0)
         self.assertEqual(int(model.opt.iterations), 100)
         self.assertEqual(float(model.opt.tolerance), 1e-10)
+        np.testing.assert_allclose(
+            model.dof_damping[:6],
+            np.asarray([10.0, 10.0, 5.0, 5.0, 5.0, 2.0]),
+            atol=0.0,
+        )
+        np.testing.assert_allclose(model.dof_armature[:6], 0.1, atol=0.0)
 
     def test_builder_validates_without_rewriting_authoritative_mjcf(self) -> None:
         before = hashlib.sha256(DEFAULT_MODEL_PATH.read_bytes()).hexdigest()

@@ -44,8 +44,9 @@ under `$MUJOCO_OUTPUT_ROOT/task_scene_preview/<task>/`, or
 ## Interactive local control
 
 The interactive tool controls only the simulated xArm and never connects to
-real hardware. Omit `--task` for a numbered task menu, or select a canonical
-task directly:
+real hardware. It does not construct a policy observation, so it does not
+require the external `openpi_client` package. Omit `--task` for a numbered task
+menu, or select a canonical task directly:
 
 ```powershell
 python -m simulation.tools.teleoperate_pick
@@ -62,7 +63,15 @@ same seed, N advances to the next seed, M prints task and collision metrics,
 1-6 switch among canonical tasks, and Escape exits. Scene randomization can be
 adjusted with `--object-xy-range-m`, `--object-yaw-range-deg`, and
 `--joint-noise-rad`; use `--scene-variant distractors` to activate the task's
-configured distractors.
+configured distractors. To prevent a one-step IK target jump from making the
+arm swing, teleoperation ramps arm targets at `0.5 rad/s` by default. Lower
+`--max-arm-joint-speed-rad-s` for gentler movement, or raise it only after
+confirming the current task can track the faster motion stably. The canonical
+arm joints use an xArm6-calibrated, Menagerie-inspired graded PD servo: the
+proximal joints receive more physical damping than the wrist joints, while
+only the inertia-dominant joints receive velocity feedback. This is independent
+of the gripper contact and `impratio` settings; it preserves the canonical
+position-target action interface and existing actuator force limits.
 
 ## Inspect collision geometry
 

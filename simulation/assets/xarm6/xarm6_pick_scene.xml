@@ -46,27 +46,27 @@
     <body name="link_base" pos="0 0 0">
       <geom name="link_base_visual" type="mesh" mesh="link_base_mesh" material="robot_white" />
       <body name="link1" pos="0 0 0.267" euler="0 0 0" gravcomp="1">
-        <joint name="joint1" type="hinge" axis="0 0 1" limited="true" range="-6.283185307 6.283185307" />
+        <joint name="joint1" type="hinge" axis="0 0 1" limited="true" range="-6.283185307 6.283185307" damping="10" armature="0.1" />
         <inertial pos="0.00022 0.02951 -0.0124" mass="2.3814" fullinertia="0.0058562 0.0050316 0.003536652 -1.79e-05 3.55e-06 -0.000888336" />
         <geom name="link1_visual" type="mesh" mesh="link1_mesh" material="robot_white" />
         <body name="link2" pos="0 0 0" euler="-1.5708 0 0" gravcomp="1">
-          <joint name="joint2" type="hinge" axis="0 0 1" limited="true" range="-2.059 2.0944" />
+          <joint name="joint2" type="hinge" axis="0 0 1" limited="true" range="-2.059 2.0944" damping="10" armature="0.1" />
           <inertial pos="0.03881 -0.22783 0.03496" mass="2.2675" fullinertia="0.028315776 0.0058 0.0273447 0.005 0.00066546 -0.0045741" />
           <geom name="link2_visual" type="mesh" mesh="link2_mesh" material="robot_white" />
           <body name="link3" pos="0.0535 -0.2845 0" euler="0 0 0" gravcomp="1">
-            <joint name="joint3" type="hinge" axis="0 0 1" limited="true" range="-3.927 0.19198" />
+            <joint name="joint3" type="hinge" axis="0 0 1" limited="true" range="-3.927 0.19198" damping="5" armature="0.1" />
             <inertial pos="0.07041 0.11631 0.0107" mass="1.875" fullinertia="0.0063483 0.00379758 0.00595768 -0.0015397 0.00096858 0.00186567" />
             <geom name="link3_visual" type="mesh" mesh="link3_mesh" material="robot_white" />
             <body name="link4" pos="0.0775 0.3425 0" euler="-1.5708 0 0" gravcomp="1">
-              <joint name="joint4" type="hinge" axis="0 0 1" limited="true" range="-6.283185307 6.283185307" />
+              <joint name="joint4" type="hinge" axis="0 0 1" limited="true" range="-6.283185307 6.283185307" damping="5" armature="0.1" />
               <inertial pos="-0.00018 0.01798 -0.02291" mass="1.3192" fullinertia="0.004896 0.00445694 0.00134332 -6.925e-06 -1.418e-05 -0.00023186" />
               <geom name="link4_visual" type="mesh" mesh="link4_mesh" material="robot_white" />
               <body name="link5" pos="0 0 0" euler="1.5708 0 0" gravcomp="1">
-                <joint name="joint5" type="hinge" axis="0 0 1" limited="true" range="-1.69297 3.141592654" />
+                <joint name="joint5" type="hinge" axis="0 0 1" limited="true" range="-1.69297 3.141592654" damping="5" armature="0.1" />
                 <inertial pos="0.0651 0.03096 0.00315" mass="1.33854" fullinertia="0.00146378 0.00184192 0.002333524 -0.000450624 0.000284306 0.000130866" />
                 <geom name="link5_visual" type="mesh" mesh="link5_mesh" material="robot_white" />
                 <body name="link6" pos="0.076 0.097 0" euler="-1.5708 0 0" gravcomp="1">
-                  <joint name="joint6" type="hinge" axis="0 0 1" limited="true" range="-6.283185307 6.283185307" />
+                  <joint name="joint6" type="hinge" axis="0 0 1" limited="true" range="-6.283185307 6.283185307" damping="2" armature="0.1" />
                   <inertial pos="0 -0.00677 -0.01098" mass="0.17" fullinertia="9.3e-05 5.87e-05 0.000132 -0 -0 -3.6e-06" />
                   <geom name="link6_visual" type="mesh" mesh="link6_mesh" material="robot_silver" />
                   <site name="end_effector_site" pos="0 0 0" size="0.01" rgba="1 0 0 1" />
@@ -197,12 +197,12 @@
     <exclude name="exclude_left_finger_right_finger" body1="left_finger" body2="right_finger" />
   </contact>
   <actuator>
-    <position name="joint1_actuator" joint="joint1" kp="120" ctrlrange="-6.283185307 6.283185307" forcelimited="true" forcerange="-50 50" />
-    <position name="joint2_actuator" joint="joint2" kp="120" ctrlrange="-2.059 2.0944" forcelimited="true" forcerange="-50 50" />
-    <position name="joint3_actuator" joint="joint3" kp="100" ctrlrange="-3.927 0.19198" forcelimited="true" forcerange="-32 32" />
-    <position name="joint4_actuator" joint="joint4" kp="70" ctrlrange="-6.283185307 6.283185307" forcelimited="true" forcerange="-32 32" />
-    <position name="joint5_actuator" joint="joint5" kp="50" ctrlrange="-1.69297 3.141592654" forcelimited="true" forcerange="-32 32" />
-    <position name="joint6_actuator" joint="joint6" kp="30" ctrlrange="-6.283185307 6.283185307" forcelimited="true" forcerange="-20 20" />
+    <general name="joint1_actuator" joint="joint1" ctrlrange="-6.283185307 6.283185307" forcelimited="true" forcerange="-50 50" gaintype="fixed" biastype="affine" gainprm="120 0 0 0 0 0 0 0 0 0" biasprm="0 -120 -1 0 0 0 0 0 0 0" />
+    <general name="joint2_actuator" joint="joint2" ctrlrange="-2.059 2.0944" forcelimited="true" forcerange="-50 50" gaintype="fixed" biastype="affine" gainprm="120 0 0 0 0 0 0 0 0 0" biasprm="0 -120 -3 0 0 0 0 0 0 0" />
+    <general name="joint3_actuator" joint="joint3" ctrlrange="-3.927 0.19198" forcelimited="true" forcerange="-32 32" gaintype="fixed" biastype="affine" gainprm="100 0 0 0 0 0 0 0 0 0" biasprm="0 -100 -8 0 0 0 0 0 0 0" />
+    <general name="joint4_actuator" joint="joint4" ctrlrange="-6.283185307 6.283185307" forcelimited="true" forcerange="-32 32" gaintype="fixed" biastype="affine" gainprm="70 0 0 0 0 0 0 0 0 0" biasprm="0 -70 0 0 0 0 0 0 0 0" />
+    <general name="joint5_actuator" joint="joint5" ctrlrange="-1.69297 3.141592654" forcelimited="true" forcerange="-32 32" gaintype="fixed" biastype="affine" gainprm="50 0 0 0 0 0 0 0 0 0" biasprm="0 -50 0 0 0 0 0 0 0 0" />
+    <general name="joint6_actuator" joint="joint6" ctrlrange="-6.283185307 6.283185307" forcelimited="true" forcerange="-20 20" gaintype="fixed" biastype="affine" gainprm="30 0 0 0 0 0 0 0 0 0" biasprm="0 -30 0 0 0 0 0 0 0 0" />
     <!-- The 12 g task block should be gripped, not driven through the contact
          solver by a 40 N position actuator. Eight newtons is ample for the
          high-friction fingertip pads while keeping manual closure stable. -->

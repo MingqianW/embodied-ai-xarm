@@ -50,10 +50,16 @@ TCP_KEY_DELTAS = {
 class TeleoperationState:
     """Mutable user-command state shared by the viewer callback and main loop."""
 
+    # ``action`` is the desired end state from keyboard/IK input.  Position
+    # actuators receive ``applied_action`` after the arm target has been
+    # rate-limited, so a single Cartesian key press cannot step every joint
+    # target in one simulation control tick.
     action: np.ndarray
+    applied_action: np.ndarray
     gripper_raw_limits: np.ndarray
     gripper_step_raw: float
     cartesian_step_m: float
+    max_arm_joint_speed_rad_s: float
     seed: int | None
     motion_requests: list[np.ndarray] = field(default_factory=list)
     hold_requested: bool = False
@@ -163,6 +169,31 @@ def _gripper_raw_limits(environment: MuJoCoEnvironment) -> np.ndarray:
     )
 
 
+def _slew_arm_target(
+    applied_action: np.ndarray,
+    desired_action: np.ndarray,
+    *,
+    period_s: float,
+    max_arm_joint_speed_rad_s: float,
+) -> np.ndarray:
+    """Return the next controller target under an arm joint-speed limit.
+
+    The gripper remains an immediate raw-unit command.  The first six values
+    are xArm joint position targets and are incremented by no more than the
+    configured speed limit times the control period.
+    """
+
+    next_action = np.asarray(desired_action, dtype=np.float64).copy()
+    max_delta = max_arm_joint_speed_rad_s * period_s
+    joint_delta = desired_action[:6] - applied_action[:6]
+    next_action[:6] = applied_action[:6] + np.clip(
+        joint_delta,
+        -max_delta,
+        max_delta,
+    )
+    return next_action
+
+
 def _move_tcp(
     environment: MuJoCoEnvironment,
     state: TeleoperationState,
@@ -233,8 +264,9 @@ def _reset(
     environment: MuJoCoEnvironment,
     state: TeleoperationState,
 ) -> None:
-    environment.reset(seed=state.seed)
+    environment.reset(seed=state.seed, build_policy_observation=False)
     state.action[:] = _current_action(environment)
+    state.applied_action[:] = state.action
     state.motion_requests.clear()
     state.reset_requested = False
     print(f"Task reset: task={environment.task} seed={state.seed}")
@@ -249,13 +281,15 @@ def _run_task(task: str, args: argparse.Namespace) -> str | None:
         joint_noise=args.joint_noise_rad,
         scene_variant=args.scene_variant,
     ) as environment:
-        environment.reset(seed=args.seed)
+        environment.reset(seed=args.seed, build_policy_observation=False)
         model, data = environment.context.model, environment.context.data
         state = TeleoperationState(
             action=_current_action(environment),
+            applied_action=_current_action(environment),
             gripper_raw_limits=_gripper_raw_limits(environment),
             gripper_step_raw=float(args.gripper_step_raw),
             cartesian_step_m=float(args.cartesian_step_mm) / 1000.0,
+            max_arm_joint_speed_rad_s=float(args.max_arm_joint_speed_rad_s),
             seed=args.seed,
         )
         runtime = environment.task_runtime
@@ -304,6 +338,7 @@ def _run_task(task: str, args: argparse.Namespace) -> str | None:
                     collision_reported = False
                 if state.hold_requested:
                     state.action[:] = _current_action(environment)
+                    state.applied_action[:] = state.action
                     state.hold_requested = False
                     print("Holding current physical position.")
                 while state.motion_requests:
@@ -321,7 +356,13 @@ def _run_task(task: str, args: argparse.Namespace) -> str | None:
                     )
                     state.status_requested = False
 
-                environment.apply_action(state.action)
+                state.applied_action[:] = _slew_arm_target(
+                    state.applied_action,
+                    state.action,
+                    period_s=period_s,
+                    max_arm_joint_speed_rad_s=state.max_arm_joint_speed_rad_s,
+                )
+                environment.apply_action(state.applied_action)
                 environment.step_physics(period_s)
                 runtime = environment.task_runtime
                 if runtime is None:
@@ -388,6 +429,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         default=25.0,
         help="Canonical xArm raw gripper units per O/C key press.",
     )
+    parser.add_argument(
+        "--max-arm-joint-speed-rad-s",
+        type=float,
+        default=0.5,
+        help=(
+            "Maximum arm position-target slew rate during teleoperation "
+            "(default: 0.5 rad/s)."
+        ),
+    )
     parser.add_argument("--control-hz", type=float, default=50.0)
     parser.add_argument("--settle-steps", type=int, default=500)
     return parser.parse_args(argv)
@@ -397,6 +447,7 @@ def _validate_args(args: argparse.Namespace) -> None:
     positive = {
         "--cartesian-step-mm": args.cartesian_step_mm,
         "--gripper-step-raw": args.gripper_step_raw,
+        "--max-arm-joint-speed-rad-s": args.max_arm_joint_speed_rad_s,
         "--control-hz": args.control_hz,
     }
     for name, value in positive.items():

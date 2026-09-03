@@ -90,7 +90,19 @@ class MuJoCoEnvironment:
             input_color_order="RGB",
         )
 
-    def reset(self, seed: int | None = None) -> PolicyObservation:
+    def reset(
+        self,
+        seed: int | None = None,
+        *,
+        build_policy_observation: bool = True,
+    ) -> PolicyObservation | None:
+        """Reset the canonical scene and optionally build a policy observation.
+
+        Simulation policy runners keep the default so they receive the same
+        OpenPI-facing observation as before. Interactive physics tools can
+        skip preprocessing when they only need MuJoCo state and rendering.
+        """
+
         initialize_scene(
             self.context.model,
             self.context.data,
@@ -111,7 +123,9 @@ class MuJoCoEnvironment:
         )
         self._last_step_started_s = float(self.context.data.time)
         self._last_step_duration_s = 0.0
-        return self.observe()
+        if build_policy_observation:
+            return self.observe()
+        return None
 
     def observe(self) -> PolicyObservation:
         base_native = render_rgb(

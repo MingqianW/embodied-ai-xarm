@@ -29,6 +29,19 @@ MENAGERIE_GRIPPER_MESH_DIR = "../../gripper/xarm"
 MENAGERIE_DRIVER_RANGE = "0 0.85"
 PROJECT_OPEN_DRIVER_ANGLE = 0.005
 PROJECT_OPEN_CTRL = PROJECT_OPEN_DRIVER_ANGLE
+# xArm6-specific servo tuning, informed by Menagerie's graded arm classes but
+# calibrated against this model's inertia, existing force limits, and 7D
+# position-target action contract.  The velocity terms are deliberately far
+# below xArm7's values because this model's force limits are lower and its
+# existing position gains are retained.
+ARM_SERVO_PARAMETERS = {
+    "joint1": {"kp": 120.0, "kd": 1.0, "damping": 10.0, "armature": 0.1},
+    "joint2": {"kp": 120.0, "kd": 3.0, "damping": 10.0, "armature": 0.1},
+    "joint3": {"kp": 100.0, "kd": 8.0, "damping": 5.0, "armature": 0.1},
+    "joint4": {"kp": 70.0, "kd": 0.0, "damping": 5.0, "armature": 0.1},
+    "joint5": {"kp": 50.0, "kd": 0.0, "damping": 5.0, "armature": 0.1},
+    "joint6": {"kp": 30.0, "kd": 0.0, "damping": 2.0, "armature": 0.1},
+}
 # The checked-in MJCF carries a calibrated fallback mount. Runtime loading
 # reapplies the package-owned camera calibration from YAML, including model
 # variants and explicit path overrides.
@@ -84,6 +97,45 @@ def find_body(root: ET.Element, name: str) -> ET.Element:
             return body
 
     raise RuntimeError(f"Body not found: {name}")
+
+
+def find_joint(root: ET.Element, name: str) -> ET.Element:
+    for joint in root.iter("joint"):
+        if joint.get("name") == name:
+            return joint
+    raise RuntimeError(f"Joint not found: {name}")
+
+
+def configure_arm_servos(root: ET.Element, actuator: ET.Element) -> None:
+    """Apply xArm6-calibrated, Menagerie-inspired PD position servos."""
+
+    for joint_name, parameters in ARM_SERVO_PARAMETERS.items():
+        joint = find_joint(root, joint_name)
+        joint.set("damping", format_values([parameters["damping"]]))
+        joint.set("armature", format_values([parameters["armature"]]))
+
+        actuator_name = f"{joint_name}_actuator"
+        arm_actuator = next(
+            (
+                element
+                for element in actuator
+                if element.get("name") == actuator_name
+            ),
+            None,
+        )
+        if arm_actuator is None:
+            raise RuntimeError(f"Arm actuator not found: {actuator_name}")
+
+        kp = parameters["kp"]
+        kd = parameters["kd"]
+        arm_actuator.tag = "general"
+        arm_actuator.attrib.pop("kp", None)
+        arm_actuator.attrib.update(
+            gaintype="fixed",
+            biastype="affine",
+            gainprm=format_values([kp] + [0.0] * 9),
+            biasprm=format_values([0.0, -kp, -kd] + [0.0] * 7),
+        )
 
 
 def camera_xyaxes(
@@ -906,6 +958,7 @@ def main() -> None:
     link6 = find_body(root, "link6")
     for link_index in range(1, 7):
         find_body(root, f"link{link_index}").set("gravcomp", "1")
+    configure_arm_servos(root, actuator)
 
     add_menagerie_gripper(
         root,
