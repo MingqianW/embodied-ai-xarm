@@ -12,12 +12,110 @@ GeneratorFactory = Callable[[Any], Any]
 
 # Values are lazy import targets so config parsing does not initialize MuJoCo.
 _REGISTRY: dict[str, dict[str, tuple[str, bool]]] = {
-    "red_block": {"scripted_pick": ("data.sim.generation.tasks.red_block.generators.scripted_pick:create", True)},
-    "blue_block": {"scripted_pick": ("data.sim.generation.tasks.blue_block.generators.scripted_pick:create", True)},
-    "red_pepper": {"scripted_pick": ("data.sim.generation.tasks.red_pepper.generators.scripted_pick:create", True)},
-    "smallest_block": {"scripted_pick": ("data.sim.generation.tasks.smallest_block.generators.scripted_pick:create", True)},
-    "largest_block": {"scripted_pick": ("data.sim.generation.tasks.largest_block.generators.scripted_pick:create", True)},
-    "place_red_pepper_in_ring": {"direct_place": ("data.sim.generation.tasks.place_red_pepper_in_ring.generators.direct_place:create", True)},
+    "red_block": {
+        "scripted_pick": (
+            "data.sim.generation.tasks.red_block.generators.scripted_pick:create",
+            True,
+        ),
+        "scripted_pick_side_approach_v1": (
+            "data.sim.generation.tasks.red_block.generators.geometric:create_side_approach",
+            False,
+        ),
+        "scripted_pick_yaw15_v1": (
+            "data.sim.generation.tasks.red_block.generators.geometric:create_yaw15",
+            False,
+        ),
+        "scripted_pick_waypoint_lift_v1": (
+            "data.sim.generation.tasks.red_block.generators.geometric:create_waypoint_lift",
+            False,
+        ),
+    },
+    "blue_block": {
+        "scripted_pick": (
+            "data.sim.generation.tasks.blue_block.generators.scripted_pick:create",
+            True,
+        ),
+        "scripted_pick_side_approach_v1": (
+            "data.sim.generation.tasks.blue_block.generators.geometric:create_side_approach",
+            False,
+        ),
+        "scripted_pick_yaw15_v1": (
+            "data.sim.generation.tasks.blue_block.generators.geometric:create_yaw15",
+            False,
+        ),
+        "scripted_pick_waypoint_lift_v1": (
+            "data.sim.generation.tasks.blue_block.generators.geometric:create_waypoint_lift",
+            False,
+        ),
+    },
+    "red_pepper": {
+        "scripted_pick": (
+            "data.sim.generation.tasks.red_pepper.generators.scripted_pick:create",
+            True,
+        ),
+        "scripted_pick_side_approach_v1": (
+            "data.sim.generation.tasks.red_pepper.generators.geometric:create_side_approach",
+            False,
+        ),
+        "scripted_pick_yaw15_v1": (
+            "data.sim.generation.tasks.red_pepper.generators.geometric:create_yaw15",
+            False,
+        ),
+        "scripted_pick_waypoint_lift_v1": (
+            "data.sim.generation.tasks.red_pepper.generators.geometric:create_waypoint_lift",
+            False,
+        ),
+    },
+    "smallest_block": {
+        "scripted_pick": (
+            "data.sim.generation.tasks.smallest_block.generators.scripted_pick:create",
+            True,
+        ),
+        "scripted_pick_side_approach_v1": (
+            "data.sim.generation.tasks.smallest_block.generators.geometric:create_side_approach",
+            False,
+        ),
+        "scripted_pick_yaw15_v1": (
+            "data.sim.generation.tasks.smallest_block.generators.geometric:create_yaw15",
+            False,
+        ),
+        "scripted_pick_waypoint_lift_v1": (
+            "data.sim.generation.tasks.smallest_block.generators.geometric:create_waypoint_lift",
+            False,
+        ),
+    },
+    "largest_block": {
+        "scripted_pick": (
+            "data.sim.generation.tasks.largest_block.generators.scripted_pick:create",
+            True,
+        ),
+        "scripted_pick_side_approach_v1": (
+            "data.sim.generation.tasks.largest_block.generators.geometric:create_side_approach",
+            False,
+        ),
+        "scripted_pick_yaw15_v1": (
+            "data.sim.generation.tasks.largest_block.generators.geometric:create_yaw15",
+            False,
+        ),
+        "scripted_pick_waypoint_lift_v1": (
+            "data.sim.generation.tasks.largest_block.generators.geometric:create_waypoint_lift",
+            False,
+        ),
+    },
+    "place_red_pepper_in_ring": {
+        "direct_place": (
+            "data.sim.generation.tasks.place_red_pepper_in_ring.generators.direct_place:create",
+            True,
+        ),
+        "direct_place_left_approach_v1": (
+            "data.sim.generation.tasks.place_red_pepper_in_ring.generators.direct_place:create_left_approach_v1",
+            False,
+        ),
+        "direct_place_right_approach_v1": (
+            "data.sim.generation.tasks.place_red_pepper_in_ring.generators.direct_place:create_right_approach_v1",
+            False,
+        ),
+    },
 }
 
 

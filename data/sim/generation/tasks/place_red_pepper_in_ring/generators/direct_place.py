@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from dataclasses import asdict
+from typing import Any, Mapping
+
 import mujoco
 import numpy as np
 
@@ -18,6 +21,15 @@ from data.sim.generation.state_conversion import policy_state_from_mujoco
 from simulation.observation.cameras import render_rgb
 from simulation.physics.collision import target_gripper_contact_count
 from simulation.scene import TABLE_TOP_Z
+
+
+PLACE_VARIANT_OVERRIDE_FIELDS = frozenset(
+    {
+        "preplace_offset_xy_m",
+        "preplace_pepper_height_m",
+        "max_action_steps",
+    }
+)
 
 
 def _body_pose(environment, body_name: str):
@@ -115,13 +127,24 @@ def _validate_initial_grasp(context: GeneratorContext) -> GeneratorInitializatio
     )
 
 
-def create(context: GeneratorContext):
+def _create(
+    context: GeneratorContext,
+    *,
+    generator_id: str,
+    oracle_overrides: Mapping[str, Any] | None = None,
+):
     initialization = _validate_initial_grasp(context)
     if not initialization.success:
-        return RejectedEpisodeGenerator(generator_id="direct_place", initialization=initialization)
+        return RejectedEpisodeGenerator(
+            generator_id=generator_id,
+            initialization=initialization,
+        )
     config = context.pipeline_config.place
-    controller = PlaceRedPepperOracleController(
-        context.environment,
+    overrides = dict(oracle_overrides or {})
+    unknown = set(overrides) - PLACE_VARIANT_OVERRIDE_FIELDS
+    if unknown:
+        raise ValueError(f"Unsupported Place variant overrides: {sorted(unknown)}")
+    values = asdict(
         PlaceOracleConfig(
             action_dt_s=config.action_dt_s,
             verify_steps=config.steps,
@@ -129,11 +152,48 @@ def create(context: GeneratorContext):
             maximum_height_above_table_m=config.maximum_height_above_table_m,
             maximum_final_speed_mps=config.maximum_final_speed_mps,
             velocity_fit_samples=config.velocity_fit_samples,
-        ),
+        )
+    )
+    values.update(overrides)
+    controller = PlaceRedPepperOracleController(
+        context.environment,
+        PlaceOracleConfig(**values),
     )
     return ControllerEpisodeGenerator(
         controller,
-        generator_id="direct_place",
+        generator_id=generator_id,
         kind="place",
         initialization=initialization,
+    )
+
+
+def create(context: GeneratorContext):
+    return _create(context, generator_id="direct_place")
+
+
+def create_left_approach_v1(context: GeneratorContext):
+    """Approach the ring from a left-front preplace waypoint before centering."""
+
+    return _create(
+        context,
+        generator_id="direct_place_left_approach_v1",
+        oracle_overrides={
+            "preplace_offset_xy_m": (-0.025, 0.02),
+            "preplace_pepper_height_m": 0.22,
+            "max_action_steps": 280,
+        },
+    )
+
+
+def create_right_approach_v1(context: GeneratorContext):
+    """Approach the ring from a right-rear preplace waypoint before centering."""
+
+    return _create(
+        context,
+        generator_id="direct_place_right_approach_v1",
+        oracle_overrides={
+            "preplace_offset_xy_m": (0.025, -0.02),
+            "preplace_pepper_height_m": 0.22,
+            "max_action_steps": 280,
+        },
     )

@@ -35,6 +35,7 @@ from simulation.robot.control import (
 class OracleStage(str, enum.Enum):
     RESET = "RESET"
     OPEN_GRIPPER = "OPEN_GRIPPER"
+    MOVE_TO_APPROACH_WAYPOINT = "MOVE_TO_APPROACH_WAYPOINT"
     MOVE_TO_PREGRASP = "MOVE_TO_PREGRASP"
     DESCEND = "DESCEND"
     CLOSE_GRIPPER = "CLOSE_GRIPPER"
@@ -59,6 +60,10 @@ class OracleConfig:
     pregrasp_clearance_from_object_m: float = 0.087
     grasp_tcp_offset_from_object_m: float = -0.011
     lift_clearance_from_object_m: float = 0.107
+    pregrasp_offset_xy_m: tuple[float, float] = (0.0, 0.0)
+    approach_waypoint_offset_xy_m: tuple[float, float] | None = None
+    lift_offset_xy_m: tuple[float, float] = (0.0, 0.0)
+    tcp_yaw_offset_deg: float = 0.0
     hold_steps: int = 5
     verify_steps: int = 20
     verification_entry_lift_height_m: float = 0.05
@@ -87,6 +92,30 @@ class OracleConfig:
             raise ValueError("hold_steps and verify_steps must be positive")
         if self.max_action_steps < 1:
             raise ValueError("max_action_steps must be positive")
+        for name, offset in (
+            ("pregrasp_offset_xy_m", self.pregrasp_offset_xy_m),
+            ("lift_offset_xy_m", self.lift_offset_xy_m),
+        ):
+            value = np.asarray(offset, dtype=np.float64)
+            if value.shape != (2,) or not np.isfinite(value).all():
+                raise ValueError(f"{name} must be a finite XY pair")
+            if float(np.max(np.abs(value))) > 0.05:
+                raise ValueError(f"{name} must stay within 0.05 m of the target")
+        if self.approach_waypoint_offset_xy_m is not None:
+            value = np.asarray(self.approach_waypoint_offset_xy_m, dtype=np.float64)
+            if value.shape != (2,) or not np.isfinite(value).all():
+                raise ValueError(
+                    "approach_waypoint_offset_xy_m must be a finite XY pair"
+                )
+            if float(np.max(np.abs(value))) > 0.05:
+                raise ValueError(
+                    "approach_waypoint_offset_xy_m must stay within 0.05 m of the target"
+                )
+        if (
+            not np.isfinite(self.tcp_yaw_offset_deg)
+            or abs(self.tcp_yaw_offset_deg) > 45.0
+        ):
+            raise ValueError("tcp_yaw_offset_deg must be finite and within [-45, 45]")
         if self.verify_steps != 20 or self.action_dt_s != 0.1:
             raise ValueError("Stable Pick verification requires 20 steps at 0.1 s")
 
@@ -105,27 +134,32 @@ class OraclePlan:
     object_position: np.ndarray
     tcp_rotation: np.ndarray
     initial_arm_qpos: np.ndarray
+    geometry: dict[str, Any]
+    approach_waypoint: IKSolution | None
     pregrasp: IKSolution
     grasp: IKSolution
     lift: IKSolution
 
     def to_json(self) -> dict[str, Any]:
+        def solution_json(solution: IKSolution) -> dict[str, Any]:
+            return {
+                **asdict(solution),
+                "joint_position": solution.joint_position.tolist(),
+            }
+
         return {
             "object_position": self.object_position.tolist(),
             "tcp_rotation": self.tcp_rotation.tolist(),
             "initial_arm_qpos": self.initial_arm_qpos.tolist(),
-            "pregrasp": {
-                **asdict(self.pregrasp),
-                "joint_position": self.pregrasp.joint_position.tolist(),
-            },
-            "grasp": {
-                **asdict(self.grasp),
-                "joint_position": self.grasp.joint_position.tolist(),
-            },
-            "lift": {
-                **asdict(self.lift),
-                "joint_position": self.lift.joint_position.tolist(),
-            },
+            "geometry": self.geometry,
+            "approach_waypoint": (
+                None
+                if self.approach_waypoint is None
+                else solution_json(self.approach_waypoint)
+            ),
+            "pregrasp": solution_json(self.pregrasp),
+            "grasp": solution_json(self.grasp),
+            "lift": solution_json(self.lift),
         }
 
 
@@ -237,6 +271,12 @@ class ScriptedOracleController:
             )
         ]
         self.plan = self._build_plan()
+        self._sequence = list(self._SEQUENCE)
+        if self.plan.approach_waypoint is not None:
+            self._sequence.insert(
+                self._sequence.index(OracleStage.MOVE_TO_PREGRASP),
+                OracleStage.MOVE_TO_APPROACH_WAYPOINT,
+            )
         self._stage_actions = self._build_stage_actions()
         self._stage_action_index = 0
         self._verification_samples: list[StabilitySample] = []
@@ -271,7 +311,7 @@ class ScriptedOracleController:
             raise RuntimeError(f"Oracle target body not found: {runtime.target_body}")
 
         object_position = np.asarray(data.xpos[body_id], dtype=np.float64).copy()
-        tcp_rotation = (
+        base_tcp_rotation = (
             np.asarray(
                 data.site_xmat[site_id],
                 dtype=np.float64,
@@ -279,12 +319,26 @@ class ScriptedOracleController:
             .reshape(3, 3)
             .copy()
         )
+        yaw_rad = np.deg2rad(self.config.tcp_yaw_offset_deg)
+        yaw_rotation = np.asarray(
+            [
+                [np.cos(yaw_rad), -np.sin(yaw_rad), 0.0],
+                [np.sin(yaw_rad), np.cos(yaw_rad), 0.0],
+                [0.0, 0.0, 1.0],
+            ],
+            dtype=np.float64,
+        )
+        tcp_rotation = yaw_rotation @ base_tcp_rotation
         initial_arm = policy_state_from_mujoco(model, data)[:6].astype(np.float64)
         target_xy = object_position[:2]
+        pregrasp_offset = np.asarray(
+            self.config.pregrasp_offset_xy_m,
+            dtype=np.float64,
+        )
+        lift_offset = np.asarray(self.config.lift_offset_xy_m, dtype=np.float64)
         pregrasp_position = np.asarray(
             [
-                target_xy[0],
-                target_xy[1],
+                *(target_xy + pregrasp_offset),
                 object_position[2] + self.config.pregrasp_clearance_from_object_m,
             ],
             dtype=np.float64,
@@ -299,12 +353,35 @@ class ScriptedOracleController:
         )
         lift_position = np.asarray(
             [
-                target_xy[0],
-                target_xy[1],
+                *(target_xy + lift_offset),
                 object_position[2] + self.config.lift_clearance_from_object_m,
             ],
             dtype=np.float64,
         )
+
+        waypoint_position = None
+        waypoint = None
+        if self.config.approach_waypoint_offset_xy_m is not None:
+            waypoint_offset = np.asarray(
+                self.config.approach_waypoint_offset_xy_m,
+                dtype=np.float64,
+            )
+            waypoint_position = np.asarray(
+                [
+                    *(target_xy + waypoint_offset),
+                    object_position[2]
+                    + self.config.pregrasp_clearance_from_object_m,
+                ],
+                dtype=np.float64,
+            )
+            waypoint = solve_site_pose(
+                model,
+                data,
+                site_name=self.config.tcp_site,
+                target_position=waypoint_position,
+                target_rotation=tcp_rotation,
+                seed_joint_qpos=initial_arm,
+            )
 
         pregrasp = solve_site_pose(
             model,
@@ -312,7 +389,9 @@ class ScriptedOracleController:
             site_name=self.config.tcp_site,
             target_position=pregrasp_position,
             target_rotation=tcp_rotation,
-            seed_joint_qpos=initial_arm,
+            seed_joint_qpos=(
+                initial_arm if waypoint is None else waypoint.joint_position
+            ),
         )
         grasp = solve_site_pose(
             model,
@@ -334,6 +413,23 @@ class ScriptedOracleController:
             object_position=object_position,
             tcp_rotation=tcp_rotation,
             initial_arm_qpos=initial_arm,
+            geometry={
+                "pregrasp_offset_xy_m": pregrasp_offset.tolist(),
+                "approach_waypoint_offset_xy_m": (
+                    None
+                    if self.config.approach_waypoint_offset_xy_m is None
+                    else list(self.config.approach_waypoint_offset_xy_m)
+                ),
+                "lift_offset_xy_m": lift_offset.tolist(),
+                "tcp_yaw_offset_deg": float(self.config.tcp_yaw_offset_deg),
+                "approach_waypoint_position_m": (
+                    None if waypoint_position is None else waypoint_position.tolist()
+                ),
+                "pregrasp_position_m": pregrasp_position.tolist(),
+                "grasp_position_m": grasp_position.tolist(),
+                "lift_position_m": lift_position.tolist(),
+            },
+            approach_waypoint=waypoint,
             pregrasp=pregrasp,
             grasp=grasp,
             lift=lift,
@@ -341,11 +437,12 @@ class ScriptedOracleController:
         failed = [
             name
             for name, solution in (
+                ("approach_waypoint", waypoint),
                 ("pregrasp", pregrasp),
                 ("grasp", grasp),
                 ("lift", lift),
             )
-            if not solution.success
+            if solution is not None and not solution.success
         ]
         if failed:
             self.failure_reason = "ik_failure:" + ",".join(failed)
@@ -376,8 +473,22 @@ class ScriptedOracleController:
             cfg.open_gripper_raw,
             max_step_raw=cfg.gripper_opening_rate_raw_per_s * cfg.action_dt_s,
         )
+        waypoint_arms = (
+            []
+            if self.plan.approach_waypoint is None
+            else _interpolate_arm(
+                self.plan.initial_arm_qpos,
+                self.plan.approach_waypoint.joint_position,
+                max_step_rad=cfg.max_joint_step_rad,
+            )
+        )
+        pregrasp_start = (
+            self.plan.initial_arm_qpos
+            if self.plan.approach_waypoint is None
+            else self.plan.approach_waypoint.joint_position
+        )
         pregrasp_arms = _interpolate_arm(
-            self.plan.initial_arm_qpos,
+            pregrasp_start,
             self.plan.pregrasp.joint_position,
             max_step_rad=cfg.max_joint_step_rad,
         )
@@ -401,6 +512,9 @@ class ScriptedOracleController:
             OracleStage.OPEN_GRIPPER: [
                 _policy_action(self.plan.initial_arm_qpos, value)
                 for value in open_values
+            ],
+            OracleStage.MOVE_TO_APPROACH_WAYPOINT: [
+                _policy_action(arm, cfg.open_gripper_raw) for arm in waypoint_arms
             ],
             OracleStage.MOVE_TO_PREGRASP: [
                 _policy_action(arm, cfg.open_gripper_raw) for arm in pregrasp_arms
@@ -497,8 +611,8 @@ class ScriptedOracleController:
             if self.stage == OracleStage.VERIFY:
                 self._fail("verification_timeout")
                 return None
-            sequence_index = self._SEQUENCE.index(self.stage)
-            next_stage = self._SEQUENCE[sequence_index + 1]
+            sequence_index = self._sequence.index(self.stage)
+            next_stage = self._sequence[sequence_index + 1]
             self._transition(next_stage, f"{self.stage.value.lower()}_complete")
         return None
 
@@ -614,6 +728,7 @@ class PlaceOracleConfig:
     gripper_opening_rate_raw_per_s: float = DEFAULT_GRIPPER_OPENING_RATE_RAW_PER_S
     preplace_pepper_height_m: float = 0.20
     release_pepper_height_m: float = 0.125
+    preplace_offset_xy_m: tuple[float, float] = (0.0, 0.0)
     verify_steps: int = 20
     ring_radius_m: float = 0.052
     maximum_height_above_table_m: float = 0.09
@@ -630,6 +745,15 @@ class PlaceOracleConfig:
             raise ValueError("max_joint_step_rad must be positive")
         if self.gripper_opening_rate_raw_per_s <= 0.0:
             raise ValueError("gripper_opening_rate_raw_per_s must be positive")
+        offset = np.asarray(self.preplace_offset_xy_m, dtype=np.float64)
+        if (
+            offset.shape != (2,)
+            or not np.isfinite(offset).all()
+            or float(np.max(np.abs(offset))) > 0.04
+        ):
+            raise ValueError(
+                "preplace_offset_xy_m must be finite, two-dimensional, and at most 0.04 m"
+            )
         if self.verify_steps != 20 or self.action_dt_s != 0.1:
             raise ValueError("Stable Place verification requires 20 steps at 0.1 s")
         if self.max_action_steps < 1:
@@ -644,6 +768,7 @@ class PlaceOraclePlan:
     initial_arm_qpos: np.ndarray
     preplace: IKSolution
     release: IKSolution
+    geometry: dict[str, Any]
 
     def to_json(self) -> dict[str, Any]:
         return {
@@ -659,6 +784,7 @@ class PlaceOraclePlan:
                 **asdict(self.release),
                 "joint_position": self.release.joint_position.tolist(),
             },
+            "geometry": self.geometry,
         }
 
 
@@ -753,8 +879,8 @@ class PlaceRedPepperOracleController:
 
         preplace_pepper = np.asarray(
             [
-                ring_position[0],
-                ring_position[1],
+                ring_position[0] + self.config.preplace_offset_xy_m[0],
+                ring_position[1] + self.config.preplace_offset_xy_m[1],
                 self.config.preplace_pepper_height_m,
             ],
             dtype=np.float64,
@@ -790,6 +916,11 @@ class PlaceRedPepperOracleController:
             initial_arm_qpos=initial_arm,
             preplace=preplace,
             release=release,
+            geometry={
+                "preplace_offset_xy_m": list(self.config.preplace_offset_xy_m),
+                "preplace_pepper_position_m": preplace_pepper.tolist(),
+                "release_pepper_position_m": release_pepper.tolist(),
+            },
         )
         failed = [
             name

@@ -16,15 +16,46 @@ tasks:
   red_block:
     # existing prompt, seed, object, and oracle fields stay unchanged
     generators:
-      scripted_pick: {episodes: 150}
-      side_grasp: {episodes: 100}
+      scripted_pick: {episodes: 10}
+      scripted_pick_side_approach_v1: {episodes: 5}
+      scripted_pick_yaw15_v1: {episodes: 5}
+      scripted_pick_waypoint_lift_v1: {episodes: 5}
+  place_red_pepper_in_ring:
+    # existing prompt, seed, object, and oracle fields stay unchanged
+    generators:
+      direct_place: {episodes: 30}
+      direct_place_left_approach_v1: {episodes: 10}
+      direct_place_right_approach_v1: {episodes: 10}
 ```
 
-The allocation must total that task's `episodes`. Each accepted raw episode and
+The allocations above match v3's 25 red-block and 50 place episodes. For a
+different plan, each allocation must total that task's `episodes`. Each accepted raw episode and
 the collection manifest record `generator_id`, `generator_version`, task, and
 resolved seed. Add a generator by creating a task-owned factory under
 `data/sim/generation/tasks/<task>/generators/`, registering it explicitly in
 `core/registry.py`, then adding it to a config allocation.
+
+Every Pick task (`red_block`, `blue_block`, `red_pepper`, `smallest_block`, and
+`largest_block`) provides these non-default geometric variants:
+
+- `scripted_pick_side_approach_v1`: a 25 mm side-offset pregrasp followed by
+  a centered diagonal descent;
+- `scripted_pick_yaw15_v1`: the same centered grasp with a 15-degree TCP yaw;
+- `scripted_pick_waypoint_lift_v1`: an elevated side waypoint before the
+  centered grasp, followed by a 10 mm diagonal lift.
+
+`place_red_pepper_in_ring` provides two non-default variants:
+
+- `direct_place_left_approach_v1`: a higher left-front preplace position,
+  followed by a centered release into the ring;
+- `direct_place_right_approach_v1`: the mirrored right-rear preplace position,
+  followed by the same centered release.
+
+All variants preserve task text, final grasp/release semantics, the 7D action
+contract, gripper settings, and acceptance criteria. Their exact target poses
+and geometric parameters are stored in each episode's `oracle_plan` metadata.
+The defaults are unchanged; add these IDs explicitly to an allocation only
+when creating a new dataset plan.
 
 For a bounded direct run (the output still must be an authorized generation
 root):
