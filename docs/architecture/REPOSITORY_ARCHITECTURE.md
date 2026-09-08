@@ -67,7 +67,7 @@ More precisely:
 | Canonical task implementation folders | `data/sim/generation/tasks/<task_id>/` |
 | 7D state/action schema | `data.common.schema` and `data.common.records` |
 | LeRobot serialization | `data.common.lerobot_writer` |
-| MuJoCo model and configuration | `simulation.resources` and `simulation/config/` |
+| MuJoCo model, configuration, and named scene-randomization profiles | `simulation.resources` and `simulation/config/` |
 | Gripper conversion | `simulation.robot.gripper_mapping` |
 | Physics-cadence trace instrumentation | `simulation.instrumentation.trace` |
 | Simulation data plans | `data.sim.generation.plans` plus `configs/data/sim/generation/` |
@@ -99,6 +99,12 @@ sets together.
 Package-internal immutable configuration stays beside its owner:
 `simulation/config/`, `training/configs/`, diagnostic baselines, and cluster
 deployment defaults. Operator-selected JSON/YAML lives under `configs/`.
+
+Generation plans and formal simulation-evaluation protocols select the
+same named randomization profile from `simulation/config/task_scenes.yaml`.
+That profile is the only owner of object layout ranges, yaw variation, joint
+noise, and layout sampling semantics; generation/evaluation files must not
+copy those numerical settings.
 
 Runtime datasets, evaluation outputs, videos, checkpoints, reports, logs, and
 caches belong outside source packages. `MUJOCO_OUTPUT_ROOT`,

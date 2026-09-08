@@ -11,6 +11,14 @@ def create_side_approach(context):
     )
 
 
+def create_opposite_side_approach(context):
+    return create_geometric_pick(
+        context,
+        generator_id="scripted_pick_opposite_side_approach_v1",
+        profile="opposite_side_approach_v1",
+    )
+
+
 def create_yaw15(context):
     return create_geometric_pick(
         context,
@@ -19,9 +27,33 @@ def create_yaw15(context):
     )
 
 
+def create_yaw_minus15(context):
+    return create_geometric_pick(
+        context,
+        generator_id="scripted_pick_yaw_minus15_v1",
+        profile="yaw_minus15_v1",
+    )
+
+
+def create_diagonal_approach(context):
+    return create_geometric_pick(
+        context,
+        generator_id="scripted_pick_diagonal_approach_v1",
+        profile="diagonal_approach_v1",
+    )
+
+
 def create_waypoint_lift(context):
     return create_geometric_pick(
         context,
         generator_id="scripted_pick_waypoint_lift_v1",
         profile="waypoint_lift_v1",
+    )
+
+
+def create_opposite_waypoint_lift(context):
+    return create_geometric_pick(
+        context,
+        generator_id="scripted_pick_opposite_waypoint_lift_v1",
+        profile="opposite_waypoint_lift_v1",
     )

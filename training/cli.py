@@ -12,7 +12,12 @@ from typing import Any
 from training.configs.experiments import EXPERIMENTS, get_experiment
 from training.datasets.resolution import DatasetResolutionError, resolve_dataset_paths
 from training.openpi.adapter import DEFAULT_OPENPI_ROOT, OpenPIUnavailable, build_openpi_train_config
-from training.openpi.mixed_loader import OpenPITrainingRuntime, ensure_mixed_normalization, install_mixed_loader
+from training.openpi.mixed_loader import (
+    OpenPITrainingRuntime,
+    ensure_mixed_normalization,
+    format_sampling_observation,
+    install_mixed_loader,
+)
 from training.validation.preflight import preflight
 
 
@@ -107,8 +112,15 @@ def main(argv: list[str] | None = None) -> int:
         _json({dataset_id: str(path) for dataset_id, path in dataset_paths.items()}), encoding="utf-8"
     )
     ensure_mixed_normalization(runtime, recompute=args.recompute_norm)
-    with install_mixed_loader(runtime):
-        _load_train_module(args.openpi_root.resolve()).main(openpi_config)
+    try:
+        with install_mixed_loader(runtime):
+            _load_train_module(args.openpi_root.resolve()).main(openpi_config)
+    finally:
+        print(
+            "Observed mixed sampling (DataLoader-delivered): "
+            + format_sampling_observation(runtime.consumption.snapshot()),
+            flush=True,
+        )
     return 0
 
 

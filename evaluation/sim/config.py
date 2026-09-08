@@ -15,11 +15,14 @@ from simulation.resources import camera_config_path
 from simulation.resources import model_path
 from simulation.resources import repository_root
 from simulation.resources import task_config_path
+from simulation.scene import resolve_scene_randomization_profile
 
 FORMAL_PROTOCOL_VERSION = "xarm-pi05-formal-evaluation-v1"
 FORMAL_STABLE_HOLD_PROTOCOL_VERSION = "xarm-pi05-formal-evaluation-v2"
+FORMAL_SHARED_SETTINGS_PROTOCOL_VERSION = "xarm-pi05-formal-evaluation-v3"
 SMOKE_PROTOCOL_VERSION = "xarm-pi05-evaluation-smoke-v1"
 SMOKE_STABLE_HOLD_PROTOCOL_VERSION = "xarm-pi05-evaluation-smoke-v2"
+SMOKE_SHARED_SETTINGS_PROTOCOL_VERSION = "xarm-pi05-evaluation-smoke-v3"
 
 
 TaskSpec = EvaluationTask
@@ -36,7 +39,9 @@ class FormalProtocol:
     max_policy_steps: int
     control_duration_s: float
     expected_physics_timestep_s: float
+    scene_profile: str
     object_xy_range_m: float
+    layout_profile: str
     object_yaw_range_deg: float
     joint_noise_rad: float
     camera_config_path: Path
@@ -96,7 +101,7 @@ def default_protocol_path() -> Path:
         / "evaluation"
         / "sim"
         / "protocols"
-        / "formal_xarm_pi05_eval_v2.json"
+        / "formal_xarm_pi05_eval_v3.json"
     )
 
 
@@ -154,6 +159,8 @@ def load_protocol(path: Path | None = None) -> FormalProtocol:
         FORMAL_STABLE_HOLD_PROTOCOL_VERSION,
         SMOKE_PROTOCOL_VERSION,
         SMOKE_STABLE_HOLD_PROTOCOL_VERSION,
+        FORMAL_SHARED_SETTINGS_PROTOCOL_VERSION,
+        SMOKE_SHARED_SETTINGS_PROTOCOL_VERSION,
     }:
         raise ValueError(f"Unsupported formal evaluation protocol: {raw.get('protocol_version')!r}")
     environment = raw["environment"]
@@ -161,6 +168,29 @@ def load_protocol(path: Path | None = None) -> FormalProtocol:
     video = raw["video"]
     placement = raw["placement_success"]
     reset = raw["placement_reset_validation"]
+    resolved_task_scene_config = _canonical_input_path(
+        raw["paths"]["task_scene_config"],
+        config_path=path,
+        fallback=task_config_path(),
+    )
+    scene_profile_name = environment.get("scene_profile")
+    if not isinstance(scene_profile_name, str) or not scene_profile_name:
+        raise ValueError(
+            "Formal protocol environment must select a canonical scene_profile; "
+            "inline randomization settings are not supported"
+        )
+    unexpected_environment_settings = {
+        key for key in environment if key != "scene_profile"
+    }
+    if unexpected_environment_settings:
+        names = ", ".join(sorted(str(key) for key in unexpected_environment_settings))
+        raise ValueError(
+            "Formal protocol environment may only contain scene_profile; "
+            f"found: {names}"
+        )
+    scene_profile = resolve_scene_randomization_profile(
+        scene_profile_name, resolved_task_scene_config
+    )
     protocol = FormalProtocol(
         protocol_version=str(raw["protocol_version"]),
         tasks=_task_specs(list(raw["tasks"])),
@@ -171,19 +201,17 @@ def load_protocol(path: Path | None = None) -> FormalProtocol:
         max_policy_steps=int(control["max_policy_steps"]),
         control_duration_s=float(control["control_duration_s"]),
         expected_physics_timestep_s=float(control["expected_physics_timestep_s"]),
-        object_xy_range_m=float(environment["object_xy_range_m"]),
-        object_yaw_range_deg=float(environment["object_yaw_range_deg"]),
-        joint_noise_rad=float(environment["joint_noise_rad"]),
+        scene_profile=scene_profile.name,
+        object_xy_range_m=scene_profile.object_xy_range_m,
+        layout_profile=scene_profile.layout_profile,
+        object_yaw_range_deg=scene_profile.object_yaw_range_deg,
+        joint_noise_rad=scene_profile.joint_noise_rad,
         camera_config_path=_canonical_input_path(
             raw["paths"]["camera_config"],
             config_path=path,
             fallback=camera_config_path(),
         ),
-        task_scene_config_path=_canonical_input_path(
-            raw["paths"]["task_scene_config"],
-            config_path=path,
-            fallback=task_config_path(),
-        ),
+        task_scene_config_path=resolved_task_scene_config,
         robot_xml_path=_canonical_input_path(
             raw["paths"]["robot_xml"],
             config_path=path,
@@ -226,11 +254,13 @@ def validate_protocol(protocol: FormalProtocol) -> None:
     if protocol.protocol_version in {
         FORMAL_PROTOCOL_VERSION,
         FORMAL_STABLE_HOLD_PROTOCOL_VERSION,
+        FORMAL_SHARED_SETTINGS_PROTOCOL_VERSION,
     } and protocol.seed_count != 20:
         raise ValueError("Formal protocol requires exactly 20 fixed seeds")
     if protocol.protocol_version in {
         SMOKE_PROTOCOL_VERSION,
         SMOKE_STABLE_HOLD_PROTOCOL_VERSION,
+        SMOKE_SHARED_SETTINGS_PROTOCOL_VERSION,
     } and not 1 <= protocol.seed_count <= 3:
         raise ValueError("Smoke protocol requires one to three fixed seeds")
     if (protocol.execute_chunk_steps, protocol.policy_action_horizon, protocol.max_policy_steps) != (5, 10, 50):
@@ -248,6 +278,8 @@ def validate_protocol(protocol: FormalProtocol) -> None:
     stable_hold_protocol = protocol.protocol_version in {
         FORMAL_STABLE_HOLD_PROTOCOL_VERSION,
         SMOKE_STABLE_HOLD_PROTOCOL_VERSION,
+        FORMAL_SHARED_SETTINGS_PROTOCOL_VERSION,
+        SMOKE_SHARED_SETTINGS_PROTOCOL_VERSION,
     }
     if stable_hold_protocol and (
         protocol.pick_post_success_hold_checks < 1

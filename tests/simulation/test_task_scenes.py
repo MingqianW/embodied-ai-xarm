@@ -117,6 +117,43 @@ class TaskSceneRuntimeTests(unittest.TestCase):
             context_a.close()
             context_b.close()
 
+    def test_wide_profile_samples_comparison_blocks_independently(self) -> None:
+        context, _, initial = self.make_scene("largest_block", seed=123)
+        try:
+            # The default profile retains the historic shared scene translation.
+            self.assertEqual(
+                initial["object_xy_deltas"]["small_block"],
+                initial["object_xy_deltas"]["large_block"],
+            )
+        finally:
+            context.close()
+
+        context = load_simulation()
+        initialize_scene(context.model, context.data, settle_steps=0)
+        try:
+            _, initial = configure_task_scene(
+                context.model,
+                context.data,
+                task="largest_block",
+                seed=123,
+                object_xy_range=0.10,
+                object_yaw_range_deg=10.0,
+                joint_noise=0.005,
+                layout_profile="wide_independent_workspace_v1",
+                settle_steps=2,
+            )
+            deltas = initial["object_xy_deltas"]
+            self.assertNotEqual(deltas["small_block"], deltas["large_block"])
+            positions = initial["initial_body_positions"]
+            separation = np.linalg.norm(
+                np.asarray(positions["small_block"][:2])
+                - np.asarray(positions["large_block"][:2])
+            )
+            self.assertGreaterEqual(separation, 0.10)
+            self.assertEqual(initial["layout_profile"], "wide_independent_workspace_v1")
+        finally:
+            context.close()
+
     def test_place_task_swaps_local_held_pepper_on_release(self) -> None:
         context, runtime, _ = self.make_scene("place_red_pepper_in_ring")
         try:

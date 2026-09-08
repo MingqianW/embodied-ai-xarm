@@ -38,9 +38,7 @@
     "expected_physics_timestep_s": 0.002
   },
   "environment": {
-    "object_xy_range_m": 0.03,
-    "object_yaw_range_deg": 15.0,
-    "joint_noise_rad": 0.01
+    "scene_profile": "legacy_formal_v1"
   },
   "paths": {
     "camera_config": "${XARM_REPOSITORY}/simulation/config/camera_calibration.yaml",

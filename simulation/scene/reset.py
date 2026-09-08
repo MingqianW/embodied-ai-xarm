@@ -38,6 +38,7 @@ def configure_task_scene(
     object_xy_range: float,
     object_yaw_range_deg: float,
     joint_noise: float,
+    layout_profile: str = "shared_scene_delta_v1",
     scene_variant: str = "clean",
     settle_steps: int = 500,
     config_path: Path = TASK_CONFIG_PATH,
@@ -167,13 +168,67 @@ def configure_task_scene(
             )
 
     initial_tcp_to_object = spec.get("initial_tcp_to_object")
-    scene_delta = np.zeros(2, dtype=np.float64)
-    if seed is not None:
-        scene_delta = rng.uniform(
-            -float(object_xy_range), float(object_xy_range), size=2
+    layout_profiles = catalog.get("layout_profiles") or {}
+    layout = layout_profiles.get(layout_profile)
+    if not isinstance(layout, dict):
+        available = ", ".join(sorted(str(name) for name in layout_profiles))
+        raise ValueError(
+            f"Unknown scene layout profile {layout_profile!r}; available: {available}"
         )
+    layout_mode = str(layout.get("mode", ""))
+    if layout_mode not in {"shared_scene_delta", "independent_body_offsets"}:
+        raise ValueError(f"Unsupported scene layout mode: {layout_mode!r}")
+    randomizable_bodies = tuple(spec.get("randomizable_bodies") or ())
+    minimum_pairwise_distance_m = float(
+        layout.get("minimum_pairwise_distance_m", 0.0)
+    )
+    max_sampling_attempts = int(layout.get("max_sampling_attempts", 1))
+    if minimum_pairwise_distance_m < 0.0 or max_sampling_attempts < 1:
+        raise ValueError(f"Invalid layout profile {layout_profile!r}")
+
+    scene_delta = np.zeros(2, dtype=np.float64)
+    body_deltas = {
+        body_name: np.zeros(2, dtype=np.float64) for body_name in randomizable_bodies
+    }
+    if seed is not None and randomizable_bodies:
+        if layout_mode == "shared_scene_delta":
+            scene_delta = rng.uniform(
+                -float(object_xy_range), float(object_xy_range), size=2
+            )
+            body_deltas = {
+                body_name: scene_delta.copy() for body_name in randomizable_bodies
+            }
+        else:
+            for _ in range(max_sampling_attempts):
+                candidate_deltas = {
+                    body_name: rng.uniform(
+                        -float(object_xy_range), float(object_xy_range), size=2
+                    )
+                    for body_name in randomizable_bodies
+                }
+                candidate_positions = []
+                for body_name in randomizable_bodies:
+                    if body_name in free_bodies:
+                        qpos_addr = _freejoint_qpos_address(model, body_name)
+                        base_xy = data.qpos[qpos_addr : qpos_addr + 2]
+                    else:
+                        base_xy = model.body_pos[_body_id(model, body_name), :2]
+                    candidate_positions.append(base_xy + candidate_deltas[body_name])
+                if all(
+                    float(np.linalg.norm(first - second))
+                    >= minimum_pairwise_distance_m
+                    for index, first in enumerate(candidate_positions)
+                    for second in candidate_positions[index + 1 :]
+                ):
+                    body_deltas = candidate_deltas
+                    break
+            else:
+                raise RuntimeError(
+                    f"{task_name} could not sample {layout_profile!r} with "
+                    f"minimum_pairwise_distance_m={minimum_pairwise_distance_m}"
+                )
     yaw_values: dict[str, float] = {}
-    for body_name in spec.get("randomizable_bodies") or ():
+    for body_name in randomizable_bodies:
         yaw = 0.0
         if seed is not None:
             yaw = math.radians(
@@ -186,11 +241,11 @@ def configure_task_scene(
         yaw_values[body_name] = yaw
         if body_name in free_bodies:
             qpos_addr = _freejoint_qpos_address(model, body_name)
-            data.qpos[qpos_addr : qpos_addr + 2] += scene_delta
+            data.qpos[qpos_addr : qpos_addr + 2] += body_deltas[body_name]
             data.qpos[qpos_addr + 3 : qpos_addr + 7] = _yaw_quaternion(yaw)
         else:
             body_id = _body_id(model, body_name)
-            model.body_pos[body_id, :2] += scene_delta
+            model.body_pos[body_id, :2] += body_deltas[body_name]
 
     limits = arm_joint_limits(model)
     joint_values = []
@@ -282,7 +337,12 @@ def configure_task_scene(
         "scene_variant": scene_variant,
         "distractor_bodies": list(distractor_bodies),
         "target_body": runtime.target_body,
+        "layout_profile": layout_profile,
+        "layout_mode": layout_mode,
         "scene_xy_delta": scene_delta.tolist(),
+        "object_xy_deltas": {
+            body_name: delta.tolist() for body_name, delta in body_deltas.items()
+        },
         "object_yaws": yaw_values,
         "initial_body_positions": active_positions,
         "initial_joint_positions": joint_values,

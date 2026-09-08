@@ -532,7 +532,7 @@ WORKFLOWS = {
             defaults={
                 "protocol": (
                     "configs/evaluation/sim/protocols/"
-                    "formal_xarm_pi05_eval_v2.json"
+                    "formal_xarm_pi05_eval_v3.json"
                 ),
                 "output_root": "",
                 "port": "8000",

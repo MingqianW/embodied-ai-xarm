@@ -7,14 +7,19 @@ model specification, and writes provenance-checked isolated outputs.
 ## Protocol
 
 The active immutable protocol is
-`configs/evaluation/sim/protocols/formal_xarm_pi05_eval_v2.json`:
+`configs/evaluation/sim/protocols/formal_xarm_pi05_eval_v3.json`:
 
 - six canonical prompts: red pepper, blue block, red block, smallest block,
   largest block, and red-pepper placement in the ring;
-- fixed seeds `50000..50019` for every task and every model;
+- fixed, wide-profile-prevalidated seeds `50018..50037` for every task and
+  every model;
 - action horizon 10, execute first 5 actions, acquire a fresh observation, and
   repeat for at most 50 policy calls (250 executed targets);
 - simulator action duration 0.1 s and expected MuJoCo timestep 0.002 s;
+- canonical `clean_wide_v4` scene profile: ±10 cm per active object, 10-degree
+  object yaw noise, 0.005 rad joint noise, and independent object offsets with
+  the comparison-block separation gate. This is the exact profile used by the
+  v4 10x-real generation plan;
 - calibrated base/wrist 640×480 RGB observations, resized/padded through the
   existing 224×224 policy preprocessing path;
 - `video_policy=category_representative`: record each rollout temporarily, then
@@ -142,7 +147,7 @@ Validate coverage after a category-representative evaluation:
 cd /u/mw89/repos/embodied-ai-xarm
 /u/mw89/repos/openpi/.venv/bin/python \
   evaluation/sim/tools/validate_category_video_coverage.py \
-  --evaluation-root /work/nvme/bfmk/mw89/mujoco_outputs/policy_evaluation/pi05_abc_15000_six_task_stable_hold_v2
+  --evaluation-root /work/nvme/bfmk/mw89/mujoco_outputs/policy_evaluation/pi05_abc_15000_six_task_wide_layout_v3
 ```
 
 It prints every observed category for each model/task and exits nonzero with
@@ -170,7 +175,7 @@ Human review is an independent artifact layer. It never changes automated
    ```bash
    cd /u/mw89/repos/embodied-ai-xarm
    /u/mw89/repos/openpi/.venv/bin/python -m evaluation.sim.tools.build_human_review_manifest \
-     --evaluation-root /work/nvme/bfmk/mw89/mujoco_outputs/policy_evaluation/pi05_abc_15000_six_task_stable_hold_v2 \
+     --evaluation-root /work/nvme/bfmk/mw89/mujoco_outputs/policy_evaluation/pi05_abc_15000_six_task_wide_layout_v3 \
      --review-seed 20260808 \
      --mode full
    ```
@@ -187,7 +192,7 @@ Human review is an independent artifact layer. It never changes automated
 
    ```bash
    /u/mw89/repos/openpi/.venv/bin/python -m evaluation.sim.tools.review_human_videos \
-     --review-root /work/nvme/bfmk/mw89/mujoco_outputs/policy_evaluation/pi05_abc_15000_six_task_stable_hold_v2/human_review/full_seed_20260808
+     --review-root /work/nvme/bfmk/mw89/mujoco_outputs/policy_evaluation/pi05_abc_15000_six_task_wide_layout_v3/human_review/full_seed_20260808
    ```
 
    If the browser is remote, use an SSH tunnel to `127.0.0.1:8765`; do not bind
@@ -202,7 +207,7 @@ Human review is an independent artifact layer. It never changes automated
 
    ```bash
    /u/mw89/repos/openpi/.venv/bin/python -m evaluation.sim.tools.summarize_human_review \
-     --review-root /work/nvme/bfmk/mw89/mujoco_outputs/policy_evaluation/pi05_abc_15000_six_task_stable_hold_v2/human_review/full_seed_20260808
+     --review-root /work/nvme/bfmk/mw89/mujoco_outputs/policy_evaluation/pi05_abc_15000_six_task_wide_layout_v3/human_review/full_seed_20260808
    ```
 
    This writes `human_review_unblinded.csv`, JSON/Markdown summaries, and a
@@ -244,8 +249,8 @@ Use this login-safe check after the manager checkpoint exists:
 cd /u/mw89/repos/embodied-ai-xarm
 /u/mw89/repos/openpi/.venv/bin/python -m evaluation.sim.cli \
   --model-spec configs/evaluation/sim/models/A.json \
-  --protocol configs/evaluation/sim/protocols/formal_xarm_pi05_eval_v2.json \
-  --output-root /work/nvme/bfmk/mw89/mujoco_outputs/policy_evaluation/pi05_abc_15000_six_task_stable_hold_v2 \
+  --protocol configs/evaluation/sim/protocols/formal_xarm_pi05_eval_v3.json \
+  --output-root /work/nvme/bfmk/mw89/mujoco_outputs/policy_evaluation/pi05_abc_15000_six_task_wide_layout_v3 \
   --openpi-root /u/mw89/repos/openpi \
   --dry-run
 ```
@@ -276,7 +281,7 @@ Slurm command only after the server and static checks are ready:
 ```bash
 python -m cluster.cli submit formal-sim-evaluation --dry-run \
   --param model_spec=configs/evaluation/sim/models/A.json \
-  --param protocol=configs/evaluation/sim/protocols/formal_xarm_pi05_eval_smoke_v2.json \
+  --param protocol=configs/evaluation/sim/protocols/formal_xarm_pi05_eval_smoke_v3.json \
   --param host=POLICY_SERVER_HOST
 ```
 
@@ -289,16 +294,18 @@ category representatives:
 ```bash
 python -m cluster.cli submit formal-sim-evaluation --dry-run \
   --param model_spec=configs/evaluation/sim/models/A.json \
-  --param protocol=configs/evaluation/sim/protocols/formal_xarm_pi05_eval_video_all_v2.json \
+  --param protocol=configs/evaluation/sim/protocols/formal_xarm_pi05_eval_video_all_v3.json \
   --param host=POLICY_SERVER_HOST
 ```
 
 This is a distinct output identity; do not mix it with the
 category-representative formal output.
 
-The v1 formal, smoke, and all-video protocol files are retained for historical
-results that used the former three-check lift rule without a post-success hold.
-Do not resume or combine those outputs with v2.
+The v1/v2 formal, smoke, and all-video protocol files are retained for
+historical results. They select `legacy_formal_v1`, whose values reproduce the
+former ±3 cm XY, 15-degree yaw, and 0.01-rad joint-noise reset settings from
+the canonical simulation profile catalog. Do not resume, combine, or use them
+for a new evaluation.
 
 ## Historical entry points — do not use for new A/B/C evaluation
 

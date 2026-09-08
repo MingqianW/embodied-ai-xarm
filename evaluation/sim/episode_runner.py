@@ -280,6 +280,7 @@ def run_formal_episode(
             object_xy_range=protocol.object_xy_range_m,
             object_yaw_range_deg=protocol.object_yaw_range_deg,
             joint_noise=protocol.joint_noise_rad,
+            layout_profile=protocol.layout_profile,
             config_path=protocol.task_scene_config_path,
         )
         initial_state = dict(initial_conditions)

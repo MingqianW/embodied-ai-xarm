@@ -45,6 +45,8 @@ def test_v4_is_strictly_ten_times_actual_real_data() -> None:
         for task in v4.tasks
     )
     assert v4.distractor_count == 0
+    assert v4.object_xy_range_m == 0.10
+    assert v4.layout_profile == "wide_independent_workspace_v1"
 
     assert set(vars(v4.outputs).values()) == expected_roots(
         v4.dataset_version

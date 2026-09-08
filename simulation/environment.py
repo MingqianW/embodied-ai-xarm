@@ -46,6 +46,7 @@ class MuJoCoEnvironment:
         object_xy_range: float = 0.0,
         object_yaw_range_deg: float = 0.0,
         joint_noise: float = 0.0,
+        layout_profile: str = "shared_scene_delta_v1",
         scene_variant: str = "clean",
     ) -> None:
         self.context = load_simulation(
@@ -64,6 +65,7 @@ class MuJoCoEnvironment:
         self.object_xy_range = float(object_xy_range)
         self.object_yaw_range_deg = float(object_yaw_range_deg)
         self.joint_noise = float(joint_noise)
+        self.layout_profile = str(layout_profile)
         self.scene_variant = str(scene_variant)
         self.task_runtime: TaskSceneRuntime | None = None
         self.initial_conditions: dict[str, Any] = {}
@@ -116,6 +118,7 @@ class MuJoCoEnvironment:
             object_xy_range=self.object_xy_range,
             object_yaw_range_deg=self.object_yaw_range_deg,
             joint_noise=self.joint_noise,
+            layout_profile=self.layout_profile,
             scene_variant=self.scene_variant,
             settle_steps=self.settle_steps,
             config_path=self.task_scene_config_path,

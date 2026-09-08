@@ -337,7 +337,9 @@ _a = _historical_multi(
     "A",
     "Real plus stable-v3 simulation; exactly 8 real and 8 simulation samples in every batch",
     SIM_STABLE_V3,
-    MixingStrategy.per_batch(8, 8),
+    MixingStrategy.fixed_batch_composition(
+        {SourceBackend.REAL: 8, SourceBackend.SIM: 8}
+    ),
     "xarm_pi05_real_v3sim_1x",
 )
 _b = _historical_multi(
@@ -345,7 +347,7 @@ _b = _historical_multi(
     "B",
     "Real plus 10x stable-v4 simulation; global sample stream repeats 1 real then 10 simulation",
     SIM_STABLE_V4_10X,
-    MixingStrategy.sample_ratio(1, 10),
+    MixingStrategy.weighted_stream({SourceBackend.REAL: 1, SourceBackend.SIM: 10}),
     "xarm_pi05_real_v4sim_10x",
 )
 _c = _historical_multi(
@@ -380,7 +382,9 @@ _continuation = ExperimentConfig(
     name="pi05_xarm_real_sim_50_50_continue",
     description="Completed historical true-state continuation from real checkpoint 30000 to manager 50000",
     datasets=DatasetSet((REAL_20260703, SIM_RED_BLOCK_EP198)),
-    mixing=MixingStrategy.per_batch(8, 8),
+    mixing=MixingStrategy.fixed_batch_composition(
+        {SourceBackend.REAL: 8, SourceBackend.SIM: 8}
+    ),
     normalization=NormalizationSpec(
         NormalizationMode.PRESERVE_CHECKPOINT,
         "local/xarm_pi05_20260703",

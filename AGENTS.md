@@ -67,9 +67,12 @@ implementations outside these canonical owners.
   acceptance, conversion, and identity) centralized. Task generators should
   not write ad-hoc dataset formats or bypass the shared recorder.
 - Generation and simulation evaluation must use the same canonical simulation
-  stack: assets, scene schema, task definitions, cameras, and robot/control
-  mappings. Evaluation uses its own seeds; it may add explicitly named
-  out-of-distribution profiles, which must not silently enter training data.
+  stack and named scene-randomization profile: assets, scene schema, task
+  definitions, cameras, robot/control mappings, object layout, yaw, and joint
+  noise. The profile is owned by `simulation/config/task_scenes.yaml` and is
+  selected by name; do not duplicate its ranges in generation or new formal
+  evaluation configuration. Evaluation uses its own seeds; a distinct profile
+  requires an explicit name and must not silently enter training data.
 
 ## Data and training conventions
 

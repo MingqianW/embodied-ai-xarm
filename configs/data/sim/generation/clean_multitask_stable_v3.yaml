@@ -13,9 +13,7 @@ outputs:
 
 collection:
   action_hz: 10
-  object_xy_range_m: 0.02
-  object_yaw_range_deg: 10.0
-  joint_noise_rad: 0.005
+  scene_profile: clean_stable_v3
   max_attempts_per_episode: 20
   seed_retry_stride: 1000
   scene_variant: clean

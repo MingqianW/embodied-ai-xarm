@@ -15,9 +15,8 @@ outputs:
   log: ${XARM_WORK_ROOT}/logs/xarm_mujoco_clean_multitask_stable_v4_10x_real
 collection:
   action_hz: 10
-  object_xy_range_m: 0.02
-  object_yaw_range_deg: 10.0
-  joint_noise_rad: 0.005
+  # Canonical ±10 cm independent layout, shared with formal evaluation v3.
+  scene_profile: clean_wide_v4
   max_attempts_per_episode: 20
   seed_retry_stride: 1000
   scene_variant: clean
@@ -81,6 +80,15 @@ tasks:
     oracle:
       closed_gripper_raw: 250.0
       grasp_tcp_offset_from_object_m: -0.022
+    generators:
+      scripted_pick: {episodes: 63}
+      scripted_pick_side_approach_v1: {episodes: 63}
+      scripted_pick_opposite_side_approach_v1: {episodes: 63}
+      scripted_pick_yaw15_v1: {episodes: 63}
+      scripted_pick_yaw_minus15_v1: {episodes: 62}
+      scripted_pick_diagonal_approach_v1: {episodes: 62}
+      scripted_pick_waypoint_lift_v1: {episodes: 62}
+      scripted_pick_opposite_waypoint_lift_v1: {episodes: 62}
   blue_block:
     prompt: pick up the blue block
     aliases:
@@ -96,6 +104,15 @@ tasks:
     oracle:
       closed_gripper_raw: 211.0
       grasp_tcp_offset_from_object_m: -0.011
+    generators:
+      scripted_pick: {episodes: 30}
+      scripted_pick_side_approach_v1: {episodes: 30}
+      scripted_pick_opposite_side_approach_v1: {episodes: 30}
+      scripted_pick_yaw15_v1: {episodes: 30}
+      scripted_pick_yaw_minus15_v1: {episodes: 30}
+      scripted_pick_diagonal_approach_v1: {episodes: 30}
+      scripted_pick_waypoint_lift_v1: {episodes: 30}
+      scripted_pick_opposite_waypoint_lift_v1: {episodes: 30}
   red_block:
     prompt: pick up the red block
     aliases:
@@ -110,6 +127,15 @@ tasks:
     oracle:
       closed_gripper_raw: 200.0
       grasp_tcp_offset_from_object_m: -0.011
+    generators:
+      scripted_pick: {episodes: 32}
+      scripted_pick_side_approach_v1: {episodes: 32}
+      scripted_pick_opposite_side_approach_v1: {episodes: 31}
+      scripted_pick_yaw15_v1: {episodes: 31}
+      scripted_pick_yaw_minus15_v1: {episodes: 31}
+      scripted_pick_diagonal_approach_v1: {episodes: 31}
+      scripted_pick_waypoint_lift_v1: {episodes: 31}
+      scripted_pick_opposite_waypoint_lift_v1: {episodes: 31}
   smallest_block:
     prompt: pick up the smallest block
     aliases:
@@ -126,6 +152,15 @@ tasks:
     oracle:
       closed_gripper_raw: 200.0
       grasp_tcp_offset_from_object_m: -0.011
+    generators:
+      scripted_pick: {episodes: 30}
+      scripted_pick_side_approach_v1: {episodes: 30}
+      scripted_pick_opposite_side_approach_v1: {episodes: 30}
+      scripted_pick_yaw15_v1: {episodes: 30}
+      scripted_pick_yaw_minus15_v1: {episodes: 30}
+      scripted_pick_diagonal_approach_v1: {episodes: 30}
+      scripted_pick_waypoint_lift_v1: {episodes: 30}
+      scripted_pick_opposite_waypoint_lift_v1: {episodes: 30}
   largest_block:
     prompt: pick up the largest block
     aliases:
@@ -142,6 +177,15 @@ tasks:
     oracle:
       closed_gripper_raw: 211.0
       grasp_tcp_offset_from_object_m: -0.011
+    generators:
+      scripted_pick: {episodes: 32}
+      scripted_pick_side_approach_v1: {episodes: 32}
+      scripted_pick_opposite_side_approach_v1: {episodes: 31}
+      scripted_pick_yaw15_v1: {episodes: 31}
+      scripted_pick_yaw_minus15_v1: {episodes: 31}
+      scripted_pick_diagonal_approach_v1: {episodes: 31}
+      scripted_pick_waypoint_lift_v1: {episodes: 31}
+      scripted_pick_opposite_waypoint_lift_v1: {episodes: 31}
   place_red_pepper_in_ring:
     prompt: place the red pepper in the ring
     aliases:
@@ -153,3 +197,10 @@ tasks:
     required_active_objects:
     - held_red_pepper
     - ring
+    generators:
+      direct_place: {episodes: 84}
+      direct_place_left_approach_v1: {episodes: 84}
+      direct_place_right_approach_v1: {episodes: 83}
+      direct_place_high_center_v1: {episodes: 83}
+      direct_place_left_rear_approach_v1: {episodes: 83}
+      direct_place_right_front_approach_v1: {episodes: 83}

@@ -9,10 +9,11 @@ checkpointing to the installed OpenPI revision.
 from __future__ import annotations
 
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import hashlib
 import json
 import logging
+import multiprocessing
 from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Iterator, Mapping, Sequence
@@ -29,6 +30,72 @@ from training.normalization import NormalizationMode
 MIXED_NORMALIZATION_MANIFEST = "mixed_normalization_manifest.json"
 
 
+def _source_label(source: SourceName) -> str:
+    return str(getattr(source, "value", source))
+
+
+@dataclass
+class SamplingCounters:
+    """Cross-worker counts of source samples delivered by the mixed loader."""
+
+    sources: tuple[SourceName, ...]
+    report_every_samples: int = 0
+    _lock: Any = field(init=False, repr=False)
+    _counts: dict[str, Any] = field(init=False, repr=False)
+    _last_report_total: Any = field(init=False, repr=False)
+
+    def __post_init__(self) -> None:
+        self._lock = multiprocessing.RLock()
+        self._counts = {
+            _source_label(source): multiprocessing.Value("Q", 0, lock=False)
+            for source in self.sources
+        }
+        self._last_report_total = multiprocessing.Value("Q", 0, lock=False)
+
+    def set_report_every_samples(self, value: int) -> None:
+        if value < 0:
+            raise ValueError("report interval must be non-negative")
+        with self._lock:
+            self.report_every_samples = value
+            self._last_report_total.value = 0
+
+    def snapshot(self) -> dict[str, Any]:
+        with self._lock:
+            counts = {source: int(value.value) for source, value in self._counts.items()}
+        total = sum(counts.values())
+        fractions = {
+            source: (count / total if total else 0.0) for source, count in counts.items()
+        }
+        return {"counts": counts, "total": total, "fractions": fractions}
+
+    def record(self, source: SourceName) -> None:
+        label = _source_label(source)
+        with self._lock:
+            try:
+                self._counts[label].value += 1
+            except KeyError as exc:
+                raise ValueError(f"mixed loader encountered undeclared source {label!r}") from exc
+            total = sum(int(value.value) for value in self._counts.values())
+            should_report = (
+                self.report_every_samples > 0
+                and total - int(self._last_report_total.value) >= self.report_every_samples
+            )
+            if should_report:
+                self._last_report_total.value = total
+        if should_report:
+            logging.info("Mixed loader observed sampling: %s", format_sampling_observation(self.snapshot()))
+
+
+def format_sampling_observation(observation: Mapping[str, Any]) -> str:
+    counts = observation["counts"]
+    fractions = observation["fractions"]
+    details = ", ".join(
+        f"{source}={counts[source]} ({fractions[source]:.2%})"
+        for source in sorted(counts)
+    )
+    return f"samples={observation['total']}; {details}"
+
+
 @dataclass(frozen=True)
 class OpenPITrainingRuntime:
     """The project metadata needed to intercept one upstream TrainConfig."""
@@ -36,6 +103,7 @@ class OpenPITrainingRuntime:
     experiment: ExperimentConfig
     openpi_config: Any
     dataset_paths: Mapping[str, Path]
+    consumption: SamplingCounters = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
         expected = {dataset.dataset_id for dataset in self.experiment.datasets.datasets}
@@ -46,6 +114,17 @@ class OpenPITrainingRuntime:
             self,
             "dataset_paths",
             MappingProxyType({key: Path(value).resolve() for key, value in self.dataset_paths.items()}),
+        )
+        object.__setattr__(
+            self,
+            "consumption",
+            SamplingCounters(
+                tuple(
+                    dict.fromkeys(
+                        dataset.source for dataset in self.experiment.datasets.datasets
+                    )
+                )
+            ),
         )
 
 
@@ -210,6 +289,7 @@ class _MixedStreamDataset:
             trajectories=[trajectory for item in loaded for trajectory in item.trajectories],
         )
         self._datasets = {item.spec.dataset_id: item.dataset for item in loaded}
+        self._consumption = runtime.consumption
         self._virtual_length = virtual_length
         self._position_offset = position_offset
 
@@ -220,6 +300,7 @@ class _MixedStreamDataset:
         if index < 0 or index >= self._virtual_length:
             raise IndexError(index)
         ref = self._stream.item_at(self._position_offset + index)
+        self._consumption.record(ref.source)
         return self._datasets[ref.dataset_id][ref.dataset_index]
 
 
@@ -242,6 +323,70 @@ def _virtual_length(config: Any, num_batches: int | None) -> int:
     return batches * int(config.batch_size)
 
 
+def format_mixed_training_summary(
+    runtime: OpenPITrainingRuntime,
+    loaded: Sequence[_LoadedDataset],
+    config: Any,
+) -> str:
+    """Render the operator-facing declaration before the first training batch."""
+
+    by_source: dict[str, dict[str, int]] = {}
+    for item in loaded:
+        source = _source_label(item.spec.source)
+        summary = by_source.setdefault(source, {"episodes": 0, "samples": 0})
+        summary["episodes"] += len(item.trajectories)
+        summary["samples"] += len(item.frames)
+    lines = ["Mixed training configuration", "----------------------------"]
+    for source in sorted(by_source):
+        summary = by_source[source]
+        lines.extend(
+            (
+                f"{source} dataset:",
+                f"  episodes: {summary['episodes']}",
+                f"  samples: {summary['samples']}",
+            )
+        )
+    mixing = runtime.experiment.mixing
+    lines.extend(("", "Sampling strategy:", f"  {mixing.mode.value}"))
+    if mixing.mode is MixingMode.WEIGHTED_DOMAIN_SAMPLING:
+        lines.append("Requested sampling:")
+        for source, probability in mixing.sampling_probabilities:
+            lines.append(f"  {_source_label(source)}: {probability:.2%}")
+    elif mixing.mode is MixingMode.FIXED_PER_BATCH:
+        lines.append(
+            "  fixed global-batch composition: "
+            + ", ".join(f"{_source_label(source)}={count}" for source, count in mixing.composition)
+        )
+    elif mixing.mode is MixingMode.WEIGHTED_SAMPLE_STREAM:
+        lines.append(
+            "  legacy exact schedule: "
+            + ", ".join(f"{_source_label(source)}={count}" for source, count in mixing.weights)
+        )
+    elif mixing.mode is MixingMode.GLOBAL_TRAJECTORY_SHUFFLE:
+        lines.append("  natural physical-pool composition; no domain quota")
+    normalization = runtime.experiment.normalization
+    lines.extend(("", "Normalization:"))
+    if normalization.mode is NormalizationMode.COMPUTE_FROM_DATASETS:
+        lines.extend(
+            (
+                "  source: selected physical dataset pool (all declared sources)",
+                "  weighting: every selected frame once (not training sampling weights)",
+            )
+        )
+    else:
+        lines.append(f"  source: {normalization.mode.value} asset {normalization.asset_id}")
+    lines.extend(
+        (
+            "",
+            "Training:",
+            f"  batch size: {config.batch_size}",
+            f"  total steps: {config.num_train_steps}",
+            "  epoch: virtual step-based stream; not derived from combined dataset length",
+        )
+    )
+    return "\n".join(lines)
+
+
 def create_mixed_data_loader(
     runtime: OpenPITrainingRuntime,
     config: Any,
@@ -258,6 +403,10 @@ def create_mixed_data_loader(
     data_loader, _, transforms = _openpi_modules()
     data_config = config.data.create(config.assets_dirs, config.model)
     loaded = _load_datasets(runtime, data_config, config.model, transforms)
+    runtime.consumption.set_report_every_samples(
+        int(config.log_interval) * int(config.batch_size)
+    )
+    print(format_mixed_training_summary(runtime, loaded, config), flush=True)
     dataset = _MixedStreamDataset(
         loaded,
         runtime,
@@ -333,6 +482,14 @@ def _normalization_manifest(runtime: OpenPITrainingRuntime, asset_id: str) -> di
         "experiment": runtime.experiment.name,
         "asset_id": asset_id,
         "pool": datasets,
+        "weighting": {
+            "mode": "uniform_selected_physical_frames",
+            "replays_training_mixing": False,
+            "description": (
+                "Every frame in the selected DatasetSpec pool is included once; "
+                "domain sampling weights do not change normalization statistics."
+            ),
+        },
         "state_semantics": runtime.experiment.normalization.state_semantics,
         "action_semantics": runtime.experiment.normalization.action_semantics,
     }

@@ -32,13 +32,30 @@ PICK_GEOMETRY_PROFILES: dict[str, dict[str, Any]] = {
         "pregrasp_offset_xy_m": (0.0, 0.025),
         "max_action_steps": 280,
     },
+    "opposite_side_approach_v1": {
+        "pregrasp_offset_xy_m": (0.0, -0.025),
+        "max_action_steps": 280,
+    },
     "yaw15_v1": {
         "tcp_yaw_offset_deg": 15.0,
+        "max_action_steps": 280,
+    },
+    "yaw_minus15_v1": {
+        "tcp_yaw_offset_deg": -15.0,
+        "max_action_steps": 280,
+    },
+    "diagonal_approach_v1": {
+        "pregrasp_offset_xy_m": (0.02, -0.02),
         "max_action_steps": 280,
     },
     "waypoint_lift_v1": {
         "approach_waypoint_offset_xy_m": (-0.025, 0.02),
         "lift_offset_xy_m": (0.01, -0.01),
+        "max_action_steps": 320,
+    },
+    "opposite_waypoint_lift_v1": {
+        "approach_waypoint_offset_xy_m": (0.025, -0.02),
+        "lift_offset_xy_m": (-0.01, 0.01),
         "max_action_steps": 320,
     },
 }

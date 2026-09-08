@@ -197,3 +197,44 @@ def create_right_approach_v1(context: GeneratorContext):
             "max_action_steps": 280,
         },
     )
+
+
+def create_high_center_v1(context: GeneratorContext):
+    """Use a higher centered preplace pose before the vertical release path."""
+
+    return _create(
+        context,
+        generator_id="direct_place_high_center_v1",
+        oracle_overrides={
+            "preplace_pepper_height_m": 0.24,
+            "max_action_steps": 300,
+        },
+    )
+
+
+def create_left_rear_approach_v1(context: GeneratorContext):
+    """Approach the ring from a left-rear preplace position before centering."""
+
+    return _create(
+        context,
+        generator_id="direct_place_left_rear_approach_v1",
+        oracle_overrides={
+            "preplace_offset_xy_m": (-0.025, -0.02),
+            "preplace_pepper_height_m": 0.22,
+            "max_action_steps": 280,
+        },
+    )
+
+
+def create_right_front_approach_v1(context: GeneratorContext):
+    """Approach the ring from a right-front preplace position before centering."""
+
+    return _create(
+        context,
+        generator_id="direct_place_right_front_approach_v1",
+        oracle_overrides={
+            "preplace_offset_xy_m": (0.025, 0.02),
+            "preplace_pepper_height_m": 0.22,
+            "max_action_steps": 280,
+        },
+    )

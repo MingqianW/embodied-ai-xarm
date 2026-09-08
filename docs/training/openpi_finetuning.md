@@ -51,6 +51,24 @@ loader. A/B/C therefore remain configuration-only experiments:
 | `pi05_xarm_real1_sim10_stratified` | deterministic 1:10 weighted sample stream |
 | `pi05_xarm_full_real_full_sim_trajectory_shuffle` | deterministic globally shuffled whole trajectories |
 
+For a new experiment, do not encode a real:sim sampling target by limiting or
+repeating a dataset. Keep the desired physical episode selections on their
+individual `DatasetSpec` objects, then use the explicit new API:
+
+```python
+MixingStrategy.real_sim_weighted_sampling(
+    real_sampling_weight=1.0,
+    sim_sampling_weight=10.0,
+)
+```
+
+This means approximately 1/11 real and 10/11 sim loader samples, independent
+of selected real/sim dataset sizes. For exact deterministic source counts in a
+global batch, instead use `MixingStrategy.fixed_batch_composition(...)` with
+counts that sum to the configured batch size. See
+[`MIXING_AUDIT.md`](MIXING_AUDIT.md) for legacy A/B/C semantics, normalization
+weighting, step semantics, and size-vs-ratio examples.
+
 For example, launch A with separate physical dataset roots:
 
 ```bash
@@ -89,3 +107,8 @@ ratio-biased training stream. It writes a manifest alongside the OpenPI asset;
 an existing asset is reused only when that manifest matches the selected paths,
 metadata hashes, episode selection, and state/action semantics. Precomputed
 and resume-checkpoint assets are never silently replaced.
+
+At training startup the loader prints selected episode/frame counts by source,
+the mixing strategy and requested weighted probabilities, normalization
+semantics, batch size, and total steps. It also reports observed real/sim
+fractions from DataLoader-delivered samples at the log interval and at exit.

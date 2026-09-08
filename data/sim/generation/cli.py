@@ -56,6 +56,11 @@ def main() -> None:
     generate.add_argument("--overwrite", action="store_true")
     generate.add_argument("--resume", action="store_true")
     generate.add_argument("--smoke", action="store_true")
+    generate.add_argument(
+        "--smoke-all-generators",
+        action="store_true",
+        help="with --smoke, collect one accepted episode for every configured generator",
+    )
     generate.add_argument("--task", help="canonical task ID for a direct single-task run")
     generate.add_argument("--generator", help="generator ID for --task")
     generate.add_argument("--episodes", type=int, help="episode count for --task")
@@ -73,6 +78,11 @@ def main() -> None:
     audit.add_argument("--report-dir", type=Path, required=True)
     audit.add_argument("--decode-all-images", action="store_true")
     audit.add_argument("--smoke", action="store_true")
+    audit.add_argument(
+        "--smoke-all-generators",
+        action="store_true",
+        help="with --smoke, audit one accepted episode for every configured generator",
+    )
 
     inspect = subparsers.add_parser("inspect")
     add_config(inspect)
@@ -107,6 +117,8 @@ def main() -> None:
                 parser.error("--episodes must be positive")
             if args.smoke:
                 parser.error("--task direct generation does not combine with --smoke")
+            if args.smoke_all_generators:
+                parser.error("--task direct generation does not combine with --smoke-all-generators")
             task_id = resolve_task_id(args.task)
             generator_id = args.generator or default_generator_id(task_id)
             resolve_generator(task_id, generator_id)
@@ -118,18 +130,24 @@ def main() -> None:
                 generators=(GeneratorPlan(generator_id, args.episodes),),
             )
             config = replace(config, tasks=(selected,), outputs=replace(config.outputs, raw=args.output.resolve()))
+        if args.smoke_all_generators and not args.smoke:
+            parser.error("--smoke-all-generators requires --smoke")
         result = collect(
             config, args.output, overwrite=args.overwrite, resume=args.resume,
             smoke=args.smoke,
+            smoke_all_generators=args.smoke_all_generators,
         )
     elif args.command == "convert":
         result = convert_dataset(config, args.raw, args.output, overwrite=args.overwrite)
     elif args.command == "audit":
+        if args.smoke_all_generators and not args.smoke:
+            parser.error("--smoke-all-generators requires --smoke")
         raw_report = audit_raw(
             config,
             args.raw,
             decode_all_images=args.decode_all_images,
             smoke=args.smoke,
+            smoke_all_generators=args.smoke_all_generators,
         )
         if args.smoke and args.converted:
             raise ValueError("Smoke audit does not accept a converted dataset")
@@ -141,7 +159,12 @@ def main() -> None:
             else None
         )
         result = (
-            write_smoke_reports(config, raw_report, args.report_dir)
+            write_smoke_reports(
+                config,
+                raw_report,
+                args.report_dir,
+                smoke_all_generators=args.smoke_all_generators,
+            )
             if args.smoke
             else (
                 write_audit_reports(

@@ -12,6 +12,7 @@ import yaml
 from data.common.task_identity import TASKS, TASK_BY_ID
 from data.sim.generation.core.registry import default_generator_id, generator_ids_for_task
 from data.sim.generation.plans import expected_counts, expected_roots, work_root
+from simulation.scene import resolve_scene_randomization_profile
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
@@ -107,7 +108,9 @@ class PipelineConfig:
     task_scene_config: Path
     tasks: tuple[TaskPlan, ...]
     action_hz: int
+    scene_profile: str
     object_xy_range_m: float
+    layout_profile: str
     object_yaw_range_deg: float
     joint_noise_rad: float
     max_attempts_per_episode: int
@@ -160,6 +163,12 @@ def load_pipeline_config(path: Path) -> PipelineConfig:
     recording = _mapping(data.get("recording"), "recording")
     outputs = _mapping(data.get("outputs"), "outputs")
     base = repository_root()
+    resolved_task_scene_config = _absolute_path(
+        data.get("task_scene_config"), "task_scene_config", relative_to=base
+    )
+    scene_profile = resolve_scene_randomization_profile(
+        str(collection.get("scene_profile", "")), resolved_task_scene_config
+    )
 
     task_rows = _mapping(data.get("tasks"), "tasks")
     plans: list[TaskPlan] = []
@@ -248,14 +257,14 @@ def load_pipeline_config(path: Path) -> PipelineConfig:
         camera_config=_absolute_path(
             data.get("camera_config"), "camera_config", relative_to=base
         ),
-        task_scene_config=_absolute_path(
-            data.get("task_scene_config"), "task_scene_config", relative_to=base
-        ),
+        task_scene_config=resolved_task_scene_config,
         tasks=tuple(plans),
         action_hz=int(collection.get("action_hz", -1)),
-        object_xy_range_m=float(collection.get("object_xy_range_m", -1.0)),
-        object_yaw_range_deg=float(collection.get("object_yaw_range_deg", -1.0)),
-        joint_noise_rad=float(collection.get("joint_noise_rad", -1.0)),
+        scene_profile=scene_profile.name,
+        object_xy_range_m=scene_profile.object_xy_range_m,
+        layout_profile=scene_profile.layout_profile,
+        object_yaw_range_deg=scene_profile.object_yaw_range_deg,
+        joint_noise_rad=scene_profile.joint_noise_rad,
         max_attempts_per_episode=int(collection.get("max_attempts_per_episode", -1)),
         seed_retry_stride=int(collection.get("seed_retry_stride", -1)),
         scene_variant=str(collection.get("scene_variant", "")),
@@ -374,6 +383,29 @@ def validate_pipeline_config(config: PipelineConfig) -> None:
         "task scene config",
     )
     scene_tasks = _mapping(scene_config.get("tasks"), "task scene tasks")
+    layout_profiles = _mapping(
+        _mapping(scene_config.get("catalog"), "task scene catalog").get(
+            "layout_profiles"
+        ),
+        "task scene layout profiles",
+    )
+    if config.layout_profile not in layout_profiles:
+        raise ValueError(f"Unknown task-scene layout profile: {config.layout_profile}")
+    resolved_profile = resolve_scene_randomization_profile(
+        config.scene_profile, config.task_scene_config
+    )
+    if (
+        config.object_xy_range_m,
+        config.object_yaw_range_deg,
+        config.joint_noise_rad,
+        config.layout_profile,
+    ) != (
+        resolved_profile.object_xy_range_m,
+        resolved_profile.object_yaw_range_deg,
+        resolved_profile.joint_noise_rad,
+        resolved_profile.layout_profile,
+    ):
+        raise ValueError("Generation randomization must resolve from its scene profile")
     for task in config.tasks:
         scene = _mapping(scene_tasks.get(task.task_id), task.task_id)
         if str(scene.get("prompt")) != task.prompt:

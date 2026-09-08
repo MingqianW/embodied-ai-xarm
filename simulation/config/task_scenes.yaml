@@ -30,6 +30,39 @@ catalog:
     - [0.365, -0.075]
     - [0.555, -0.080]
     - [0.385, 0.055]
+  # Reset profiles are simulation-owned so generation and evaluation can
+  # explicitly select the same layout semantics.  The default retains the
+  # historical correlated scene translation.  The wide profile samples each
+  # active task body independently and rejects comparison layouts whose object
+  # centers are too close for a clean approach.
+  layout_profiles:
+    shared_scene_delta_v1:
+      mode: shared_scene_delta
+    wide_independent_workspace_v1:
+      mode: independent_body_offsets
+      minimum_pairwise_distance_m: 0.10
+      max_sampling_attempts: 100
+  # These are the sole owner of generation/evaluation reset randomization.
+  # A plan or formal protocol selects one by name; it must not duplicate its
+  # individual ranges.  The legacy formal profile preserves the reset settings
+  # used by v1/v2 protocols and is also available to generation when exact
+  # historical comparability is needed.
+  randomization_profiles:
+    legacy_formal_v1:
+      object_xy_range_m: 0.03
+      object_yaw_range_deg: 15.0
+      joint_noise_rad: 0.01
+      layout_profile: shared_scene_delta_v1
+    clean_stable_v3:
+      object_xy_range_m: 0.02
+      object_yaw_range_deg: 10.0
+      joint_noise_rad: 0.005
+      layout_profile: shared_scene_delta_v1
+    clean_wide_v4:
+      object_xy_range_m: 0.10
+      object_yaw_range_deg: 10.0
+      joint_noise_rad: 0.005
+      layout_profile: wide_independent_workspace_v1
 
 tasks:
   red_block:

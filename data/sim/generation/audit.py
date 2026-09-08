@@ -39,14 +39,29 @@ def audit_raw(
     *,
     decode_all_images: bool,
     smoke: bool = False,
+    smoke_all_generators: bool = False,
 ) -> dict[str, Any]:
     raw = Path(raw).resolve()
     manifest = json.loads((raw / "collection_manifest.json").read_text(encoding="utf-8"))
     summary = json.loads((raw / "collection_summary.json").read_text(encoding="utf-8"))
+    if smoke_all_generators and not smoke:
+        raise ValueError("smoke_all_generators requires smoke=True")
     expected = {
-        task.task_id: (1 if smoke else task.episodes) for task in config.tasks
+        task.task_id: (
+            len(task.generators)
+            if smoke_all_generators
+            else 1
+            if smoke
+            else task.episodes
+        )
+        for task in config.tasks
     }
-    expected_total = 6 if smoke else config.total_episodes
+    expected_total = sum(expected.values())
+    expected_generator_pairs = Counter(
+        (task.task_id, generator.generator_id)
+        for task in config.tasks
+        for generator in task.generators
+    ) if smoke_all_generators else Counter()
     if manifest.get("complete") is not True or summary.get("complete") is not True:
         raise ValueError("Raw manifests are incomplete")
     if (
@@ -56,6 +71,7 @@ def audit_raw(
         raise ValueError("Raw episode/distractor totals are invalid")
     counts: Counter[str] = Counter()
     prompts: Counter[tuple[str, str]] = Counter()
+    generators: Counter[tuple[str, str]] = Counter()
     frame_ids: set[tuple[int, int]] = set()
     episode_ids: set[int] = set()
     episodes: list[dict[str, Any]] = []
@@ -86,6 +102,10 @@ def audit_raw(
             raise ValueError(f"Canonical prompt mismatch: {episode_dir}")
         counts[task_id] += 1
         prompts[(task_id, prompt)] += 1
+        generator_id = str(entry.get("generator_id") or "")
+        if not generator_id:
+            raise ValueError(f"Missing generator ID: {episode_dir}")
+        generators[(task_id, generator_id)] += 1
         validation = meta["simulation"]["validation"]
         if task_id == "place_red_pepper_in_ring":
             initial = validation["place_initial_grasp"]
@@ -175,6 +195,7 @@ def audit_raw(
                 "episode_index": episode_index,
                 "task_id": task_id,
                 "task_prompt": prompt,
+                "generator_id": generator_id,
                 "path": entry["path"],
                 "robot_log_rows": len(rows),
                 "validation": validation,
@@ -183,6 +204,11 @@ def audit_raw(
         )
     if dict(counts) != expected:
         raise ValueError(f"Raw task counts differ: {dict(counts)}")
+    if smoke_all_generators and generators != expected_generator_pairs:
+        raise ValueError(
+            "Smoke generator coverage differs: "
+            f"{dict(generators)}"
+        )
     return {
         "passed": True,
         "raw": str(raw),
@@ -190,10 +216,15 @@ def audit_raw(
         "task_count": len(counts),
         "task_counts": dict(counts),
         "prompt_counts": {f"{task_id}|{prompt}": count for (task_id, prompt), count in prompts.items()},
+        "generator_counts": {
+            f"{task_id}|{generator_id}": count
+            for (task_id, generator_id), count in generators.items()
+        },
         "total_frames": total_frames,
         "total_distractor_episodes": 0,
         "decoded_all_images": decode_all_images,
         "smoke": smoke,
+        "smoke_all_generators": smoke_all_generators,
         "episodes": episodes,
     }
 
@@ -202,14 +233,26 @@ def write_smoke_reports(
     config: PipelineConfig,
     raw_report: dict[str, Any],
     report_dir: Path,
+    *,
+    smoke_all_generators: bool = False,
 ) -> dict[str, Any]:
-    if raw_report.get("episode_count") != 6 or not raw_report.get("smoke"):
-        raise ValueError("Smoke report requires an audited six-episode smoke dataset")
+    expected_total = (
+        sum(len(task.generators) for task in config.tasks)
+        if smoke_all_generators
+        else 6
+    )
+    if (
+        raw_report.get("episode_count") != expected_total
+        or not raw_report.get("smoke")
+        or bool(raw_report.get("smoke_all_generators")) != smoke_all_generators
+    ):
+        raise ValueError("Smoke report does not match the requested smoke mode")
     report_dir.mkdir(parents=True, exist_ok=True)
     result = {
         "schema_version": "xarm_mujoco_smoke_audit_v1",
         "dataset_version": config.dataset_version,
         "status": "PASS",
+        "smoke_all_generators": smoke_all_generators,
         "raw": raw_report,
     }
     atomic_write_json(report_dir / "SMOKE_AUDIT.json", result)
@@ -218,21 +261,23 @@ def write_smoke_reports(
         "",
         "**PASS**",
         "",
-        "- Accepted episodes: 6",
+        f"- Accepted episodes: {expected_total}",
         "- Tasks: 6",
+        f"- One episode per configured generator: {'yes' if smoke_all_generators else 'no'}",
         "- Distractor episodes: 0",
         "- All base/wrist/overview images decoded: yes",
         "- Place initialization frames recorded: 0",
         "",
         "## Per-task results",
         "",
-        "| Task ID | Prompt | Result | Contact sheet |",
-        "|---|---|---|---|",
+        "| Task ID | Generator | Prompt | Result | Contact sheet |",
+        "|---|---|---|---|---|",
     ]
     for episode in raw_report["episodes"]:
         visuals = episode.get("visuals") or {}
         lines.append(
-            f"| `{episode['task_id']}` | {episode['task_prompt']} | PASS | "
+            f"| `{episode['task_id']}` | `{episode['generator_id']}` | "
+            f"{episode['task_prompt']} | PASS | "
             f"`{visuals.get('contact_sheet') or ''}` |"
         )
     lines.extend(

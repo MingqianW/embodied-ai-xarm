@@ -9,7 +9,11 @@ from data.common.task_identity import TASKS
 from data.sim.generation.config import GeneratorPlan, load_pipeline_config
 from data.sim.generation.core.generator import ControllerEpisodeGenerator
 from data.sim.generation.core import registry
-from data.sim.generation.core.registry import default_generator_id, resolve_generator
+from data.sim.generation.core.registry import (
+    default_generator_id,
+    generator_ids_for_task,
+    resolve_generator,
+)
 
 
 V3 = Path("configs/data/sim/generation/clean_multitask_stable_v3.yaml")
@@ -38,13 +42,21 @@ def test_generator_names_are_scoped_to_the_canonical_task() -> None:
         resolve_generator("red_block", "direct_place")
 
 
-def test_v3_and_v4_implicit_legacy_configs_resolve_to_defaults() -> None:
-    for path in (V3, V4):
-        config = load_pipeline_config(path)
-        assert all(
-            task.generators == (GeneratorPlan(default_generator_id(task.task_id), task.episodes),)
-            for task in config.tasks
+def test_v3_implicit_legacy_config_resolves_to_defaults() -> None:
+    config = load_pipeline_config(V3)
+    assert all(
+        task.generators == (GeneratorPlan(default_generator_id(task.task_id), task.episodes),)
+        for task in config.tasks
+    )
+
+
+def test_v4_explicitly_allocates_every_registered_geometry_variant() -> None:
+    config = load_pipeline_config(V4)
+    for task in config.tasks:
+        assert tuple(generator.generator_id for generator in task.generators) == (
+            generator_ids_for_task(task.task_id)
         )
+        assert sum(generator.episodes for generator in task.generators) == task.episodes
 
 
 def test_exact_multi_generator_allocations_are_task_local_and_deterministic(

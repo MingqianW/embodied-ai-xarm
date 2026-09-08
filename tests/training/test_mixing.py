@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from collections import Counter
 
+import pytest
+
 from data.common.records import SourceBackend
 from training.mixing.sampler import SampleRef, TrajectoryRef, sample_batches, trajectory_batches
 from training.mixing.strategies import MixingStrategy
@@ -23,9 +25,11 @@ def test_real_only_cycles_deterministically_at_exhaustion() -> None:
 
 
 def test_fixed_one_to_one_is_exact_per_batch_despite_source_size_difference() -> None:
+    with pytest.deprecated_call(match="fixed_batch_composition"):
+        strategy = MixingStrategy.per_batch(8, 8, seed=11)
     batches = sample_batches(
         _samples(2, 11),
-        MixingStrategy.per_batch(8, 8, seed=11),
+        strategy,
         batch_size=16,
         num_batches=5,
     )
@@ -35,9 +39,11 @@ def test_fixed_one_to_one_is_exact_per_batch_despite_source_size_difference() ->
 
 
 def test_fixed_one_to_ten_is_a_stream_schedule_not_per_batch_composition() -> None:
+    with pytest.deprecated_call(match="real_sim_weighted_sampling"):
+        strategy = MixingStrategy.sample_ratio(1, 10, seed=5)
     batches = sample_batches(
         _samples(2, 3),
-        MixingStrategy.sample_ratio(1, 10, seed=5),
+        strategy,
         batch_size=16,
         num_batches=11,
     )

@@ -6,6 +6,7 @@ import pytest
 
 from data.sim.generation.acceptance import simulation_is_finite, update_task_success
 from data.sim.generation.config import load_pipeline_config
+from data.sim.generation.collection import _collection_task
 from data.sim.generation.core.generator import GeneratorContext
 from data.sim.generation.core.registry import resolve_generator
 from simulation.environment import MuJoCoEnvironment
@@ -25,14 +26,33 @@ PICK_VARIANTS = (
         {"pregrasp_offset_xy_m": [0.0, 0.025]},
     ),
     (
+        "scripted_pick_opposite_side_approach_v1",
+        {"pregrasp_offset_xy_m": [0.0, -0.025]},
+    ),
+    (
         "scripted_pick_yaw15_v1",
         {"tcp_yaw_offset_deg": 15.0},
+    ),
+    (
+        "scripted_pick_yaw_minus15_v1",
+        {"tcp_yaw_offset_deg": -15.0},
+    ),
+    (
+        "scripted_pick_diagonal_approach_v1",
+        {"pregrasp_offset_xy_m": [0.02, -0.02]},
     ),
     (
         "scripted_pick_waypoint_lift_v1",
         {
             "approach_waypoint_offset_xy_m": [-0.025, 0.02],
             "lift_offset_xy_m": [0.01, -0.01],
+        },
+    ),
+    (
+        "scripted_pick_opposite_waypoint_lift_v1",
+        {
+            "approach_waypoint_offset_xy_m": [0.025, -0.02],
+            "lift_offset_xy_m": [-0.01, 0.01],
         },
     ),
 )
@@ -44,6 +64,18 @@ PLACE_VARIANTS = (
     (
         "direct_place_right_approach_v1",
         {"preplace_offset_xy_m": [0.025, -0.02]},
+    ),
+    (
+        "direct_place_high_center_v1",
+        {"preplace_offset_xy_m": [0.0, 0.0]},
+    ),
+    (
+        "direct_place_left_rear_approach_v1",
+        {"preplace_offset_xy_m": [-0.025, -0.02]},
+    ),
+    (
+        "direct_place_right_front_approach_v1",
+        {"preplace_offset_xy_m": [0.025, 0.02]},
     ),
 )
 
@@ -110,3 +142,20 @@ def test_geometric_variants_record_and_complete(
 
         assert generator.accepted()
         assert generator.failure_reason is None
+
+
+def test_smoke_all_generators_reindexes_each_variant_once() -> None:
+    config = load_pipeline_config(CONFIG_PATH)
+    task = next(item for item in config.tasks if item.task_id == "red_block")
+    expanded = _collection_task(
+        task,
+        smoke=True,
+        smoke_all_generators=True,
+    )
+
+    assert expanded.episodes == len(task.generators)
+    assert expanded.clean_episodes == len(task.generators)
+    assert [item.episodes for item in expanded.generators] == [1] * len(task.generators)
+    assert [item.generator_id for item in expanded.generators] == [
+        item.generator_id for item in task.generators
+    ]

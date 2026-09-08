@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import subprocess
 from collections import Counter
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from pathlib import Path
 from typing import Any
 
@@ -25,7 +25,7 @@ from data.sim.generation.artifacts import (
     write_diagnostic_visuals,
     write_episode_visuals,
 )
-from data.sim.generation.config import PipelineConfig, TaskPlan
+from data.sim.generation.config import GeneratorPlan, PipelineConfig, TaskPlan
 from data.sim.generation.manifest import (
     atomic_write_json,
     initial_manifest,
@@ -151,7 +151,46 @@ def _record_attempt(
     return success, meta
 
 
-def _run_config(config: PipelineConfig, output: Path, *, smoke: bool, overwrite: dict[str, Any] | None) -> dict[str, Any]:
+def _collection_task(
+    task: TaskPlan,
+    *,
+    smoke: bool,
+    smoke_all_generators: bool,
+) -> TaskPlan:
+    """Return the exact task allocation to execute for this collection mode."""
+
+    if not smoke_all_generators:
+        return task
+    if not smoke:
+        raise ValueError("smoke_all_generators requires smoke=True")
+    generators = tuple(
+        GeneratorPlan(generator.generator_id, 1) for generator in task.generators
+    )
+    return replace(
+        task,
+        episodes=len(generators),
+        clean_episodes=len(generators),
+        generators=generators,
+    )
+
+
+def _run_config(
+    config: PipelineConfig,
+    output: Path,
+    *,
+    smoke: bool,
+    smoke_all_generators: bool,
+    overwrite: dict[str, Any] | None,
+) -> dict[str, Any]:
+    run_tasks = tuple(
+        _collection_task(
+            task,
+            smoke=smoke,
+            smoke_all_generators=smoke_all_generators,
+        )
+        for task in config.tasks
+    )
+    target_count = lambda task: 1 if smoke and not smoke_all_generators else task.episodes
     return {
         "schema_version": "xarm_mujoco_clean_collection_run_v1",
         "dataset_version": config.dataset_version,
@@ -166,6 +205,7 @@ def _run_config(config: PipelineConfig, output: Path, *, smoke: bool, overwrite:
         "distractor_count": 0,
         "randomization_config": {
             "object_xy_range_m": config.object_xy_range_m,
+            "layout_profile": config.layout_profile,
             "object_yaw_range_deg": config.object_yaw_range_deg,
             "joint_noise_rad": config.joint_noise_rad,
         },
@@ -181,19 +221,22 @@ def _run_config(config: PipelineConfig, output: Path, *, smoke: bool, overwrite:
         "plan": [
             {
                 **asdict(task),
-                "episodes": 1 if smoke else task.episodes,
-                "clean_episodes": 1 if smoke else task.episodes,
+                "episodes": target_count(task),
+                "clean_episodes": target_count(task),
                 "distractor_episodes": 0,
                 "generators": (
-                    [{"generator_id": task.generator_for_episode(0), "episodes": 1}]
+                    [asdict(generator) for generator in task.generators]
+                    if smoke_all_generators
+                    else [{"generator_id": task.generator_for_episode(0), "episodes": 1}]
                     if smoke
                     else [asdict(generator) for generator in task.generators]
                 ),
             }
-            for task in config.tasks
+            for task in run_tasks
         ],
-        "total_target_episodes": len(config.tasks) if smoke else config.total_episodes,
+        "total_target_episodes": sum(target_count(task) for task in run_tasks),
         "smoke": smoke,
+        "smoke_all_generators": smoke_all_generators,
         "overwrite": overwrite,
     }
 
@@ -205,6 +248,7 @@ def collect(
     overwrite: bool,
     resume: bool,
     smoke: bool,
+    smoke_all_generators: bool = False,
 ) -> dict[str, Any]:
     output = Path(output).resolve(strict=False)
     expected = config.outputs.smoke if smoke else config.outputs.raw
@@ -212,12 +256,20 @@ def collect(
         raise ValueError(f"Resolved output must equal configured root: {expected}")
     if overwrite and resume:
         raise ValueError("--overwrite and --resume are mutually exclusive")
+    if smoke_all_generators and not smoke:
+        raise ValueError("smoke_all_generators requires smoke=True")
     overwrite_record = None
     if overwrite:
         overwrite_record = replace_authorized_roots(
             [output], overwrite=True, git_sha=_git_sha(), config_path=config.path
         )
-    run_config = _run_config(config, output, smoke=smoke, overwrite=overwrite_record)
+    run_config = _run_config(
+        config,
+        output,
+        smoke=smoke,
+        smoke_all_generators=smoke_all_generators,
+        overwrite=overwrite_record,
+    )
     config_path = output / "run_config.json"
     manifest_path = output / "collection_manifest.json"
     if resume:
@@ -241,9 +293,17 @@ def collect(
         (str(row["task_id"]), int(row["requested_episode_index"]))
         for row in completed
     }
+    run_tasks = tuple(
+        _collection_task(
+            task,
+            smoke=smoke,
+            smoke_all_generators=smoke_all_generators,
+        )
+        for task in config.tasks
+    )
     offset = 0
-    for task in config.tasks:
-        target = 1 if smoke else task.episodes
+    for task in run_tasks:
+        target = 1 if smoke and not smoke_all_generators else task.episodes
         with MuJoCoEnvironment(
             task=task.task_id,
             prompt=task.prompt,
@@ -252,6 +312,7 @@ def collect(
             object_xy_range=config.object_xy_range_m,
             object_yaw_range_deg=config.object_yaw_range_deg,
             joint_noise=config.joint_noise_rad,
+            layout_profile=config.layout_profile,
             scene_variant="clean",
         ) as environment:
             for requested_index in range(target):
@@ -365,7 +426,8 @@ def collect(
         offset += target
 
     requested_counts = {
-        task.task_id: (1 if smoke else task.episodes) for task in config.tasks
+        task.task_id: (1 if smoke and not smoke_all_generators else task.episodes)
+        for task in run_tasks
     }
     accepted_counts = Counter(str(row["task_id"]) for row in completed)
     accepted_counts_by_generator = Counter(
@@ -420,6 +482,7 @@ def collect(
         },
         "randomization_config": run_config["randomization_config"],
         "verification_config": run_config["verification_config"],
+        "smoke_all_generators": smoke_all_generators,
         "converted": False,
     }
     if not complete:

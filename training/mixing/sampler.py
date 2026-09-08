@@ -123,6 +123,29 @@ class DeterministicSourceStream(Generic[T]):
             return source, cycle * weight + within
         raise ValueError("trajectory shuffle has no source-only stream")
 
+    def _weighted_domain_source(self, position: int) -> SourceName:
+        """Choose a source without turning source weights into repeated data."""
+
+        draw = random.Random(
+            _stable_seed(self._strategy.seed, "weighted-domain", position)
+        ).random()
+        cumulative = 0.0
+        probabilities = self._strategy.sampling_probabilities
+        for source, probability in probabilities:
+            cumulative += probability
+            if draw < cumulative:
+                return source
+        # Floating-point accumulation may end infinitesimally below one.
+        return probabilities[-1][0]
+
+    def _weighted_domain_item(self, position: int) -> T:
+        source = self._weighted_domain_source(position)
+        pool = self._pools[source]
+        index = random.Random(
+            _stable_seed(self._strategy.seed, f"{_source_label(source)}:sample", position)
+        ).randrange(len(pool))
+        return pool[index]
+
     def _trajectory_item(self, position: int) -> T:
         epoch, offset = divmod(position, self._trajectory_epoch_size)
         order = list(range(len(self._trajectories)))
@@ -137,8 +160,16 @@ class DeterministicSourceStream(Generic[T]):
     def item_at(self, position: int) -> T:
         if self._strategy.mode is MixingMode.GLOBAL_TRAJECTORY_SHUFFLE:
             return self._trajectory_item(position)
+        if self._strategy.mode is MixingMode.WEIGHTED_DOMAIN_SAMPLING:
+            return self._weighted_domain_item(position)
         source, ordinal = self._source_and_ordinal(position)
         return self._pools[source][self._permutation_index(source, ordinal)]
+
+    @property
+    def source_pool_sizes(self) -> Mapping[SourceName, int]:
+        """Physical selected-pool sizes; never expanded by source weighting."""
+
+        return {source: len(pool) for source, pool in self._pools.items()}
 
     def batch_at(self, batch_index: int) -> tuple[T, ...]:
         if batch_index < 0:

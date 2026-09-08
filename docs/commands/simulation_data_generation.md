@@ -4,9 +4,8 @@
 
 Generation is task-centered: every canonical task owns one or more named
 generators, while MuJoCo execution, raw recording, acceptance, conversion, and
-LeRobot writing remain shared. The v3 and v4 configs omit `generators` and
-therefore resolve to their preserved defaults: `scripted_pick` for every Pick
-task and `direct_place` for `place_red_pepper_in_ring`.
+LeRobot writing remain shared. v3 uses the preserved default generator for each
+task. v4 explicitly allocates every registered Pick and Place variant.
 
 Use an explicit exact allocation when a task has more than one registered
 generator:
@@ -40,9 +39,16 @@ Every Pick task (`red_block`, `blue_block`, `red_pepper`, `smallest_block`, and
 
 - `scripted_pick_side_approach_v1`: a 25 mm side-offset pregrasp followed by
   a centered diagonal descent;
+- `scripted_pick_opposite_side_approach_v1`: the mirrored 25 mm side-offset
+  pregrasp and centered diagonal descent;
 - `scripted_pick_yaw15_v1`: the same centered grasp with a 15-degree TCP yaw;
+- `scripted_pick_yaw_minus15_v1`: the mirrored -15-degree TCP yaw;
+- `scripted_pick_diagonal_approach_v1`: a 20 mm diagonal pregrasp offset,
+  followed by the centered grasp;
 - `scripted_pick_waypoint_lift_v1`: an elevated side waypoint before the
   centered grasp, followed by a 10 mm diagonal lift.
+- `scripted_pick_opposite_waypoint_lift_v1`: the mirrored waypoint and lift
+  path.
 
 `place_red_pepper_in_ring` provides two non-default variants:
 
@@ -50,12 +56,37 @@ Every Pick task (`red_block`, `blue_block`, `red_pepper`, `smallest_block`, and
   followed by a centered release into the ring;
 - `direct_place_right_approach_v1`: the mirrored right-rear preplace position,
   followed by the same centered release.
+- `direct_place_high_center_v1`: a higher centered preplace pose before the
+  vertical release;
+- `direct_place_left_rear_approach_v1` and
+  `direct_place_right_front_approach_v1`: the two remaining diagonal preplace
+  positions, each followed by a centered release.
 
 All variants preserve task text, final grasp/release semantics, the 7D action
 contract, gripper settings, and acceptance criteria. Their exact target poses
 and geometric parameters are stored in each episode's `oracle_plan` metadata.
 The defaults are unchanged; add these IDs explicitly to an allocation only
 when creating a new dataset plan.
+
+## Object-layout randomization
+
+The canonical simulation config owns named randomization profiles. The legacy
+v3 plan selects `clean_stable_v3`; the v4 10x-real plan and formal evaluation
+v3 both select `clean_wide_v4`. It samples every active task object within
+±10 cm of its nominal position, with independent offsets and the comparison
+block separation gate. The chosen profile and actual per-object XY deltas are
+stored in every raw episode's initial-condition metadata. Do not change a
+profile for an existing dataset or evaluation root; create a named profile and
+run generation and evaluation smoke/audit first.
+
+The v4 plan explicitly allocates all eight Pick trajectories and all six Place
+trajectories.  `--smoke --smoke-all-generators` therefore validates each of the
+46 task/generator pairs once under the same wide layout profile used for its
+full collection.
+
+To collect one accepted smoke episode for every generator declared in an
+explicit allocation, use `--smoke-all-generators`. It is opt-in and does not
+change normal `--smoke`, which still collects one episode per task.
 
 For a bounded direct run (the output still must be an authorized generation
 root):
@@ -90,9 +121,19 @@ $log = "$env:XARM_WORK_ROOT\logs\$dataset"
 & $python -m data.sim.generation.cli generate `
   --config $config --output $smoke --smoke --overwrite
 
+# Requires an explicit multi-generator allocation in $config.
+# Writes one accepted smoke episode for every listed generator.
+& $python -m data.sim.generation.cli generate `
+  --config $config --output $smoke --smoke --smoke-all-generators --overwrite
+
 & $python -m data.sim.generation.cli audit `
   --config $config --raw $smoke --report-dir $log `
   --decode-all-images --smoke
+
+# For --smoke-all-generators generation, use the matching audit mode.
+& $python -m data.sim.generation.cli audit `
+  --config $config --raw $smoke --report-dir $log `
+  --decode-all-images --smoke --smoke-all-generators
 
 Invoke-Item "$log\SMOKE_AUDIT.md"
 explorer "$smoke\accepted"
