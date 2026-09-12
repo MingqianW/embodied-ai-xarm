@@ -139,20 +139,6 @@ def test_all_video_protocol_is_explicit_and_has_an_isolated_output_root(protocol
     assert all_video.scene_profile == protocol.scene_profile
 
 
-def test_legacy_v1_protocol_remains_loadable_without_post_success_hold() -> None:
-    path = Path(__file__).resolve().parents[2] / "configs/evaluation/sim/protocols/formal_xarm_pi05_eval_v1.json"
-    legacy = load_protocol(path)
-    assert legacy.scene_profile == "legacy_formal_v1"
-    assert (
-        legacy.object_xy_range_m,
-        legacy.object_yaw_range_deg,
-        legacy.joint_noise_rad,
-        legacy.layout_profile,
-    ) == (0.03, 15.0, 0.01, "shared_scene_delta_v1")
-    assert legacy.pick_post_success_hold_checks == 0
-    assert legacy.pick_max_post_success_drop_m == 0.0
-
-
 def test_every_checked_in_formal_protocol_selects_a_canonical_scene_profile() -> None:
     protocols = Path(__file__).resolve().parents[2] / "configs/evaluation/sim/protocols"
     for path in sorted(protocols.glob("formal_xarm_pi05_eval*.json")):

@@ -28,7 +28,7 @@ from simulation.scene import load_task_scene_config
 
 
 CONFIG_PATH = Path(
-    "configs/data/sim/generation/clean_multitask_stable_v3.yaml"
+    "configs/data/sim/generation/clean_multitask_stable_v4_10x_real.yaml"
 )
 
 
@@ -68,14 +68,14 @@ class TestTaskRegistryAndConfig:
         assert [task.task_id for task in config.tasks] == [task.task_id for task in TASKS]
         assert [task.prompt for task in config.tasks] == [task.prompt for task in TASKS]
         assert {task.task_id: task.episodes for task in config.tasks} == {
-            "red_pepper": 50,
-            "blue_block": 25,
-            "red_block": 25,
-            "smallest_block": 25,
-            "largest_block": 25,
-            "place_red_pepper_in_ring": 50,
+            "red_pepper": 500,
+            "blue_block": 240,
+            "red_block": 250,
+            "smallest_block": 240,
+            "largest_block": 250,
+            "place_red_pepper_in_ring": 500,
         }
-        assert config.total_episodes == 200
+        assert config.total_episodes == 1980
         assert all(task.distractor_episodes == 0 for task in config.tasks)
         assert config.distractor_count == 0
         pick_plans = [
@@ -121,7 +121,7 @@ class TestTaskRegistryAndConfig:
         config = _config()
         first = config.tasks[0]
         second = config.tasks[1]
-        assert resolve_seed(first, 4, 3, config.seed_retry_stride) == 103004
+        assert resolve_seed(first, 4, 3, config.seed_retry_stride) == 10103004
         assert resolve_seed(first, 4, 3, config.seed_retry_stride) == resolve_seed(
             first, 4, 3, config.seed_retry_stride
         )
@@ -227,7 +227,7 @@ class TestOutputSafetyAndManifest:
 
     def test_atomic_manifest_write_and_partial_default(self, tmp_path: Path) -> None:
         path = tmp_path / "manifest.json"
-        manifest = initial_manifest("v3", {"total_target_episodes": 200})
+        manifest = initial_manifest("v4-10x", {"total_target_episodes": 1980})
         assert manifest["complete"] is False
         atomic_write_json(path, manifest)
         assert json.loads(path.read_text()) == manifest
@@ -482,7 +482,7 @@ class TestConversionContract:
             json.dumps(
                 {
                     "complete": True,
-                    "total_accepted_episodes": 200,
+                    "total_accepted_episodes": config.total_episodes,
                     "total_distractor_episodes": 0,
                     "accepted_counts_by_task": expected_counts,
                 }
@@ -511,15 +511,18 @@ class TestConversionContract:
             ]
             captured["kwargs"] = kwargs
             (output / "meta").mkdir()
-            return {"written_episodes": len(records_by_episode), "written_frames": 200}
+            return {
+                "written_episodes": len(records_by_episode),
+                "written_frames": config.total_episodes,
+            }
 
         monkeypatch.setattr(conversion, "replace_authorized_roots", fake_replace)
         monkeypatch.setattr(conversion, "write_xarm_lerobot_dataset", fake_writer)
         result = conversion.convert_dataset(config, raw, output, overwrite=True)
         records = captured["records"]
-        assert isinstance(records, list) and len(records) == 200
+        assert isinstance(records, list) and len(records) == config.total_episodes
         flattened = [record for episode in records for record in episode]
-        assert len(flattened) == 200
+        assert len(flattened) == config.total_episodes
         assert {record["task_id"] for record in flattened} == {
             task.task_id for task in config.tasks
         }
@@ -527,7 +530,9 @@ class TestConversionContract:
         assert all("_" not in record["task"] for record in flattened)
         assert all(record["state"].shape == (7,) for record in flattened)
         assert all(record["actions"].shape == (7,) for record in flattened)
-        assert [item["episode_index"] for item in result["episodes"]] == list(range(200))
+        assert [item["episode_index"] for item in result["episodes"]] == list(
+            range(config.total_episodes)
+        )
         assert result["total_distractor_episodes"] == 0
         assert result["task_index_order"] == [task.task_id for task in config.tasks]
         assert not any("failed_attempts" in str(record["image"]) for record in flattened)

@@ -153,18 +153,6 @@ cd /u/mw89/repos/embodied-ai-xarm
 It prints every observed category for each model/task and exits nonzero with
 `CATEGORY VIDEO COVERAGE INCOMPLETE` if a representative bundle is missing.
 
-Historical v1 result files can be reclassified without simulation and without
-modifying them:
-
-```bash
-python -m evaluation.sim.tools.reclassify_failures \
-  --root /work/nvme/bfmk/mw89/mujoco_outputs/policy_evaluation/pi05_abc_15000_smoke_v1
-```
-
-The command writes schema-v2 copies, summaries, and video indexes below the
-source root's `derived/failure_diagnosis_v1/` tree. It refuses a non-empty
-derived target unless `--overwrite-derived` is explicit.
-
 ## Blinded human video review
 
 Human review is an independent artifact layer. It never changes automated
@@ -300,23 +288,3 @@ python -m cluster.cli submit formal-sim-evaluation --dry-run \
 
 This is a distinct output identity; do not mix it with the
 category-representative formal output.
-
-The v1/v2 formal, smoke, and all-video protocol files are retained for
-historical results. They select `legacy_formal_v1`, whose values reproduce the
-former ±3 cm XY, 15-degree yaw, and 0.01-rad joint-noise reset settings from
-the canonical simulation profile catalog. Do not resume, combine, or use them
-for a new evaluation.
-
-## Historical entry points — do not use for new A/B/C evaluation
-
-- `slurm/pi05_xarm_abc_six_task_eval.sbatch`
-- `slurm/pi05_xarm_abc_six_task_smoke.sbatch`
-- `slurm/pi05_xarm_abc_six_task_smoke_v2.sbatch`
-- `evaluation/sim/legacy/evaluate_remote_policy_automatic.py`
-- `evaluation/sim/legacy/run_remote_policy_closed_loop.py`
-- historical `summarize_xarm_abc*_evaluation.py` scripts
-
-The former Slurm launchers are available only through Git history. The Python
-legacy modules remain for result reproducibility. They include old checkpoint
-identities, output layouts, and/or legacy result schemas and are not valid
-formal launchers for the new A/B/C models.

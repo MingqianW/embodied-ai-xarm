@@ -4,8 +4,8 @@
 
 Generation is task-centered: every canonical task owns one or more named
 generators, while MuJoCo execution, raw recording, acceptance, conversion, and
-LeRobot writing remain shared. v3 uses the preserved default generator for each
-task. v4 explicitly allocates every registered Pick and Place variant.
+LeRobot writing remain shared. The v4 plan explicitly allocates every
+registered Pick and Place variant.
 
 Use an explicit exact allocation when a task has more than one registered
 generator:
@@ -27,8 +27,7 @@ tasks:
       direct_place_right_approach_v1: {episodes: 10}
 ```
 
-The allocations above match v3's 25 red-block and 50 place episodes. For a
-different plan, each allocation must total that task's `episodes`. Each accepted raw episode and
+For a different plan, each allocation must total that task's `episodes`. Each accepted raw episode and
 the collection manifest record `generator_id`, `generator_version`, task, and
 resolved seed. Add a generator by creating a task-owned factory under
 `data/sim/generation/tasks/<task>/generators/`, registering it explicitly in
@@ -70,9 +69,8 @@ when creating a new dataset plan.
 
 ## Object-layout randomization
 
-The canonical simulation config owns named randomization profiles. The legacy
-v3 plan selects `clean_stable_v3`; the v4 10x-real plan and formal evaluation
-v3 both select `clean_wide_v4`. It samples every active task object within
+The canonical simulation config owns named randomization profiles. The current
+v4 10x-real plan and formal evaluation v3 both select `clean_wide_v4`. It samples every active task object within
 ±10 cm of its nominal position, with independent offsets and the comparison
 block separation gate. The chosen profile and actual per-object XY deltas are
 stored in every raw episode's initial-condition metadata. Do not change a
@@ -104,8 +102,8 @@ Run from the repository root. Do not set `MUJOCO_GL=egl` on Windows.
 ```powershell
 $python = "D:\miniconda\envs\mujoco-pi\python.exe"
 $env:XARM_WORK_ROOT = "D:\xarm-work"
-$config = "configs\data\sim\generation\clean_multitask_stable_v3.yaml"
-$dataset = "xarm_mujoco_clean_multitask_stable_v3"
+$config = "configs\data\sim\generation\clean_multitask_stable_v4_10x_real.yaml"
+$dataset = "xarm_mujoco_clean_multitask_stable_v4_10x_real"
 $raw = "$env:XARM_WORK_ROOT\mujoco_datasets\raw\$dataset"
 $converted = "$env:XARM_WORK_ROOT\mujoco_datasets\local\$dataset"
 $smoke = "$env:XARM_WORK_ROOT\mujoco_datasets\smoke\$dataset"
@@ -141,7 +139,7 @@ explorer "$smoke\accepted"
 
 The smoke audit must pass for all six tasks.
 
-### Optional full v3
+### Full v4 10x-real collection
 
 ```powershell
 & $python -m data.sim.generation.cli generate `
@@ -181,16 +179,14 @@ cd "$XARM_REPOSITORY"
 Submit one phase at a time and wait for success before continuing:
 
 ```bash
-"$XARM_PYTHON" -m cluster.cli submit sim-data-preflight --param plan=v3
-"$XARM_PYTHON" -m cluster.cli submit sim-data-initialize --param plan=v3
-"$XARM_PYTHON" -m cluster.cli submit sim-data-smoke --param plan=v3
+"$XARM_PYTHON" -m cluster.cli submit sim-data-preflight --param plan=v4-10x
+"$XARM_PYTHON" -m cluster.cli submit sim-data-initialize --param plan=v4-10x
+"$XARM_PYTHON" -m cluster.cli submit sim-data-smoke --param plan=v4-10x
 # Review smoke artifacts here.
-"$XARM_PYTHON" -m cluster.cli submit sim-data-generate --param plan=v3
-"$XARM_PYTHON" -m cluster.cli submit sim-data-convert --param plan=v3
-"$XARM_PYTHON" -m cluster.cli submit sim-data-audit --param plan=v3
+"$XARM_PYTHON" -m cluster.cli submit sim-data-generate --param plan=v4-10x
+"$XARM_PYTHON" -m cluster.cli submit sim-data-convert --param plan=v4-10x
+"$XARM_PYTHON" -m cluster.cli submit sim-data-audit --param plan=v4-10x
 ```
-
-Use `--param plan=v4-10x` for the 1,980-episode plan.
 
 Monitor a job with:
 
@@ -199,13 +195,13 @@ squeue -j JOB_ID
 sacct -j JOB_ID --format=JobID,JobName%32,State,Elapsed,ExitCode,MaxRSS
 ```
 
-## v3 outputs
+## v4 10x-real outputs
 
 ```text
-$XARM_WORK_ROOT/mujoco_datasets/smoke/xarm_mujoco_clean_multitask_stable_v3
-$XARM_WORK_ROOT/mujoco_datasets/raw/xarm_mujoco_clean_multitask_stable_v3
-$XARM_WORK_ROOT/mujoco_datasets/local/xarm_mujoco_clean_multitask_stable_v3
-$XARM_WORK_ROOT/logs/xarm_mujoco_clean_multitask_stable_v3
+$XARM_WORK_ROOT/mujoco_datasets/smoke/xarm_mujoco_clean_multitask_stable_v4_10x_real
+$XARM_WORK_ROOT/mujoco_datasets/raw/xarm_mujoco_clean_multitask_stable_v4_10x_real
+$XARM_WORK_ROOT/mujoco_datasets/local/xarm_mujoco_clean_multitask_stable_v4_10x_real
+$XARM_WORK_ROOT/logs/xarm_mujoco_clean_multitask_stable_v4_10x_real
 ```
 
 See [DATASET_SCHEMA.md](../simulation_data/DATASET_SCHEMA.md) for the raw and

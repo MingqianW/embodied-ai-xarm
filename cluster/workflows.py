@@ -61,7 +61,7 @@ EVALUATION = Resources("12:00:00", 16, "128G")
 TRAINING = Resources("12:00:00", 16, "220G")
 CPU_PREFLIGHT = Resources("00:30:00", 4, "24G", 0)
 EXPORT = Resources("02:00:00", 8, "64G")
-DATA_PLANS = frozenset({"v3", "v4-10x"})
+DATA_PLANS = frozenset({"v4-10x"})
 
 
 def _python(settings: ClusterSettings, *args: object) -> tuple[str, ...]:
@@ -71,7 +71,6 @@ def _python(settings: ClusterSettings, *args: object) -> tuple[str, ...]:
 def _dataset(settings: ClusterSettings, version: str) -> dict[str, PurePath]:
     try:
         suffix = {
-            "v3": "xarm_mujoco_clean_multitask_stable_v3",
             "v4-10x": "xarm_mujoco_clean_multitask_stable_v4_10x_real",
         }[version]
     except KeyError as exc:
@@ -86,11 +85,7 @@ def _dataset(settings: ClusterSettings, version: str) -> dict[str, PurePath]:
             / "data"
             / "sim"
             / "generation"
-            / (
-                "clean_multitask_stable_v3.yaml"
-                if version == "v3"
-                else "clean_multitask_stable_v4_10x_real.yaml"
-            )
+            / "clean_multitask_stable_v4_10x_real.yaml"
         ),
         "raw": settings.work_root / "mujoco_datasets" / "raw" / suffix,
         "converted": settings.work_root / "mujoco_datasets" / "local" / suffix,
@@ -353,8 +348,6 @@ def _videos(settings: ClusterSettings, _: Mapping[str, str]) -> tuple[Command, .
                 "-m",
                 "tools.datasets.export_lerobot_training_videos",
                 "--dataset",
-                f"stable_v3={local / 'xarm_mujoco_clean_multitask_stable_v3'}",
-                "--dataset",
                 "stable_v4_10x="
                 f"{local / 'xarm_mujoco_clean_multitask_stable_v4_10x_real'}",
                 "--output",
@@ -452,7 +445,7 @@ def _workflow(
         f"simulation data {phase}",
         resources,
         _generation(phase),
-        defaults={"plan": "v3"},
+        defaults={"plan": "v4-10x"},
         phase=phase,
         next_action=next_action,
         completed_work=completed,
@@ -467,14 +460,14 @@ WORKFLOWS = {
             "Resolve and inspect a simulation data plan without writing outputs",
             CPU_PREFLIGHT,
             _generation("preflight"),
-            defaults={"plan": "v3"},
+            defaults={"plan": "v4-10x"},
         ),
         Workflow(
             "sim-data-initialize",
             "Initialize the selected plan's exact log root after explicit submission",
             Resources("00:30:00", 2, "8G", 0),
             _initialize,
-            defaults={"plan": "v3"},
+            defaults={"plan": "v4-10x"},
         ),
         _workflow(
             "sim-data-smoke",

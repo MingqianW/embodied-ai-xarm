@@ -36,7 +36,9 @@ from data.sim.generation.safety import (
 from data.sim.generation.status import git_sha, write_status
 
 
-DEFAULT_CONFIG = Path("configs/data/sim/generation/clean_multitask_stable_v3.yaml")
+DEFAULT_CONFIG = Path(
+    "configs/data/sim/generation/clean_multitask_stable_v4_10x_real.yaml"
+)
 
 
 def _config(args: argparse.Namespace):

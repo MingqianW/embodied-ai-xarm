@@ -7,9 +7,10 @@ The camera source of truth is
 `simulation/config/camera_calibration.yaml`; collection never substitutes older
 calibration values.
 
-The versioned collection plan is
-`configs/data/sim/generation/clean_multitask_stable_v3.yaml`. It requests
-200 accepted episodes, six canonical prompts, and zero distractor episodes.
+The current collection plan is
+`configs/data/sim/generation/clean_multitask_stable_v4_10x_real.yaml`. It
+requests 1,980 accepted episodes, six canonical prompts, zero distractor
+episodes, and the shared `clean_wide_v4` reset profile.
 
 ## Quick start
 
@@ -19,7 +20,7 @@ Run lightweight config inspection on a login node:
 cd /u/mw89/repos/embodied-ai-xarm
 /u/mw89/repos/openpi/.venv/bin/python \
   -m data.sim.generation.cli inspect \
-  --config configs/data/sim/generation/clean_multitask_stable_v3.yaml
+  --config configs/data/sim/generation/clean_multitask_stable_v4_10x_real.yaml
 ```
 
 Run physics, rendering, collection, conversion, and full decoding through the
@@ -37,7 +38,7 @@ python -m data.sim.generation.cli inspect --config CONFIG
 ```
 
 `--overwrite` is always explicit. The safety layer accepts only the four exact
-v3 roots in the config, rejects symlinks and parent/sibling paths, writes a
+four exact roots in the config, rejects symlinks and parent/sibling paths, writes a
 pre-overwrite inventory outside the replaced root, and records an overwrite
 marker. No sibling dataset or earlier version is eligible.
 

@@ -13,7 +13,9 @@ from data.sim.generation.conversion import training_records_from_raw_episode
 from simulation.environment import MuJoCoEnvironment
 
 
-CONFIG_PATH = Path("configs/data/sim/generation/clean_multitask_stable_v3.yaml")
+CONFIG_PATH = Path(
+    "configs/data/sim/generation/clean_multitask_stable_v4_10x_real.yaml"
+)
 
 
 def test_one_deterministic_generation_attempt_reaches_training_contract(
@@ -32,6 +34,7 @@ def test_one_deterministic_generation_attempt_reaches_training_contract(
         object_xy_range=config.object_xy_range_m,
         object_yaw_range_deg=config.object_yaw_range_deg,
         joint_noise=config.joint_noise_rad,
+        layout_profile=config.layout_profile,
         scene_variant="clean",
     ) as environment:
         success, metadata = _record_attempt(

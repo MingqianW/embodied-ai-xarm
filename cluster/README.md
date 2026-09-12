@@ -59,7 +59,7 @@ POSIX deployment paths remain POSIX when commands are audited from Windows.
 
 | Workflow | Canonical owner | Resources | Required parameters |
 |---|---|---|---|
-| `sim-data-preflight` | `data.sim.generation.cli inspect` | 4 CPU, 24G, 30m, no GPU | optional `plan=v3|v4-10x` |
+| `sim-data-preflight` | `data.sim.generation.cli inspect` | 4 CPU, 24G, 30m, no GPU | optional `plan=v4-10x` |
 | `sim-data-initialize` | `data.sim.generation.cli inspect` | 2 CPU, 8G, 30m, no GPU | optional `plan` |
 | `sim-data-smoke` | data CLI plus environment diagnostic | 8 CPU, 64G, 2h, 1 GPU | optional `plan` |
 | `sim-data-generate` | `data.sim.generation.cli` | 8 CPU, 64G, 12h, 1 GPU | optional `plan` |

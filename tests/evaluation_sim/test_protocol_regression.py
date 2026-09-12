@@ -87,6 +87,21 @@ def test_formal_v3_resolves_the_same_profile_as_v4_generation() -> None:
     )
 
 
+def test_current_simulation_settings_expose_only_the_shared_v4_v3_pair() -> None:
+    assert sorted(
+        path.name
+        for path in Path("configs/data/sim/generation").glob("*.yaml")
+    ) == ["clean_multitask_stable_v4_10x_real.yaml"]
+    assert sorted(
+        path.name
+        for path in Path("configs/evaluation/sim/protocols").glob("*.json")
+    ) == [
+        "formal_xarm_pi05_eval_smoke_v3.json",
+        "formal_xarm_pi05_eval_v3.json",
+        "formal_xarm_pi05_eval_video_all_v3.json",
+    ]
+
+
 def test_formal_v3_fixed_seeds_have_valid_wide_profile_resets() -> None:
     protocol = load_protocol()
     for task in protocol.tasks:

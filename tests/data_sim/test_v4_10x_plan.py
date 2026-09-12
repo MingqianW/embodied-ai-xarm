@@ -5,11 +5,6 @@ from data.sim.generation.config import load_pipeline_config
 from data.sim.generation.plans import expected_roots
 
 
-V3 = Path(
-    "configs/data/sim/generation/"
-    "clean_multitask_stable_v3.yaml"
-)
-
 V4 = Path(
     "configs/data/sim/generation/"
     "clean_multitask_stable_v4_10x_real.yaml"
@@ -24,16 +19,12 @@ EXPECTED_SIM_COUNTS = {
 
 
 def test_v4_is_strictly_ten_times_actual_real_data() -> None:
-    v3 = load_pipeline_config(V3)
     v4 = load_pipeline_config(V4)
 
     actual = {
         task.task_id: task.episodes
         for task in v4.tasks
     }
-
-    # v3 remains the independent 200-episode simulation reference.
-    assert v3.total_episodes == 200
 
     # v4 is defined from the actual 198-episode real dataset.
     assert sum(REAL_COUNTS.values()) == 198
@@ -53,21 +44,8 @@ def test_v4_is_strictly_ten_times_actual_real_data() -> None:
     )
 
 
-def test_v4_seed_ranges_do_not_overlap_v3_or_each_other() -> None:
-    v3 = load_pipeline_config(V3)
+def test_v4_seed_ranges_do_not_overlap_each_other() -> None:
     v4 = load_pipeline_config(V4)
-
-    v3_seeds = {
-        resolve_seed(
-            task,
-            episode,
-            retry,
-            v3.seed_retry_stride,
-        )
-        for task in v3.tasks
-        for episode in range(task.episodes)
-        for retry in range(v3.max_attempts_per_episode)
-    }
 
     v4_seeds = set()
     task_ranges = []
@@ -89,8 +67,6 @@ def test_v4_seed_ranges_do_not_overlap_v3_or_each_other() -> None:
         task_ranges.append(
             (min(task_seeds), max(task_seeds))
         )
-
-    assert not v3_seeds & v4_seeds
 
     for index, first in enumerate(task_ranges):
         for second in task_ranges[index + 1:]:

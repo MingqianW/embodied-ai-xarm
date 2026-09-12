@@ -34,7 +34,7 @@ DEFAULT_GENERATION_CONFIG = (
     / "configs/data/sim/generation/clean_multitask_stable_v4_10x_real.yaml"
 )
 DEFAULT_EVALUATION_PROTOCOL = (
-    PROJECT_ROOT / "configs/evaluation/sim/protocols/formal_xarm_pi05_eval_v2.json"
+    PROJECT_ROOT / "configs/evaluation/sim/protocols/formal_xarm_pi05_eval_v3.json"
 )
 FINGER_BODIES = ("left_finger", "right_finger")
 OBJECT_BODIES = ("object", "blue_block", "small_block", "large_block", "red_pepper")

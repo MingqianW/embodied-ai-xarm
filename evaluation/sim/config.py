@@ -17,12 +17,8 @@ from simulation.resources import repository_root
 from simulation.resources import task_config_path
 from simulation.scene import resolve_scene_randomization_profile
 
-FORMAL_PROTOCOL_VERSION = "xarm-pi05-formal-evaluation-v1"
-FORMAL_STABLE_HOLD_PROTOCOL_VERSION = "xarm-pi05-formal-evaluation-v2"
-FORMAL_SHARED_SETTINGS_PROTOCOL_VERSION = "xarm-pi05-formal-evaluation-v3"
-SMOKE_PROTOCOL_VERSION = "xarm-pi05-evaluation-smoke-v1"
-SMOKE_STABLE_HOLD_PROTOCOL_VERSION = "xarm-pi05-evaluation-smoke-v2"
-SMOKE_SHARED_SETTINGS_PROTOCOL_VERSION = "xarm-pi05-evaluation-smoke-v3"
+FORMAL_PROTOCOL_VERSION = "xarm-pi05-formal-evaluation-v3"
+SMOKE_PROTOCOL_VERSION = "xarm-pi05-evaluation-smoke-v3"
 
 
 TaskSpec = EvaluationTask
@@ -156,11 +152,7 @@ def load_protocol(path: Path | None = None) -> FormalProtocol:
     raw = json.loads(path.read_text(encoding="utf-8"))
     if raw.get("protocol_version") not in {
         FORMAL_PROTOCOL_VERSION,
-        FORMAL_STABLE_HOLD_PROTOCOL_VERSION,
         SMOKE_PROTOCOL_VERSION,
-        SMOKE_STABLE_HOLD_PROTOCOL_VERSION,
-        FORMAL_SHARED_SETTINGS_PROTOCOL_VERSION,
-        SMOKE_SHARED_SETTINGS_PROTOCOL_VERSION,
     }:
         raise ValueError(f"Unsupported formal evaluation protocol: {raw.get('protocol_version')!r}")
     environment = raw["environment"]
@@ -251,17 +243,9 @@ def load_protocol(path: Path | None = None) -> FormalProtocol:
 def validate_protocol(protocol: FormalProtocol) -> None:
     if protocol.seed_start < 0:
         raise ValueError("Evaluation seeds must be non-negative")
-    if protocol.protocol_version in {
-        FORMAL_PROTOCOL_VERSION,
-        FORMAL_STABLE_HOLD_PROTOCOL_VERSION,
-        FORMAL_SHARED_SETTINGS_PROTOCOL_VERSION,
-    } and protocol.seed_count != 20:
+    if protocol.protocol_version == FORMAL_PROTOCOL_VERSION and protocol.seed_count != 20:
         raise ValueError("Formal protocol requires exactly 20 fixed seeds")
-    if protocol.protocol_version in {
-        SMOKE_PROTOCOL_VERSION,
-        SMOKE_STABLE_HOLD_PROTOCOL_VERSION,
-        SMOKE_SHARED_SETTINGS_PROTOCOL_VERSION,
-    } and not 1 <= protocol.seed_count <= 3:
+    if protocol.protocol_version == SMOKE_PROTOCOL_VERSION and not 1 <= protocol.seed_count <= 3:
         raise ValueError("Smoke protocol requires one to three fixed seeds")
     if (protocol.execute_chunk_steps, protocol.policy_action_horizon, protocol.max_policy_steps) != (5, 10, 50):
         raise ValueError("Formal protocol requires c5, action horizon 10, and i50")
@@ -275,21 +259,11 @@ def validate_protocol(protocol: FormalProtocol) -> None:
         raise ValueError("Formal protocol requires positive periodic cadence and fail-on-invalid")
     if not 0 < protocol.pick_meaningful_lift_diagnostic_m < protocol.pick_lift_height_m:
         raise ValueError("Pick meaningful-lift diagnostic threshold must be between zero and success lift")
-    stable_hold_protocol = protocol.protocol_version in {
-        FORMAL_STABLE_HOLD_PROTOCOL_VERSION,
-        SMOKE_STABLE_HOLD_PROTOCOL_VERSION,
-        FORMAL_SHARED_SETTINGS_PROTOCOL_VERSION,
-        SMOKE_SHARED_SETTINGS_PROTOCOL_VERSION,
-    }
-    if stable_hold_protocol and (
+    if (
         protocol.pick_post_success_hold_checks < 1
         or not 0 < protocol.pick_max_post_success_drop_m < protocol.pick_lift_height_m
     ):
         raise ValueError("Stable-hold pick protocol requires positive hold checks and a bounded drop tolerance")
-    if not stable_hold_protocol and (
-        protocol.pick_post_success_hold_checks != 0 or protocol.pick_max_post_success_drop_m != 0.0
-    ):
-        raise ValueError("Only the stable-hold formal v2 protocol may enable post-success pick holding")
     if protocol.placement_max_center_distance_m <= 0:
         raise ValueError("Placement containment geometry leaves no usable ring area")
     if not all(

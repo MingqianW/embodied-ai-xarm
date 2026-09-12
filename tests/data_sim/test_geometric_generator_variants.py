@@ -12,7 +12,9 @@ from data.sim.generation.core.registry import resolve_generator
 from simulation.environment import MuJoCoEnvironment
 
 
-CONFIG_PATH = Path("configs/data/sim/generation/clean_multitask_stable_v3.yaml")
+CONFIG_PATH = Path(
+    "configs/data/sim/generation/clean_multitask_stable_v4_10x_real.yaml"
+)
 PICK_TASK_IDS = (
     "red_block",
     "blue_block",
@@ -98,11 +100,14 @@ def test_geometric_variants_record_and_complete(
 ) -> None:
     config = load_pipeline_config(CONFIG_PATH)
     task = next(item for item in config.tasks if item.task_id == task_id)
-    seed = (
-        task.base_seed + 3
-        if task_id == "place_red_pepper_in_ring"
-        else task.base_seed
-    )
+    place_variant_seeds = {
+        "direct_place_left_approach_v1": 10601001,
+        "direct_place_right_approach_v1": 10600002,
+        "direct_place_high_center_v1": 10601003,
+        "direct_place_left_rear_approach_v1": 10600004,
+        "direct_place_right_front_approach_v1": 10600005,
+    }
+    seed = place_variant_seeds.get(generator_id, task.base_seed)
     with MuJoCoEnvironment(
         task=task.task_id,
         prompt=task.prompt,
@@ -110,6 +115,7 @@ def test_geometric_variants_record_and_complete(
         object_xy_range=config.object_xy_range_m,
         object_yaw_range_deg=config.object_yaw_range_deg,
         joint_noise=config.joint_noise_rad,
+        layout_profile=config.layout_profile,
     ) as environment:
         environment.reset(seed=seed, build_policy_observation=False)
         generator = resolve_generator(task.task_id, generator_id)(

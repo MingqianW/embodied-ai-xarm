@@ -6,7 +6,7 @@ import pytest
 import yaml
 
 from data.common.task_identity import TASKS
-from data.sim.generation.config import GeneratorPlan, load_pipeline_config
+from data.sim.generation.config import load_pipeline_config
 from data.sim.generation.core.generator import ControllerEpisodeGenerator
 from data.sim.generation.core import registry
 from data.sim.generation.core.registry import (
@@ -16,7 +16,6 @@ from data.sim.generation.core.registry import (
 )
 
 
-V3 = Path("configs/data/sim/generation/clean_multitask_stable_v3.yaml")
 V4 = Path("configs/data/sim/generation/clean_multitask_stable_v4_10x_real.yaml")
 
 
@@ -42,14 +41,6 @@ def test_generator_names_are_scoped_to_the_canonical_task() -> None:
         resolve_generator("red_block", "direct_place")
 
 
-def test_v3_implicit_legacy_config_resolves_to_defaults() -> None:
-    config = load_pipeline_config(V3)
-    assert all(
-        task.generators == (GeneratorPlan(default_generator_id(task.task_id), task.episodes),)
-        for task in config.tasks
-    )
-
-
 def test_v4_explicitly_allocates_every_registered_geometry_variant() -> None:
     config = load_pipeline_config(V4)
     for task in config.tasks:
@@ -62,7 +53,7 @@ def test_v4_explicitly_allocates_every_registered_geometry_variant() -> None:
 def test_exact_multi_generator_allocations_are_task_local_and_deterministic(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    config = load_pipeline_config(V3)
+    config = load_pipeline_config(V4)
     task = next(task for task in config.tasks if task.task_id == "red_block")
     original = dict(registry._REGISTRY[task.task_id])
     monkeypatch.setitem(
@@ -70,15 +61,15 @@ def test_exact_multi_generator_allocations_are_task_local_and_deterministic(
         task.task_id,
         {**original, "scripted_pick_replay": original["scripted_pick"]},
     )
-    raw = yaml.safe_load(V3.read_text(encoding="utf-8"))
+    raw = yaml.safe_load(V4.read_text(encoding="utf-8"))
     raw["tasks"]["red_block"]["generators"] = {
-        "scripted_pick": {"episodes": 10},
-        "scripted_pick_replay": {"episodes": 15},
+        "scripted_pick": {"episodes": 125},
+        "scripted_pick_replay": {"episodes": 125},
     }
     config_path = tmp_path / "multi_generator.yaml"
     config_path.write_text(yaml.safe_dump(raw, sort_keys=False), encoding="utf-8")
     allocation = next(task for task in load_pipeline_config(config_path).tasks if task.task_id == "red_block")
-    assert [allocation.generator_for_episode(index) for index in (0, 9, 10, 24)] == [
+    assert [allocation.generator_for_episode(index) for index in (0, 124, 125, 249)] == [
         "scripted_pick",
         "scripted_pick",
         "scripted_pick_replay",

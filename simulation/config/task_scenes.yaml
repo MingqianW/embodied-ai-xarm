@@ -42,22 +42,10 @@ catalog:
       mode: independent_body_offsets
       minimum_pairwise_distance_m: 0.10
       max_sampling_attempts: 100
-  # These are the sole owner of generation/evaluation reset randomization.
-  # A plan or formal protocol selects one by name; it must not duplicate its
-  # individual ranges.  The legacy formal profile preserves the reset settings
-  # used by v1/v2 protocols and is also available to generation when exact
-  # historical comparability is needed.
+  # This is the sole owner of generation/evaluation reset randomization.
+  # The current generation plan and formal protocol select it by name; they
+  # must not duplicate its individual ranges.
   randomization_profiles:
-    legacy_formal_v1:
-      object_xy_range_m: 0.03
-      object_yaw_range_deg: 15.0
-      joint_noise_rad: 0.01
-      layout_profile: shared_scene_delta_v1
-    clean_stable_v3:
-      object_xy_range_m: 0.02
-      object_yaw_range_deg: 10.0
-      joint_noise_rad: 0.005
-      layout_profile: shared_scene_delta_v1
     clean_wide_v4:
       object_xy_range_m: 0.10
       object_yaw_range_deg: 10.0

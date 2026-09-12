@@ -20,24 +20,6 @@ def _root(*parts: str) -> Path:
 
 
 DATASET_PLANS = {
-    "xarm_mujoco_clean_multitask_stable_v3": {
-        "counts": {
-            "red_pepper": 50,
-            "blue_block": 25,
-            "red_block": 25,
-            "smallest_block": 25,
-            "largest_block": 25,
-            "place_red_pepper_in_ring": 50,
-        },
-        "roots": frozenset(
-            {
-                _root("mujoco_datasets", "raw", "xarm_mujoco_clean_multitask_stable_v3"),
-                _root("mujoco_datasets", "local", "xarm_mujoco_clean_multitask_stable_v3"),
-                _root("mujoco_datasets", "smoke", "xarm_mujoco_clean_multitask_stable_v3"),
-                _root("logs", "xarm_mujoco_clean_multitask_stable_v3"),
-            }
-        ),
-    },
     "xarm_mujoco_clean_multitask_stable_v4_10x_real": {
         "counts": {
             "red_pepper": 500,
