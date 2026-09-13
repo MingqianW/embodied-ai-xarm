@@ -15,7 +15,7 @@ from data.sim.generation.audit import (
     write_raw_audit_reports,
     write_smoke_reports,
 )
-from data.sim.generation.collection import collect
+from data.sim.generation.collection import collect, paired_smoke_config
 from data.sim.generation.config import load_pipeline_config, repository_root
 from data.sim.generation.config import GeneratorPlan
 from data.sim.generation.core.registry import default_generator_id, resolve_generator
@@ -37,7 +37,7 @@ from data.sim.generation.status import git_sha, write_status
 
 
 DEFAULT_CONFIG = Path(
-    "configs/data/sim/generation/clean_multitask_stable_v4_10x_real.yaml"
+    "configs/data/sim/generation/clean_multitask_paired_trajectory_v1.yaml"
 )
 
 
@@ -144,8 +144,13 @@ def main() -> None:
     elif args.command == "audit":
         if args.smoke_all_generators and not args.smoke:
             parser.error("--smoke-all-generators requires --smoke")
+        audit_config = (
+            paired_smoke_config(config)
+            if args.smoke and config.generation_mode == "paired_scene_groups"
+            else config
+        )
         raw_report = audit_raw(
-            config,
+            audit_config,
             args.raw,
             decode_all_images=args.decode_all_images,
             smoke=args.smoke,
@@ -162,7 +167,7 @@ def main() -> None:
         )
         result = (
             write_smoke_reports(
-                config,
+                audit_config,
                 raw_report,
                 args.report_dir,
                 smoke_all_generators=args.smoke_all_generators,
@@ -170,10 +175,10 @@ def main() -> None:
             if args.smoke
             else (
                 write_audit_reports(
-                    config, raw_report, converted_report, args.report_dir
+                    audit_config, raw_report, converted_report, args.report_dir
                 )
                 if converted_report is not None
-                else write_raw_audit_reports(config, raw_report, args.report_dir)
+                else write_raw_audit_reports(audit_config, raw_report, args.report_dir)
             )
         )
     elif args.command == "permissions":

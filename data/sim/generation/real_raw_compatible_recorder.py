@@ -98,6 +98,7 @@ class RealCompatibleRawEpisodeRecorder:
         retry_index: int | None = None,
         generator_id: str = "scripted_pick",
         generator_version: str = "v1",
+        provenance: dict[str, Any] | None = None,
     ) -> None:
         if save_hz != 10:
             raise ValueError("The audited real raw format is recorded at 10 Hz")
@@ -122,6 +123,7 @@ class RealCompatibleRawEpisodeRecorder:
         self.scene_variant = str(scene_variant)
         self.generator_id = str(generator_id)
         self.generator_version = str(generator_version)
+        self.provenance = dict(provenance or {})
         self.environment = environment
         self.save_hz = int(save_hz)
         self.created_ts = _deterministic_created_ts(
@@ -303,6 +305,7 @@ class RealCompatibleRawEpisodeRecorder:
                 "scene_variant": self.scene_variant,
                 "generator_id": self.generator_id,
                 "generator_version": self.generator_version,
+                "provenance": self.provenance,
                 "success": bool(success),
                 "failure_reason": failure_reason,
                 "robot_log_rows": len(self.rows),

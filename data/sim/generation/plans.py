@@ -38,6 +38,19 @@ DATASET_PLANS = {
             }
         ),
     },
+    # The v1 paired plan derives counts from scenes_per_task and enabled members.
+    # Its roots remain explicit so destructive operations cannot target arbitrary paths.
+    "xarm_mujoco_clean_multitask_paired_trajectory_v1": {
+        "counts": None,
+        "roots": frozenset(
+            {
+                _root("mujoco_datasets", "raw", "xarm_mujoco_clean_multitask_paired_trajectory_v1"),
+                _root("mujoco_datasets", "local", "xarm_mujoco_clean_multitask_paired_trajectory_v1"),
+                _root("mujoco_datasets", "smoke", "xarm_mujoco_clean_multitask_paired_trajectory_v1"),
+                _root("logs", "xarm_mujoco_clean_multitask_paired_trajectory_v1"),
+            }
+        ),
+    },
 }
 
 
@@ -51,7 +64,10 @@ def _plan(dataset_version: str) -> dict:
 
 
 def expected_counts(dataset_version: str) -> dict[str, int]:
-    return dict(_plan(dataset_version)["counts"])
+    counts = _plan(dataset_version)["counts"]
+    if counts is None:
+        raise ValueError(f"{dataset_version} derives counts from its paired-scene configuration")
+    return dict(counts)
 
 
 def expected_roots(dataset_version: str) -> frozenset[Path]:

@@ -18,6 +18,8 @@ class GeneratorContext:
     requested_episode_index: int
     retry_index: int
     seed: int
+    scene_seed: int | None = None
+    trajectory_parameters: dict[str, Any] | None = None
 
 
 @dataclass(frozen=True)
@@ -72,12 +74,14 @@ class ControllerEpisodeGenerator:
         generator_version: str = "v1",
         kind: str,
         initialization: GeneratorInitialization | None = None,
+        trajectory_metadata: dict[str, Any] | None = None,
     ) -> None:
         self._controller = controller
         self.generator_id = generator_id
         self.generator_version = generator_version
         self._kind = kind
         self.initialization = initialization or GeneratorInitialization()
+        self._trajectory_metadata = dict(trajectory_metadata or {})
 
     @property
     def terminal(self) -> bool:
@@ -114,7 +118,10 @@ class ControllerEpisodeGenerator:
         return self._controller.transition_log()
 
     def plan_metadata(self) -> dict[str, Any]:
-        return self._controller.plan.to_json()
+        plan = self._controller.plan.to_json()
+        if self._trajectory_metadata:
+            plan["trajectory"] = self._trajectory_metadata
+        return plan
 
     def validation_metadata(self) -> dict[str, Any]:
         stability = self.stability_metadata()

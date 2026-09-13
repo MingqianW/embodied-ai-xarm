@@ -105,7 +105,7 @@ def test_simulation_data_workflows_preserve_phase_order() -> None:
             "handoff",
         ],
     }
-    for version in ("v4-10x",):
+    for version in ("paired-v1",):
         for phase, labels in expected.items():
             workflow = get_workflow(f"sim-data-{phase}")
             commands = workflow.build(settings, {"plan": version})
@@ -118,7 +118,7 @@ def test_sbatch_uses_only_the_generic_runner() -> None:
     command = _sbatch_command(
         settings,
         workflow,
-        {"plan": "v4-10x"},
+        {"plan": "paired-v1"},
         dependency="afterok:12345",
     )
     assert command[0] == "sbatch"
@@ -128,7 +128,7 @@ def test_sbatch_uses_only_the_generic_runner() -> None:
         if _slash(value).endswith("cluster/jobs/run_workflow.sbatch")
     )
     assert command[runner_index + 1] == workflow.name
-    assert "--job-name=xarm-sim-data-smoke-v4-10x" in command
+    assert "--job-name=xarm-sim-data-smoke-paired-v1" in command
     assert "--dependency=afterok:12345" in command
     assert not any("slurm/simulation_data" in value for value in command)
 

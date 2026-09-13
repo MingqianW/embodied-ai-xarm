@@ -42,6 +42,10 @@ def audit_raw(
     smoke_all_generators: bool = False,
 ) -> dict[str, Any]:
     raw = Path(raw).resolve()
+    if config.generation_mode == "paired_scene_groups":
+        if smoke_all_generators:
+            raise ValueError("smoke_all_generators does not combine with paired-scene audit")
+        return _audit_paired_raw(config, raw, decode_all_images=decode_all_images, smoke=smoke)
     manifest = json.loads((raw / "collection_manifest.json").read_text(encoding="utf-8"))
     summary = json.loads((raw / "collection_summary.json").read_text(encoding="utf-8"))
     if smoke_all_generators and not smoke:
@@ -229,6 +233,131 @@ def audit_raw(
     }
 
 
+def _path_metrics(episode_dir: Path, meta: dict[str, Any]) -> dict[str, Any]:
+    with (episode_dir / "robot_log.csv").open("r", encoding="utf-8", newline="") as stream:
+        rows = list(csv.DictReader(stream))
+    tcp = np.asarray([[float(row[name]) for name in ("tcp_x_m", "tcp_y_m", "tcp_z_m")] for row in rows], dtype=np.float64)
+    plan = meta["simulation"]["oracle_plan"]
+    target = plan.get("object_position") or plan.get("ring_position")
+    if target is None:
+        raise ValueError(f"Missing target reference in oracle plan: {episode_dir}")
+    relative = tcp - np.asarray(target, dtype=np.float64)
+    segment_lengths = np.linalg.norm(np.diff(relative, axis=0), axis=1)
+    return {
+        "target_relative_tcp_path_m": relative.tolist(),
+        "path_length_m": float(segment_lengths.sum()),
+        "peak_height_m": float(tcp[:, 2].max()),
+        "duration_s": float(rows and float(rows[-1]["ts"]) - float(rows[0]["ts"])),
+        "orientation_start_rpy_rad": [float(rows[0][name]) for name in ("tcp_rx_rad", "tcp_ry_rad", "tcp_rz_rad")],
+        "orientation_end_rpy_rad": [float(rows[-1][name]) for name in ("tcp_rx_rad", "tcp_ry_rad", "tcp_rz_rad")],
+    }
+
+
+def _resample_path(path: list[list[float]], count: int = 32) -> np.ndarray:
+    values = np.asarray(path, dtype=np.float64)
+    if len(values) == 1:
+        return np.repeat(values, count, axis=0)
+    distances = np.concatenate(([0.0], np.cumsum(np.linalg.norm(np.diff(values, axis=0), axis=1))))
+    if distances[-1] == 0.0:
+        return np.repeat(values[:1], count, axis=0)
+    samples = np.linspace(0.0, distances[-1], count)
+    return np.column_stack([np.interp(samples, distances, values[:, axis]) for axis in range(3)])
+
+
+def _audit_paired_raw(
+    config: PipelineConfig, raw: Path, *, decode_all_images: bool, smoke: bool
+) -> dict[str, Any]:
+    manifest = json.loads((raw / "collection_manifest.json").read_text(encoding="utf-8"))
+    summary = json.loads((raw / "collection_summary.json").read_text(encoding="utf-8"))
+    if not manifest.get("complete") or not summary.get("complete"):
+        raise ValueError("Incomplete paired scene groups cannot enter the normal dataset audit")
+    assert config.scenes_per_task is not None
+    completed = manifest.get("completed") or []
+    by_key = {
+        (str(row["task_id"]), int(row["scene_index"]), str(row["family_member_id"])): row
+        for row in completed
+    }
+    if len(by_key) != len(completed):
+        raise ValueError("Duplicate accepted paired scene/member tuple")
+    expected = {
+        (task.task_id, scene_index, member.generator_id)
+        for task in config.tasks for scene_index in range(config.scenes_per_task)
+        for member in task.generators
+    }
+    if set(by_key) != expected:
+        raise ValueError("Paired coverage has missing or unexpected family members")
+    groups = manifest.get("scene_groups") or []
+    if len(groups) != len(config.tasks) * config.scenes_per_task:
+        raise ValueError("Missing scene groups in paired manifest")
+    parameter_coverage: dict[str, list[dict[str, Any]]] = {}
+    path_rows: list[dict[str, Any]] = []
+    for group in groups:
+        if not group.get("complete"):
+            raise ValueError(f"Incomplete paired group: {group.get('scene_group_id')}")
+        task_id, scene_index = str(group["task_id"]), int(group["scene_index"])
+        required = {str(value) for value in group["required_family_members"]}
+        actual = {member for candidate_task, candidate_scene, member in by_key if candidate_task == task_id and candidate_scene == scene_index}
+        if actual != required:
+            raise ValueError(f"Group member coverage mismatch: {group['scene_group_id']}")
+        fingerprints = {str(by_key[(task_id, scene_index, member)]["initialized_scene_fingerprint"]) for member in actual}
+        if len(fingerprints) != 1 or next(iter(fingerprints)) != str(group["initialized_scene_fingerprint"]):
+            raise ValueError(f"Initialized scene mismatch: {group['scene_group_id']}")
+        for member in actual:
+            entry = by_key[(task_id, scene_index, member)]
+            episode_dir = raw / entry["path"]
+            meta = json.loads((episode_dir / "meta.json").read_text(encoding="utf-8"))
+            provenance = meta["simulation"].get("provenance") or {}
+            if provenance.get("initialized_scene_fingerprint") != next(iter(fingerprints)):
+                raise ValueError(f"Episode provenance scene mismatch: {episode_dir}")
+            if provenance.get("family_member_id") != member or provenance.get("scene_group_id") != group["scene_group_id"]:
+                raise ValueError(f"Episode provenance identity mismatch: {episode_dir}")
+            validation = meta["simulation"].get("validation") or {}
+            if task_id == "place_red_pepper_in_ring":
+                if not validation.get("place_initial_grasp", {}).get("initial_grasp_success") or not validation.get("stable_place", {}).get("stable_place_success"):
+                    raise ValueError(f"Paired Place acceptance failed: {episode_dir}")
+            elif not validation.get("stable_grasp", {}).get("stable_grasp_success"):
+                raise ValueError(f"Paired Pick acceptance failed: {episode_dir}")
+            for name, value in (entry.get("resolved_trajectory_parameters") or {}).items():
+                parameter_coverage.setdefault(name, []).append({"value": value, "accepted": True, "member": member})
+            metrics = _path_metrics(episode_dir, meta)
+            path_rows.append({"task_id": task_id, "scene_group_id": group["scene_group_id"], "family_member_id": member, **metrics})
+            if decode_all_images:
+                with (episode_dir / "robot_log.csv").open("r", encoding="utf-8", newline="") as stream:
+                    for row in csv.DictReader(stream):
+                        _decode_image(episode_dir / row["realsense_0_file"])
+                        _decode_image(episode_dir / row["realsense_1_file"])
+    for entry in manifest.get("failed_attempts") or []:
+        for name, value in (entry.get("resolved_trajectory_parameters") or {}).items():
+            parameter_coverage.setdefault(name, []).append(
+                {"value": value, "accepted": False, "member": entry.get("family_member_id")}
+            )
+    near_duplicates: list[dict[str, Any]] = []
+    for group_id in {row["scene_group_id"] for row in path_rows}:
+        rows = [row for row in path_rows if row["scene_group_id"] == group_id]
+        for index, left in enumerate(rows):
+            for right in rows[index + 1:]:
+                distance = float(np.mean(np.linalg.norm(_resample_path(left["target_relative_tcp_path_m"]) - _resample_path(right["target_relative_tcp_path_m"]), axis=1)))
+                if distance < 0.003:
+                    near_duplicates.append({"scene_group_id": group_id, "members": [left["family_member_id"], right["family_member_id"]], "mean_resampled_tcp_distance_m": distance})
+    return {
+        "passed": True, "raw": str(raw), "generation_mode": "paired_scene_groups",
+        "episode_count": len(completed), "task_count": len(config.tasks),
+        "task_counts": dict(Counter(str(row["task_id"]) for row in completed)),
+        "generator_counts": dict(Counter(f"{row['task_id']}|{row['family_member_id']}" for row in completed)),
+        "requested_scene_groups": len(groups), "completed_scene_groups": len(groups),
+        "parameter_coverage": parameter_coverage, "trajectory_metrics": path_rows,
+        "near_duplicate_members": near_duplicates, "decoded_all_images": decode_all_images,
+        "smoke": smoke, "smoke_all_generators": False,
+        "episodes": [
+            {
+                "task_id": row["task_id"], "task_prompt": canonical_prompt(str(row["task_id"])),
+                "generator_id": row["family_member_id"], "path": row["path"], "visuals": row.get("visuals"),
+            }
+            for row in completed
+        ],
+    }
+
+
 def write_smoke_reports(
     config: PipelineConfig,
     raw_report: dict[str, Any],
@@ -239,6 +368,7 @@ def write_smoke_reports(
     expected_total = (
         sum(len(task.generators) for task in config.tasks)
         if smoke_all_generators
+        or config.generation_mode == "paired_scene_groups"
         else 6
     )
     if (

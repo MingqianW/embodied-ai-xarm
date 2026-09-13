@@ -106,6 +106,12 @@ That profile is the only owner of object layout ranges, yaw variation, joint
 noise, and layout sampling semantics; generation/evaluation files must not
 copy those numerical settings.
 
+Trajectory-family membership, bounded trajectory distributions, paired-scene
+counts, and trajectory retry seeds are generation-plan concerns under
+`configs/data/sim/generation/`; they do not belong in the simulation scene
+profile. Paired generation reconstructs the canonical simulation scene and
+records the initialized-state fingerprint through the `data.sim` manifest.
+
 Runtime datasets, evaluation outputs, videos, checkpoints, reports, logs, and
 caches belong outside source packages. `MUJOCO_OUTPUT_ROOT`,
 `MUJOCO_DATASET_ROOT`, and `XARM_WORK_ROOT` select external roots; ignored

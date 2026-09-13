@@ -28,6 +28,7 @@ PLACE_VARIANT_OVERRIDE_FIELDS = frozenset(
         "preplace_offset_xy_m",
         "preplace_pepper_height_m",
         "max_action_steps",
+        "transfer_speed_scale",
     }
 )
 
@@ -141,6 +142,17 @@ def _create(
         )
     config = context.pipeline_config.place
     overrides = dict(oracle_overrides or {})
+    sampled = dict(context.trajectory_parameters or {})
+    if "preplace_offset_xy_m" in overrides and "preplace_offset_xy_m" in sampled:
+        baseline = tuple(float(value) for value in overrides["preplace_offset_xy_m"])
+        candidate = tuple(float(value) for value in sampled["preplace_offset_xy_m"])
+        if any(
+            (abs(base) < 1e-12 and abs(value) > 1e-12)
+            or (abs(base) >= 1e-12 and base * value <= 0.0)
+            for base, value in zip(baseline, candidate, strict=True)
+        ):
+            raise ValueError(f"{generator_id} trajectory parameters crossed its fixed preplace direction")
+    overrides.update(sampled)
     unknown = set(overrides) - PLACE_VARIANT_OVERRIDE_FIELDS
     if unknown:
         raise ValueError(f"Unsupported Place variant overrides: {sorted(unknown)}")
@@ -154,6 +166,8 @@ def _create(
             velocity_fit_samples=config.velocity_fit_samples,
         )
     )
+    if "transfer_speed_scale" in overrides:
+        overrides["max_joint_step_rad"] = float(values["max_joint_step_rad"]) * float(overrides.pop("transfer_speed_scale"))
     values.update(overrides)
     controller = PlaceRedPepperOracleController(
         context.environment,
@@ -164,6 +178,11 @@ def _create(
         generator_id=generator_id,
         kind="place",
         initialization=initialization,
+        trajectory_metadata={
+            "seed": context.seed,
+            "scene_seed": context.scene_seed,
+            "resolved_parameters": dict(context.trajectory_parameters or {}),
+        },
     )
 
 

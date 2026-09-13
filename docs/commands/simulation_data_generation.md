@@ -102,8 +102,8 @@ Run from the repository root. Do not set `MUJOCO_GL=egl` on Windows.
 ```powershell
 $python = "D:\miniconda\envs\mujoco-pi\python.exe"
 $env:XARM_WORK_ROOT = "D:\xarm-work"
-$config = "configs\data\sim\generation\clean_multitask_stable_v4_10x_real.yaml"
-$dataset = "xarm_mujoco_clean_multitask_stable_v4_10x_real"
+$config = "configs\data\sim\generation\clean_multitask_paired_trajectory_v1.yaml"
+$dataset = "xarm_mujoco_clean_multitask_paired_trajectory_v1"
 $raw = "$env:XARM_WORK_ROOT\mujoco_datasets\raw\$dataset"
 $converted = "$env:XARM_WORK_ROOT\mujoco_datasets\local\$dataset"
 $smoke = "$env:XARM_WORK_ROOT\mujoco_datasets\smoke\$dataset"
@@ -119,19 +119,9 @@ $log = "$env:XARM_WORK_ROOT\logs\$dataset"
 & $python -m data.sim.generation.cli generate `
   --config $config --output $smoke --smoke --overwrite
 
-# Requires an explicit multi-generator allocation in $config.
-# Writes one accepted smoke episode for every listed generator.
-& $python -m data.sim.generation.cli generate `
-  --config $config --output $smoke --smoke --smoke-all-generators --overwrite
-
 & $python -m data.sim.generation.cli audit `
   --config $config --raw $smoke --report-dir $log `
   --decode-all-images --smoke
-
-# For --smoke-all-generators generation, use the matching audit mode.
-& $python -m data.sim.generation.cli audit `
-  --config $config --raw $smoke --report-dir $log `
-  --decode-all-images --smoke --smoke-all-generators
 
 Invoke-Item "$log\SMOKE_AUDIT.md"
 explorer "$smoke\accepted"
@@ -139,7 +129,7 @@ explorer "$smoke\accepted"
 
 The smoke audit must pass for all six tasks.
 
-### Full v4 10x-real collection
+### Full paired-v1 collection
 
 ```powershell
 & $python -m data.sim.generation.cli generate `
@@ -179,13 +169,13 @@ cd "$XARM_REPOSITORY"
 Submit one phase at a time and wait for success before continuing:
 
 ```bash
-"$XARM_PYTHON" -m cluster.cli submit sim-data-preflight --param plan=v4-10x
-"$XARM_PYTHON" -m cluster.cli submit sim-data-initialize --param plan=v4-10x
-"$XARM_PYTHON" -m cluster.cli submit sim-data-smoke --param plan=v4-10x
+"$XARM_PYTHON" -m cluster.cli submit sim-data-preflight --param plan=paired-v1
+"$XARM_PYTHON" -m cluster.cli submit sim-data-initialize --param plan=paired-v1
+"$XARM_PYTHON" -m cluster.cli submit sim-data-smoke --param plan=paired-v1
 # Review smoke artifacts here.
-"$XARM_PYTHON" -m cluster.cli submit sim-data-generate --param plan=v4-10x
-"$XARM_PYTHON" -m cluster.cli submit sim-data-convert --param plan=v4-10x
-"$XARM_PYTHON" -m cluster.cli submit sim-data-audit --param plan=v4-10x
+"$XARM_PYTHON" -m cluster.cli submit sim-data-generate --param plan=paired-v1
+"$XARM_PYTHON" -m cluster.cli submit sim-data-convert --param plan=paired-v1
+"$XARM_PYTHON" -m cluster.cli submit sim-data-audit --param plan=paired-v1
 ```
 
 Monitor a job with:
@@ -195,18 +185,79 @@ squeue -j JOB_ID
 sacct -j JOB_ID --format=JobID,JobName%32,State,Elapsed,ExitCode,MaxRSS
 ```
 
-## v4 10x-real outputs
+## Paired-v1 outputs
 
 ```text
-$XARM_WORK_ROOT/mujoco_datasets/smoke/xarm_mujoco_clean_multitask_stable_v4_10x_real
-$XARM_WORK_ROOT/mujoco_datasets/raw/xarm_mujoco_clean_multitask_stable_v4_10x_real
-$XARM_WORK_ROOT/mujoco_datasets/local/xarm_mujoco_clean_multitask_stable_v4_10x_real
-$XARM_WORK_ROOT/logs/xarm_mujoco_clean_multitask_stable_v4_10x_real
+$XARM_WORK_ROOT/mujoco_datasets/smoke/xarm_mujoco_clean_multitask_paired_trajectory_v1
+$XARM_WORK_ROOT/mujoco_datasets/raw/xarm_mujoco_clean_multitask_paired_trajectory_v1
+$XARM_WORK_ROOT/mujoco_datasets/local/xarm_mujoco_clean_multitask_paired_trajectory_v1
+$XARM_WORK_ROOT/logs/xarm_mujoco_clean_multitask_paired_trajectory_v1
 ```
 
 See [DATASET_SCHEMA.md](../simulation_data/DATASET_SCHEMA.md) for the raw and
 converted directory layouts, state/action semantics, image streams, and
 manifest contracts.
+
+## Paired trajectory scene groups (v1, opt-in)
+
+`clean_multitask_paired_trajectory_v1.yaml` is a schema-v2 plan for evaluating
+trajectory diversity independently from the existing `clean_wide_v4` scene
+profile. Its meaning differs deliberately from an episode allocation:
+`scenes_per_task: N` produces one accepted episode for every enabled family
+member in each of N initialized scenes. A Pick task with eight members produces
+`8N` episodes; the Place task with six members produces `6N`. v4 remains
+`legacy_episodes` and is not reinterpreted.
+
+Each `(task, scene_index, family_member)` derives SHA-256 seeds from stable
+identifiers. The scene seed uses base seed, task, and scene; trajectory seed
+also uses family member and retry. Each attempt reconstructs the same scene
+from its scene seed and records an actual initialized-state fingerprint before
+sampling trajectory parameters. Member order changes or an added member cannot
+alter another member's seeds.
+
+The versioned `collection.trajectory_profile` supports `fixed`, `uniform`, and
+`truncated_normal` distributions. Values are sampled once per episode, bounded,
+and recorded. Member parameters override task parameters, which override
+defaults. Supported Pick values are XY approach/waypoint/lift offsets (m),
+pregrasp/lift clearance (m), wrist yaw (deg), and approach/lift speed scales;
+Place supports preplace XY offset (m), preplace height (m), and transfer speed.
+The v1 validator uses conservative +/-40 mm XY and +/-25 degree limits.
+
+Enabled members are the existing validated centered, mirrored-side, diagonal,
+yaw, and waypoint/lateral-lift Pick paths; and centered, cardinal/diagonal
+preplace, and high-transfer Place paths. Curved paths are not enabled because
+the current controller is a collision-checked joint-space waypoint state
+machine without a validated Cartesian-curve feasibility check. Pepper bounds
+are deliberately conservative because initial grasp/release clearance is tight.
+
+A failed member retries only from the same scene and member identity with a new
+trajectory seed. Exhaustion marks its scene group incomplete, retaining
+diagnostics and successful members for resume. Resume requires an exact saved
+run configuration; incomplete groups cannot pass raw audit or conversion.
+
+```powershell
+$paired = "configs\data\sim\generation\clean_multitask_paired_trajectory_v1.yaml"
+$pairedSmoke = "$env:XARM_WORK_ROOT\mujoco_datasets\smoke\xarm_mujoco_clean_multitask_paired_trajectory_v1"
+$pairedRaw = "$env:XARM_WORK_ROOT\mujoco_datasets\raw\xarm_mujoco_clean_multitask_paired_trajectory_v1"
+$pairedLocal = "$env:XARM_WORK_ROOT\mujoco_datasets\local\xarm_mujoco_clean_multitask_paired_trajectory_v1"
+$pairedLog = "$env:XARM_WORK_ROOT\logs\xarm_mujoco_clean_multitask_paired_trajectory_v1"
+
+& $python -m data.sim.generation.cli inspect --config $paired
+# Bounded smoke: one scene per task, one episode for every enabled family.
+& $python -m data.sim.generation.cli generate --config $paired --output $pairedSmoke --smoke --overwrite
+& $python -m data.sim.generation.cli audit --config $paired --raw $pairedSmoke --report-dir $pairedLog --smoke --decode-all-images
+
+# Full v1 plan (the checked-in example has N=2).
+& $python -m data.sim.generation.cli generate --config $paired --output $pairedRaw --overwrite
+& $python -m data.sim.generation.cli audit --config $paired --raw $pairedRaw --report-dir $pairedLog --decode-all-images
+& $python -m data.sim.generation.cli convert --config $paired --raw $pairedRaw --output $pairedLocal --overwrite
+& $python -m data.sim.generation.cli generate --config $paired --output $pairedRaw --resume
+```
+
+The paired audit checks complete tuple coverage, common initialized-state
+fingerprints, duplicate/missing members, attempt and acceptance counts,
+sampled versus accepted parameters, and target-relative TCP path length,
+peak height, timing, orientation, and near-duplicate warnings.
 
 For resume, permissions, and failure recovery, see
 [DELTA_AI_RUNBOOK.md](../simulation_data/DELTA_AI_RUNBOOK.md) and

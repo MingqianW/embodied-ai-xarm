@@ -12,6 +12,7 @@ import yaml
 from data.common.task_identity import TASKS, TASK_BY_ID
 from data.sim.generation.core.registry import default_generator_id, generator_ids_for_task
 from data.sim.generation.plans import expected_counts, expected_roots, work_root
+from data.sim.generation.trajectory import TrajectoryProfile, parse_trajectory_profile
 from simulation.scene import resolve_scene_randomization_profile
 
 
@@ -117,6 +118,9 @@ class PipelineConfig:
     seed_retry_stride: int
     scene_variant: str
     distractor_count: int
+    generation_mode: str
+    scenes_per_task: int | None
+    trajectory_profile: TrajectoryProfile | None
     record_all_smoke_videos: bool
     representative_video_every: int
     output_schema_version: str
@@ -248,6 +252,26 @@ def load_pipeline_config(path: Path) -> PipelineConfig:
         plans.append(plan)
     if set(task_rows) != set(TASK_BY_ID):
         raise ValueError("Config must contain exactly the six canonical task IDs")
+    generation_mode = str(collection.get("generation_mode", "legacy_episodes"))
+    if generation_mode not in {"legacy_episodes", "paired_scene_groups"}:
+        raise ValueError("collection.generation_mode must be legacy_episodes or paired_scene_groups")
+    scenes_per_task = (
+        None if generation_mode == "legacy_episodes" else int(collection.get("scenes_per_task", -1))
+    )
+    if generation_mode == "paired_scene_groups" and scenes_per_task < 1:
+        raise ValueError("paired_scene_groups requires a positive scenes_per_task")
+    profile_data = collection.get("trajectory_profile")
+    trajectory_profile = (
+        None
+        if profile_data is None
+        else parse_trajectory_profile(
+            profile_data,
+            task_ids=set(TASK_BY_ID),
+            member_ids={task.task_id: {member.generator_id for member in task.generators} for task in plans},
+        )
+    )
+    if generation_mode == "paired_scene_groups" and trajectory_profile is None:
+        raise ValueError("paired_scene_groups requires a versioned trajectory_profile")
 
     config = PipelineConfig(
         path=path,
@@ -269,6 +293,9 @@ def load_pipeline_config(path: Path) -> PipelineConfig:
         seed_retry_stride=int(collection.get("seed_retry_stride", -1)),
         scene_variant=str(collection.get("scene_variant", "")),
         distractor_count=int(collection.get("distractor_count", -1)),
+        generation_mode=generation_mode,
+        scenes_per_task=scenes_per_task,
+        trajectory_profile=trajectory_profile,
         record_all_smoke_videos=bool(recording.get("record_all_smoke_videos", True)),
         representative_video_every=int(recording.get("representative_video_every", 0)),
         output_schema_version=str(data.get("output_schema_version", "")),
@@ -331,13 +358,24 @@ def load_pipeline_config(path: Path) -> PipelineConfig:
 
 
 def validate_pipeline_config(config: PipelineConfig) -> None:
-    plan_counts = expected_counts(config.dataset_version)
-    if config.schema_version != 1 or not config.dataset_version:
+    if config.schema_version not in {1, 2} or not config.dataset_version:
         raise ValueError("Unsupported or missing pipeline schema/dataset version")
-    if {task.task_id: task.episodes for task in config.tasks} != plan_counts:
-        raise ValueError(f"Task episode counts do not match {config.dataset_version}")
-    if config.total_episodes != sum(plan_counts.values()):
-        raise ValueError(f"Collection total does not match {config.dataset_version}")
+    if config.schema_version == 1 and config.generation_mode != "legacy_episodes":
+        raise ValueError("schema_version=1 only supports legacy_episodes")
+    if config.generation_mode == "legacy_episodes":
+        plan_counts = expected_counts(config.dataset_version)
+        if {task.task_id: task.episodes for task in config.tasks} != plan_counts:
+            raise ValueError(f"Task episode counts do not match {config.dataset_version}")
+        if config.total_episodes != sum(plan_counts.values()):
+            raise ValueError(f"Collection total does not match {config.dataset_version}")
+    else:
+        assert config.scenes_per_task is not None
+        for task in config.tasks:
+            expected = config.scenes_per_task * len(task.generators)
+            if task.episodes != expected or any(member.episodes != config.scenes_per_task for member in task.generators):
+                raise ValueError(
+                    f"{task.task_id} paired-scene allocation must be scenes_per_task times every enabled member"
+                )
     if config.action_hz != 10 or config.scene_variant != "clean":
         raise ValueError("This version requires 10 Hz clean-scene collection")
     if config.distractor_count != 0:

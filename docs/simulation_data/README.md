@@ -8,9 +8,10 @@ The camera source of truth is
 calibration values.
 
 The current collection plan is
-`configs/data/sim/generation/clean_multitask_stable_v4_10x_real.yaml`. It
-requests 1,980 accepted episodes, six canonical prompts, zero distractor
-episodes, and the shared `clean_wide_v4` reset profile.
+`configs/data/sim/generation/clean_multitask_paired_trajectory_v1.yaml`. It
+uses paired scene groups: every enabled trajectory member is collected from
+each initialized scene, with zero distractor episodes and the shared
+`clean_wide_v4` reset profile.
 
 ## Quick start
 
@@ -20,7 +21,7 @@ Run lightweight config inspection on a login node:
 cd /u/mw89/repos/embodied-ai-xarm
 /u/mw89/repos/openpi/.venv/bin/python \
   -m data.sim.generation.cli inspect \
-  --config configs/data/sim/generation/clean_multitask_stable_v4_10x_real.yaml
+  --config configs/data/sim/generation/clean_multitask_paired_trajectory_v1.yaml
 ```
 
 Run physics, rendering, collection, conversion, and full decoding through the

@@ -59,7 +59,7 @@ POSIX deployment paths remain POSIX when commands are audited from Windows.
 
 | Workflow | Canonical owner | Resources | Required parameters |
 |---|---|---|---|
-| `sim-data-preflight` | `data.sim.generation.cli inspect` | 4 CPU, 24G, 30m, no GPU | optional `plan=v4-10x` |
+| `sim-data-preflight` | `data.sim.generation.cli inspect` | 4 CPU, 24G, 30m, no GPU | optional `plan=paired-v1` |
 | `sim-data-initialize` | `data.sim.generation.cli inspect` | 2 CPU, 8G, 30m, no GPU | optional `plan` |
 | `sim-data-smoke` | data CLI plus environment diagnostic | 8 CPU, 64G, 2h, 1 GPU | optional `plan` |
 | `sim-data-generate` | `data.sim.generation.cli` | 8 CPU, 64G, 12h, 1 GPU | optional `plan` |
@@ -98,9 +98,9 @@ The same launchers serve both versioned plans; scientific differences remain in
 their checked-in YAML configs:
 
 ```bash
-python -m cluster.cli submit sim-data-preflight --param plan=v4-10x --dry-run
-python -m cluster.cli submit sim-data-initialize --param plan=v4-10x
-python -m cluster.cli submit sim-data-smoke --param plan=v4-10x
+python -m cluster.cli submit sim-data-preflight --param plan=paired-v1 --dry-run
+python -m cluster.cli submit sim-data-initialize --param plan=paired-v1
+python -m cluster.cli submit sim-data-smoke --param plan=paired-v1
 ```
 
 Review smoke artifacts before full generation. The required order is
@@ -109,9 +109,9 @@ review means the default runbook does not silently chain every phase. After a
 phase has been reviewed, dependencies can be explicit:
 
 ```bash
-GEN_JOB=$(python -m cluster.cli submit sim-data-generate --param plan=v4-10x \
+GEN_JOB=$(python -m cluster.cli submit sim-data-generate --param plan=paired-v1 \
   | sed -n 's/^submitted_job_id=//p')
-python -m cluster.cli submit sim-data-convert --param plan=v4-10x \
+python -m cluster.cli submit sim-data-convert --param plan=paired-v1 \
   --dependency "afterok:$GEN_JOB"
 ```
 

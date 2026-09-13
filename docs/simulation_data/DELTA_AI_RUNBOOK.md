@@ -22,8 +22,8 @@ export XARM_SLURM_PARTITION=ghx4
 cd "$XARM_REPOSITORY"
 
 "$XARM_PYTHON" -m cluster.cli list
-"$XARM_PYTHON" -m cluster.cli show sim-data-smoke --param plan=v4-10x
-"$XARM_PYTHON" -m cluster.cli submit sim-data-smoke --param plan=v4-10x --dry-run
+"$XARM_PYTHON" -m cluster.cli show sim-data-smoke --param plan=paired-v1
+"$XARM_PYTHON" -m cluster.cli submit sim-data-smoke --param plan=paired-v1 --dry-run
 ```
 
 `XARM_WORK_ROOT` changes the four versioned roots and their exact-root safety
@@ -38,15 +38,15 @@ the dry-run command first, submit it once, then advance one audited phase at a
 time:
 
 ```bash
-"$XARM_PYTHON" -m cluster.cli submit sim-data-preflight --param plan=v4-10x
-"$XARM_PYTHON" -m cluster.cli submit sim-data-initialize --param plan=v4-10x --dry-run
-"$XARM_PYTHON" -m cluster.cli submit sim-data-initialize --param plan=v4-10x
-"$XARM_PYTHON" -m cluster.cli submit sim-data-smoke --param plan=v4-10x
+"$XARM_PYTHON" -m cluster.cli submit sim-data-preflight --param plan=paired-v1
+"$XARM_PYTHON" -m cluster.cli submit sim-data-initialize --param plan=paired-v1 --dry-run
+"$XARM_PYTHON" -m cluster.cli submit sim-data-initialize --param plan=paired-v1
+"$XARM_PYTHON" -m cluster.cli submit sim-data-smoke --param plan=paired-v1
 # Review SMOKE_AUDIT.md and every contact sheet.
-"$XARM_PYTHON" -m cluster.cli submit sim-data-generate --param plan=v4-10x
+"$XARM_PYTHON" -m cluster.cli submit sim-data-generate --param plan=paired-v1
 # Require complete=true and RAW_PASS.
-"$XARM_PYTHON" -m cluster.cli submit sim-data-convert --param plan=v4-10x
-"$XARM_PYTHON" -m cluster.cli submit sim-data-audit --param plan=v4-10x
+"$XARM_PYTHON" -m cluster.cli submit sim-data-convert --param plan=paired-v1
+"$XARM_PYTHON" -m cluster.cli submit sim-data-audit --param plan=paired-v1
 ```
 
 Every job writes a machine-readable record under
