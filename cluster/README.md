@@ -68,6 +68,8 @@ templates and the FarmShare operating guide are in
 
 | Workflow | Canonical owner | Resources | Required parameters |
 |---|---|---|---|
+| `openpi-inference-environment` | pinned external OpenPI lock and package installer | 8 CPU, 32G, 1h, no GPU | optional absolute `uv` executable |
+| `checkpoint-snapshot` | `evaluation.common.checkpoint_snapshot` | 8 CPU, 32G, 1h, no GPU | fixed `repo_id`, `revision` |
 | `sim-data-preflight` | `data.sim.generation.cli inspect` | 4 CPU, 24G, 30m, no GPU | optional `plan=paired-v1` |
 | `sim-data-initialize` | `data.sim.generation.cli inspect` | 2 CPU, 8G, 30m, no GPU | optional `plan` |
 | `sim-data-smoke` | data CLI plus environment diagnostic | 8 CPU, 64G, 2h, 1 GPU | optional `plan` |
@@ -139,13 +141,16 @@ python -m cluster.cli submit formal-sim-evaluation --dry-run \
   --param host=POLICY_SERVER_HOST
 ```
 
-The protocol defaults to the canonical formal v2 config and its exact isolated
+The protocol defaults to the canonical formal v3 config and its exact isolated
 output root. Optional `protocol`, `output_root`, `port`, `timeout`, and `resume`
 parameters remain subject to the evaluator's validation. The evaluator rejects
 unverified server provenance, incomplete checkpoints, output-root mismatch,
-and invalid episodes. Starting the upstream server is still a manual external
-OpenPI operation because this repository has no validated canonical server
-launcher; the cluster layer does not fabricate one.
+and invalid episodes. By default the policy server remains external.
+`start_server=true` explicitly selects `evaluation.sim.service` to restore,
+warm up, serve, and clean up the model on the same allocated node. This requires
+`host=127.0.0.1`. Optional `verification_report=/absolute/path/report.json`
+uses that lifecycle for GPU/EGL and repeated-request/restart verification
+without episodes. The FarmShare guide records actual verification status.
 
 There is deliberately no real-robot job. Real evaluation remains inside the
 human-controlled safety boundary documented by `evaluation/real/`.

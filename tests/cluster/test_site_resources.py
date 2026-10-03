@@ -56,3 +56,29 @@ def test_absent_site_config_preserves_deltaai_submission(monkeypatch: pytest.Mon
     assert not any(x.startswith("--qos=") for x in sbatch)
     assert "XARM_SLURM_RESOURCE_CONFIG" not in settings.runtime_environment()
     assert _sbatch_command(replace(settings, resource_config=None, qos=None), workflow, supplied) == sbatch
+
+
+def test_environment_setup_uses_frozen_upstream_and_external_interpreter() -> None:
+    settings = ClusterSettings.from_environment()
+    workflow = get_workflow("openpi-inference-environment")
+    commands = workflow.build(settings, workflow.parameters({"uv": "/opt/verified/uv"}))
+    assert workflow.resources.gpus == 0
+    assert all(command.argv[0] == "/opt/verified/uv" for command in commands)
+    export = commands[0].argv
+    assert "--frozen" in export and "--no-emit-workspace" in export
+    assert "gym-aloha" in export and "dm-control" in export and "mujoco" in export
+    for command in commands[1:]:
+        assert str(settings.python) in command.argv
+    assert "mujoco==3.3.7" in commands[3].argv
+    assert commands[-1].record_output == str(settings.work_root / "openpi-environment-freeze.txt")
+
+
+def test_local_service_is_opt_in_and_uses_the_same_evaluator_arguments() -> None:
+    settings = ClusterSettings.from_environment()
+    workflow = get_workflow("formal-sim-evaluation")
+    supplied = {"model_spec": "target.json", "host": "127.0.0.1"}
+    external = workflow.build(settings, workflow.parameters(supplied))[0].argv
+    local = workflow.build(settings, workflow.parameters({**supplied, "start_server": "true"}))[0].argv
+    assert external[2] == "evaluation.sim.cli"
+    assert local[2] == "evaluation.sim.service"
+    assert external[:2] == local[:2] and external[3:] == local[3:]

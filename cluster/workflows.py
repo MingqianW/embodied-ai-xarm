@@ -362,9 +362,12 @@ def _videos(settings: ClusterSettings, _: Mapping[str, str]) -> tuple[Command, .
 
 
 def _evaluation(settings: ClusterSettings, params: Mapping[str, str]) -> tuple[Command, ...]:
+    local_service = params["start_server"].lower() in {"1", "true", "yes"}
+    if params["verification_report"] and not local_service:
+        raise ValueError("verification_report requires start_server=true")
     args: list[object] = [
         "-m",
-        "evaluation.sim.cli",
+        "evaluation.sim.service" if local_service else "evaluation.sim.cli",
         "--model-spec",
         params["model_spec"],
         "--protocol",
@@ -384,7 +387,49 @@ def _evaluation(settings: ClusterSettings, params: Mapping[str, str]) -> tuple[C
         args.extend(("--output-root", params["output_root"]))
     if params["resume"].lower() in {"1", "true", "yes"}:
         args.append("--resume")
+    if params["verification_report"]:
+        args.extend(("--verification-report", params["verification_report"]))
     return (Command("formal-simulation-evaluation", _python(settings, *args)),)
+
+
+def _openpi_environment(settings: ClusterSettings, params: Mapping[str, str]) -> tuple[Command, ...]:
+    requirements = settings.work_root / "openpi-inference-requirements.txt"
+    uv = params["uv"]
+    return (
+        Command("export-pinned-inference-dependencies", (
+            uv, "export", "--project", str(settings.openpi_root), "--frozen", "--no-dev",
+            "--no-emit-workspace", "--no-emit-package", "gym-aloha",
+            "--no-emit-package", "dm-control", "--no-emit-package", "mujoco",
+            "--output-file", str(requirements),
+        )),
+        Command("install-pinned-inference-dependencies", (
+            uv, "pip", "install", "--python", str(settings.python), "--no-deps",
+            "--requirements", str(requirements),
+        )),
+        Command("install-pinned-openpi-client", (
+            uv, "pip", "install", "--python", str(settings.python), "--no-deps",
+            str(settings.openpi_root / "packages" / "openpi-client"),
+        )),
+        Command("install-project-simulation-dependencies", (
+            uv, "pip", "install", "--python", str(settings.python),
+            "mujoco==3.3.7", "opencv-python-headless==4.11.0.86", "pytest==8.4.2",
+        )),
+        Command("check-environment-dependencies", (
+            uv, "pip", "check", "--python", str(settings.python),
+        )),
+        Command("freeze-environment", (
+            uv, "pip", "freeze", "--python", str(settings.python),
+        ), record_output=str(settings.work_root / "openpi-environment-freeze.txt")),
+    )
+
+
+def _checkpoint_snapshot(settings: ClusterSettings, params: Mapping[str, str]) -> tuple[Command, ...]:
+    directory = settings.work_root / "checkpoints" / "huggingface" / params["repo_id"].split("/")[-1] / params["revision"]
+    return (Command("download-and-verify-snapshot", _python(
+        settings, "-m", "evaluation.common.checkpoint_snapshot",
+        "--repo-id", params["repo_id"], "--revision", params["revision"],
+        "--directory", directory, "--report", settings.work_root / "evidence" / "checkpoint-snapshot.json",
+    )),)
 
 
 def _training_preflight(
@@ -455,6 +500,20 @@ def _workflow(
 WORKFLOWS = {
     workflow.name: workflow
     for workflow in (
+        Workflow(
+            "checkpoint-snapshot",
+            "Download a fixed checkpoint and verify hashes and all OCDBT values",
+            Resources("01:00:00", 8, "32G", 0),
+            _checkpoint_snapshot,
+            defaults={"repo_id": "MingqianW/xarm-pi05-20260703", "revision": "c308df02100a3f2b67512cc7ae61e28f16ee9263"},
+        ),
+        Workflow(
+            "openpi-inference-environment",
+            "Install pinned external OpenPI inference dependencies and project MuJoCo runtime",
+            Resources("01:00:00", 8, "32G", 0),
+            _openpi_environment,
+            defaults={"uv": "uv"},
+        ),
         Workflow(
             "sim-data-preflight",
             "Resolve and inspect a simulation data plan without writing outputs",
@@ -531,6 +590,8 @@ WORKFLOWS = {
                 "port": "8000",
                 "timeout": "120",
                 "resume": "false",
+                "start_server": "false",
+                "verification_report": "",
             },
         ),
         Workflow(

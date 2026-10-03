@@ -6,9 +6,10 @@ The initial audit on 2026-10-03 verified access to a FarmShare rice login node,
 the reorganized source branch, the pinned external OpenPI source, Slurm
 resource/account queries, and offline regression checks. It has **not**
 validated a GPU environment, restored the target model, launched a verified
-policy service, or completed smoke/formal evaluation. No success rates or job
-IDs can be inferred from these static checks. Continue from the external
-runtime state record after resolving the gates below.
+policy service, or completed smoke/formal evaluation. CPU installation job
+`1773283` is running on `wheat-02` (normal partition/QoS, requested 8 CPU/32G,
+allocated 10 CPU). No success rates can be inferred from these checks.
+Continue from the external runtime state record after inspecting job evidence.
 
 Source baseline: `refactor/reorganize-repository` at
 `924f4e5771d76f336e085aba3b90ca67cabc7b53`; do not substitute `main`.
@@ -76,7 +77,9 @@ df -h "$HOME" /scratch/users/"$USER"
 Actual partitions were `normal`, `bigmem`, and `gpu`; the documentation's
 `interactive` example did not match the current partition list. The observed
 GPU partition had a two-day limit, four GPUs per node, and maximum memory of
-4G per requested CPU. Node features reported L40S/48GB; this is scheduler
+4000 MB per requested CPU. Slurm can increase allocated CPUs to satisfy a
+GiB memory request, so retain actual accounting as well as requested values.
+Node features reported L40S/48GB; this is scheduler
 inventory, not an allocated driver or inference measurement. Actual QoS limits
 also differed from the documentation's example. Available modules included
 Python 3.12.3 and CUDA 12.9.0, differing from the software page's older module
@@ -89,7 +92,8 @@ guarantee. Keep source and required scientific results in separately named
 durable user directories; put rebuildable environments, model snapshots, and
 caches outside source. Explicitly establish an archive destination and verify
 copies before relying on it. Prefer the documented DTN/Globus mechanism for
-large transfers; only small source/metadata transfers have been performed.
+large transfers. The model snapshot workflow runs transfers on a scheduled
+compute node and verifies downloaded data before any model restoration.
 
 ## Paths and scheduler templates
 
@@ -128,9 +132,26 @@ These command-resolution checks have been exercised; they do not prove that a
 job can run. The unmodified OpenPI lock pins JAX/JAXlib 0.5.3, Flax 0.10.2,
 Orbax 0.11.13, NumPy 1.26.4, TensorStore 0.1.74, and ml-dtypes 0.4.1. The
 separate initial audit environment used Python 3.12.3 and MuJoCo 3.3.7 for
-offline checks. It is not the verified model environment. Build the latter
-from the pinned source/lock, then record compatibility and driver evidence
-inside an allocation before claiming readiness.
+offline checks. It is not the verified model environment. Python 3.11.15 is
+prepared for the model environment. The pinned upstream lock includes MuJoCo
+2.3.7 through the unused Aloha simulator, while this project's scene requires
+MuJoCo >=3.2. The `openpi-inference-environment` workflow exports the frozen
+upstream dependencies, omits the unrelated `gym-aloha`/`dm-control`/`mujoco`
+packages, installs the pinned client, and adds MuJoCo 3.3.7, OpenCV headless
+4.11.0.86, and pytest 8.4.2. OpenPI source/lock remain unchanged; its source is
+loaded from `OPENPI_ROOT/src` rather than installed as a package with Aloha
+dependencies. The workflow checks dependencies and saves a freeze file.
+Use a CPU partition/QoS for this CPU-only setup job:
+
+```bash
+XARM_SLURM_PARTITION=normal XARM_SLURM_QOS=normal \
+  python -m cluster.cli submit openpi-inference-environment --dry-run \
+  --param uv=/absolute/path/to/verified/uv
+```
+
+Remove `--dry-run` only after the site eligibility/resource checks. Record
+compatibility and driver evidence inside an allocation before claiming
+readiness. No model is imported during installation.
 
 ## Model and evaluation gates
 
@@ -143,8 +164,12 @@ and manifest-referenced OCDBT parameter data, then restore and infer on a
 compute node. File preflight alone is insufficient.
 
 The pinned upstream service lacks the evaluator's required
-`formal_evaluation_provenance` and `request_rng_required` boundary. A verified,
-thin project adapter is still required: strip request RNG metadata before model
+`formal_evaluation_provenance` and `request_rng_required` boundary. The thin
+[`policy_runtime.openpi_request_rng`](../../policy_runtime/openpi_request_rng.py)
+adapter uses the pinned JAX Pi0/Pi0.5 public explicit-noise hook. Offline tests
+verify transport stripping, seed propagation, repeat/restart behavior with a
+fixture, and canonical final-action checks. Real GPU sampling and service
+identity are still unverified. The service integration must strip request RNG metadata before model
 transforms, use the request seed in real sampling, reject missing seeds, return
 finite final 10x7 actions, and derive identity from the actually loaded
 checkpoint/config/assets. Do not advertise required metadata without proving
@@ -189,3 +214,50 @@ Only resume with exactly matching provenance and the canonical evaluator's
 configuration, complete runtime, service validation, and actual results are
 still pending verification. Never fabricate human-review decisions; sim performance alone
 does not establish real-robot performance.
+
+## Target commands and acceptance gates
+
+After the CPU environment workflow passes its dependency check, inspect and
+submit the fixed snapshot workflow using `XARM_PYTHON` from that environment:
+
+```bash
+XARM_SLURM_PARTITION=normal XARM_SLURM_QOS=normal \
+  python -m cluster.cli submit checkpoint-snapshot --dry-run
+```
+
+The snapshot report verifies Hugging Face sizes/content hashes and reads every
+OCDBT key/value. It is not evidence of a restored model. The target spec is
+[`HF_REAL_20260703.json`](../../configs/evaluation/sim/models/HF_REAL_20260703.json),
+using the explicit inference-only config `pi05_xarm_hf_20260703` and its own
+normalization asset. Numeric manager step remains unknown.
+
+The following command forms are implemented and covered by offline resolution
+tests; their GPU execution is still pending. Run preflight first:
+
+```bash
+python -m evaluation.sim.cli --dry-run \
+  --model-spec configs/evaluation/sim/models/HF_REAL_20260703.json \
+  --protocol configs/evaluation/sim/protocols/hf_real_20260703_smoke_v3.json \
+  --openpi-root "$OPENPI_ROOT"
+
+python -m cluster.cli submit formal-sim-evaluation --dry-run \
+  --param model_spec=configs/evaluation/sim/models/HF_REAL_20260703.json \
+  --param protocol=configs/evaluation/sim/protocols/hf_real_20260703_smoke_v3.json \
+  --param host=127.0.0.1 --param port=18005 --param start_server=true \
+  --param verification_report="$XARM_WORK_ROOT/evidence/gpu-model-verification.json"
+```
+
+Verification restores the real model twice, compares repeated seeds exactly
+with an intervening different seed, rejects missing seeds, and renders both
+canonical policy images through EGL. Metadata is derived after restoration
+and a finite 10x7 warm-up. It never consumes prepared identity JSON.
+Service logs and restoration reports live under
+`$XARM_WORK_ROOT/logs/policy_service/SLURM_JOB_ID/`.
+
+After real verification passes, omit `verification_report` for twelve
+all-video smoke episodes. Accept raw result validity, observation/action
+contracts, scoring, provenance, and videos before choosing measured resources
+and changing the protocol to `hf_real_20260703_formal_v3.json` for 120 episodes.
+Both target protocols inherit the canonical v3 scientific fields and override
+only output roots; scientific overrides/nested inheritance are rejected.
+`resume=true` maps to the existing evaluator's guarded `--resume`.
