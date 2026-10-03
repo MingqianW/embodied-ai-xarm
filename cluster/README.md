@@ -151,6 +151,9 @@ warm up, serve, and clean up the model on the same allocated node. This requires
 `host=127.0.0.1`. Optional `verification_report=/absolute/path/report.json`
 uses that lifecycle for GPU/EGL and repeated-request/restart verification
 without episodes. The FarmShare guide records actual verification status.
+`dry_run=true` instead runs the canonical client configuration/checkpoint
+preflight and requires `start_server=false`. Use verified CPU scheduling
+overrides for that mode; it never restores a model or runs episodes.
 
 There is deliberately no real-robot job. Real evaluation remains inside the
 human-controlled safety boundary documented by `evaluation/real/`.

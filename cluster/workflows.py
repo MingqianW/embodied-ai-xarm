@@ -363,6 +363,9 @@ def _videos(settings: ClusterSettings, _: Mapping[str, str]) -> tuple[Command, .
 
 def _evaluation(settings: ClusterSettings, params: Mapping[str, str]) -> tuple[Command, ...]:
     local_service = params["start_server"].lower() in {"1", "true", "yes"}
+    dry_run = params["dry_run"].lower() in {"1", "true", "yes"}
+    if dry_run and local_service:
+        raise ValueError("Evaluation dry_run uses the canonical client preflight; start_server must be false")
     if params["verification_report"] and not local_service:
         raise ValueError("verification_report requires start_server=true")
     args: list[object] = [
@@ -389,6 +392,8 @@ def _evaluation(settings: ClusterSettings, params: Mapping[str, str]) -> tuple[C
         args.append("--resume")
     if params["verification_report"]:
         args.extend(("--verification-report", params["verification_report"]))
+    if dry_run:
+        args.append("--dry-run")
     return (Command("formal-simulation-evaluation", _python(settings, *args)),)
 
 
@@ -592,6 +597,7 @@ WORKFLOWS = {
                 "resume": "false",
                 "start_server": "false",
                 "verification_report": "",
+                "dry_run": "false",
             },
         ),
         Workflow(

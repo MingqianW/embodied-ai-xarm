@@ -82,3 +82,14 @@ def test_local_service_is_opt_in_and_uses_the_same_evaluator_arguments() -> None
     assert external[2] == "evaluation.sim.cli"
     assert local[2] == "evaluation.sim.service"
     assert external[:2] == local[:2] and external[3:] == local[3:]
+
+
+def test_scheduled_evaluation_preflight_never_starts_a_model_service() -> None:
+    settings = ClusterSettings.from_environment()
+    workflow = get_workflow("formal-sim-evaluation")
+    supplied = {"model_spec": "target.json", "host": "127.0.0.1", "dry_run": "true"}
+    command = workflow.build(settings, workflow.parameters(supplied))[0].argv
+    assert command[2] == "evaluation.sim.cli"
+    assert command[-1] == "--dry-run"
+    with pytest.raises(ValueError, match="start_server must be false"):
+        workflow.build(settings, workflow.parameters({**supplied, "start_server": "true"}))
