@@ -42,7 +42,9 @@ selected checkpoint manifest and normalization asset.
 `evaluation.sim.service` adds an explicitly selected, allocation-local service
 lifecycle for this evaluator. It restores and warms up the specified checkpoint
 before deriving metadata, uses the `policy_runtime` request-noise adapter,
-enforces localhost, and bounds readiness, inference, and owned-process cleanup.
+enforces localhost, selects the single Slurm GPU's global EGL device index,
+and bounds readiness, inference, and owned-process cleanup. Ambiguous/multiple
+GPU allocations are rejected instead of rendering on an unallocated device.
 Its verification mode compares real seeded requests across intervening requests
 and two model restores, and checks canonical MuJoCo EGL observations. It never
 accepts a caller-supplied provenance document. Provenance includes this service,

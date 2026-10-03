@@ -33,6 +33,16 @@ def require_allocation() -> None:
         raise RuntimeError("Model service and rendering require a Slurm allocation")
 
 
+def configure_allocated_egl() -> None:
+    require_allocation()
+    # Slurm reports global GPU IDs; MuJoCo's EGL selector uses device indices,
+    # independently of CUDA_VISIBLE_DEVICES. Never select the first free GPU.
+    selected = os.environ.get("SLURM_JOB_GPUS", "")
+    if not selected.isdecimal():
+        raise RuntimeError("Local service requires exactly one numeric SLURM_JOB_GPUS device ID")
+    os.environ["MUJOCO_EGL_DEVICE_ID"] = selected
+
+
 def _write_new(path: Path, value: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("x", encoding="utf-8") as stream:
@@ -74,6 +84,7 @@ def restore_policy(args: Any, model: Any, provenance: dict[str, Any]) -> tuple[A
         "jax_devices": [str(device) for device in devices],
         "jax_version": jax.__version__, "metadata": metadata,
         "checkpoint": str(model.manager_directory),
+        "gpu_selection": {key: os.environ.get(key) for key in ("SLURM_JOB_GPUS", "CUDA_VISIBLE_DEVICES", "MUJOCO_EGL_DEVICE_ID")},
     })
     return policy, metadata
 
@@ -160,6 +171,7 @@ def main() -> None:
     parser.add_argument("--verification-report", type=Path)
     args = parser.parse_args()
     require_allocation()
+    configure_allocated_egl()
     if args.host != "127.0.0.1" or not 1024 <= args.port <= 65535:
         raise ValueError("Allocation-local service requires 127.0.0.1 and an unprivileged port")
     if args.timeout <= 0 or args.readiness_timeout <= 0:

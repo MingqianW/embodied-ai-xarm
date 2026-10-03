@@ -10,6 +10,7 @@ import pytest
 
 from evaluation.sim.service import require_allocation, stop_owned_process, wait_ready
 from evaluation.sim.service import restore_policy
+from evaluation.sim.service import configure_allocated_egl
 from evaluation.common.models import ModelSpec
 
 
@@ -23,6 +24,23 @@ def test_readiness_detects_early_server_exit() -> None:
     process = SimpleNamespace(poll=lambda: 1, returncode=1)
     with pytest.raises(RuntimeError, match="before readiness"):
         wait_ready(process, SimpleNamespace(readiness_timeout=1), {})
+
+
+def test_egl_uses_allocated_global_gpu_instead_of_cuda_remapped_zero(monkeypatch) -> None:
+    monkeypatch.setenv("SLURM_JOB_ID", "test")
+    monkeypatch.setenv("SLURM_JOB_GPUS", "2")
+    monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "0")
+    monkeypatch.setenv("MUJOCO_EGL_DEVICE_ID", "1")
+    configure_allocated_egl()
+    assert __import__("os").environ["MUJOCO_EGL_DEVICE_ID"] == "2"
+
+
+@pytest.mark.parametrize("devices", ["", "0,1", "GPU-unknown"])
+def test_egl_refuses_ambiguous_allocation(devices, monkeypatch) -> None:
+    monkeypatch.setenv("SLURM_JOB_ID", "test")
+    monkeypatch.setenv("SLURM_JOB_GPUS", devices)
+    with pytest.raises(RuntimeError, match="exactly one numeric"):
+        configure_allocated_egl()
 
 
 def test_cleanup_kills_owned_process_after_terminate_timeout() -> None:
