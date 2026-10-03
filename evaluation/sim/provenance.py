@@ -46,7 +46,6 @@ def build_provenance(
             name: file_hash(evaluation_root / name)
             for name in (
                 "config.py",
-                "models.py",
                 "rng.py",
                 "success.py",
                 "slip_trace.py",

@@ -35,6 +35,10 @@ Pre-formal evaluators remain under `evaluation/sim/legacy/` because their
 human-label and output semantics are not interchangeable with the formal
 six-task protocol.
 
+Formal provenance hashes the model contract at its canonical owner,
+`evaluation/common/models.py`, alongside simulation evaluation code and the
+selected checkpoint manifest and normalization asset.
+
 Simulation measurement may inspect MuJoCo object state and contacts. Those
 implementations stay in `evaluation.sim`; a task prompt is shared, but its
 measurement backend is not.
