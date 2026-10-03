@@ -52,6 +52,9 @@ def build_provenance(
                 "episode_runner.py",
                 "outputs.py",
                 "summary.py",
+                "representative_videos.py",
+                "video.py",
+                "failure_diagnosis.py",
                 "cli.py",
                 "service.py",
             )

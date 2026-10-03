@@ -309,3 +309,8 @@ for site prerequisites and actual verification status.
 
 The target model's smoke/formal protocol files inherit the existing v3 protocols
 and change only their output root. The loader rejects scientific overrides.
+
+When category retention discards a recording or replaces a representative,
+the corresponding episode's video paths are cleared. Its result and retention
+status remain available, while summary indexes do not advertise deleted files.
+Representative selection and scoring are unchanged.

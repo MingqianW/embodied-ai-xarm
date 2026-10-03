@@ -11,6 +11,7 @@ from evaluation.sim.representative_videos import index_json_path
 from evaluation.sim.representative_videos import load_representative_index
 from evaluation.sim.representative_videos import retain_video_bundle
 from evaluation.sim.representative_videos import validate_category_video_coverage
+from evaluation.sim.summary import build_video_index
 
 
 def _result(*, model: str, task: str, seed: int, category: str) -> dict[str, object]:
@@ -123,6 +124,20 @@ def test_second_same_category_is_discarded_and_temporary_bundle_is_cleaned(tmp_p
     assert index["records"][0]["seed"] == 50001
 
 
+def test_discarded_video_clears_recorded_paths_when_merged_by_runner(tmp_path: Path) -> None:
+    root = tmp_path / "evaluation"
+    _retain(root, category="PICK_PARTIAL_LIFT", seed=50001)
+    model_root, result_path, temporary, result, metadata = _episode(root, seed=50002, category="PICK_PARTIAL_LIFT")
+    retained = retain_video_bundle(
+        model_root=model_root, result_json_path=result_path, result=result,
+        temporary_video_dir=temporary, temporary_metadata=metadata,
+        video_policy="category_representative",
+    )
+    result["artifacts"] = {**metadata, **retained}
+    assert build_video_index([result])["episodes"][0]["video_path"] is None
+    assert result["artifacts"].get("video_paths") == {}
+
+
 def test_lower_seed_later_replaces_higher_seed_only_after_new_bundle_finalizes(tmp_path: Path) -> None:
     root = tmp_path / "evaluation"
     _, high_result_path, _ = _retain(root, category="PICK_DROPPED_AFTER_LIFT", seed=50010)
@@ -135,6 +150,7 @@ def test_lower_seed_later_replaces_higher_seed_only_after_new_bundle_finalizes(t
     assert high_result_path.is_file()
     assert low_result_path.is_file()
     assert read_json(high_result_path)["artifacts"]["video_retention"]["status"] == "superseded_by_lower_seed_representative"
+    assert build_video_index([read_json(high_result_path)])["episodes"][0]["video_path"] is None
 
 
 def test_task_model_and_invalid_categories_do_not_share_representatives(tmp_path: Path) -> None:

@@ -198,6 +198,8 @@ def _mark_replaced_result(previous: dict[str, Any], replacement: dict[str, Any])
         "selection_policy": SELECTION_POLICY,
     }
     artifacts.pop("representative_video", None)
+    artifacts["video_paths"] = {}
+    artifacts["combined_video_path"] = None
     result["artifacts"] = artifacts
     write_json(path, result)
     return True
@@ -275,6 +277,10 @@ def retain_video_bundle(
     if previous_valid and int(previous["seed"]) <= candidate["seed"]:
         _remove_temporary(temporary_video_dir)
         return {
+            # The runner merges retention metadata over recorded metadata.
+            # Clear paths to the deleted temporary bundle explicitly.
+            "video_paths": {},
+            "combined_video_path": None,
             "video_retention": {
                 "status": "discarded_after_classification",
                 "category": category,
