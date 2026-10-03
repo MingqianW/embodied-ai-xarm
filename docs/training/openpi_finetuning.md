@@ -38,6 +38,39 @@ python -m training.validation.openpi_smoke \
   --output-json /tmp/xarm_openpi_smoke.json
 ```
 
+## User-supplied historical configuration
+
+On 2026-10-03 the user supplied the training-time xArm configuration snippet.
+Its `XARM_CONFIG_SNIPPET` payload exactly matches the existing
+[`legacy_openpi_xarm_config_snippet.py`](../../training/openpi/legacy_openpi_xarm_config_snippet.py).
+The payload is preserved without adding a second configuration implementation.
+Its SHA-256, computed over the UTF-8 string value, is
+`d7c9f396dc7b0532500db6c5ec80b5ce3b7df1b19f9dd464cc3b04cc5e87477d`.
+
+Inspect the original snippet from the repository root without importing OpenPI
+or loading a checkpoint:
+
+```bash
+python -m training.openpi.legacy_openpi_xarm_config_snippet
+```
+
+The supplied source contains `pi05_xarm_full_finetune`, `pi05_xarm`, and
+`pi05_xarm_colab_smoke`. Its historical `pi05_xarm` entry uses the dataset
+placeholder `local/xarm_pi05_data`, 20,001 training steps, a 5,000-step save
+interval, and EMA 0.999. The matching project registry identity is
+`pi05_xarm_legacy_snippet_20001`; the current unsuffixed `pi05_xarm` still means
+the separately audited 198-episode configuration. This source confirmation
+does not change either registry entry.
+
+For checkpoint inference, retain the supplied model and action-transform
+semantics, and resolve the normalization asset from the actual checkpoint.
+The HF `MingqianW/xarm-pi05-20260703` asset is
+`local/xarm_pi05_20260703`, which differs from the snippet's dataset placeholder.
+Do not rename checkpoint assets or recompute normalization to match that
+placeholder. The snippet is historical evidence, not a registered upstream
+config or a validated policy-server launch command; checkpoint restore and
+server compatibility still require validation in the deployment environment.
+
 ## Training delegation
 
 The command resolves every declared source independently and then delegates to

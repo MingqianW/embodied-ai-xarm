@@ -7,6 +7,12 @@ with the repo id used by data/real/conversion/convert_xarm_raw_to_lerobot.py.
 
 This is the historical static integration snippet. The `pi05_xarm` entry below
 is not the repository's current 198-episode config with the same name.
+
+On 2026-10-03 the user supplied this snippet as the configuration used during
+training. Its XARM_CONFIG_SNIPPET payload matches the supplied source exactly;
+the historical names, dataset placeholder, and transforms are preserved here.
+See docs/training/openpi_finetuning.md for the source checksum and the distinction
+between this evidence and a checkpoint-specific runnable configuration.
 """
 
 # Add these imports in openpi/src/openpi/training/config.py if they are not present:
