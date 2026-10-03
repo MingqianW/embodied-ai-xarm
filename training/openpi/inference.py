@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import replace
+from dataclasses import fields, replace
 from pathlib import Path
 from typing import Any
 
@@ -13,6 +13,16 @@ from training.openpi.adapter import _imports, build_openpi_train_config
 
 HF_XARM_CONFIG = "pi05_xarm_hf_20260703"
 HF_XARM_ASSET = "local/xarm_pi05_20260703"
+
+
+def strict_parameter_config(config: Any) -> Any:
+    """Use upstream's strict load hook without silently dropping checkpoint leaves."""
+    class StrictModelConfig(type(config.model)):
+        def load(self, params: Any, *, remove_extra_params: bool = True) -> Any:
+            return super().load(params, remove_extra_params=False)
+
+    values = {field.name: getattr(config.model, field.name) for field in fields(config.model) if field.init}
+    return replace(config, model=StrictModelConfig(**values))
 
 
 def hf_xarm_inference_experiment() -> Any:

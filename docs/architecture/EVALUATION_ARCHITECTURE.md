@@ -42,6 +42,9 @@ selected checkpoint manifest and normalization asset.
 `evaluation.sim.service` adds an explicitly selected, allocation-local service
 lifecycle for this evaluator. It restores and warms up the specified checkpoint
 before deriving metadata, uses the `policy_runtime` request-noise adapter,
+and uses upstream's strict model-load option to reject extra checkpoint
+parameters rather than silently discard them. The project configuration
+subclass preserves the original fields and upstream transforms. It
 enforces localhost, selects the single Slurm GPU's global EGL device index,
 and bounds readiness, inference, and owned-process cleanup. Ambiguous/multiple
 GPU allocations are rejected instead of rendering on an unallocated device.

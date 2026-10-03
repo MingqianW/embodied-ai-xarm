@@ -1,4 +1,5 @@
 from pathlib import Path
+from dataclasses import dataclass, asdict
 
 import pytest
 
@@ -29,3 +30,25 @@ def test_existing_config_resolution_still_delegates_to_upstream(monkeypatch: pyt
     assert inference.resolve_inference_config("external", openpi_root=Path("external")) == "existing upstream config"
     with pytest.raises(ValueError, match="unknown upstream"):
         inference.resolve_inference_config("absent", openpi_root=Path("external"))
+
+
+def test_strict_inference_loader_preserves_fields_and_disables_extra_parameter_removal() -> None:
+    @dataclass(frozen=True)
+    class Model:
+        action_dim: int = 32
+        action_horizon: int = 10
+
+        def load(self, params, *, remove_extra_params=True):
+            return params, remove_extra_params
+
+    @dataclass(frozen=True)
+    class Config:
+        model: Model
+        name: str = "selected"
+
+    original = Config(Model())
+    strict = inference.strict_parameter_config(original)
+    assert asdict(strict) == asdict(original)
+    assert isinstance(strict.model, Model)
+    assert strict.model.load({"extra": 1}) == ({"extra": 1}, False)
+    assert original.model.load({"extra": 1}) == ({"extra": 1}, True)

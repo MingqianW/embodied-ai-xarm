@@ -52,7 +52,7 @@ def _write_new(path: Path, value: dict[str, Any]) -> None:
 
 def restore_policy(args: Any, model: Any, provenance: dict[str, Any]) -> tuple[Any, dict[str, Any]]:
     require_allocation()
-    from training.openpi.inference import resolve_inference_config
+    from training.openpi.inference import resolve_inference_config, strict_parameter_config
     from openpi.policies.policy_config import create_trained_policy
     import jax
 
@@ -63,7 +63,7 @@ def restore_policy(args: Any, model: Any, provenance: dict[str, Any]) -> tuple[A
     if (config.model.action_horizon, config.model.action_dim) != (10, 32):
         raise ValueError("This service supports the audited JAX Pi0/Pi0.5 10x32 sampling contract")
     started = time.monotonic()
-    loaded = create_trained_policy(config, model.manager_directory)
+    loaded = create_trained_policy(strict_parameter_config(config), model.manager_directory)
     policy = RequestRngPolicy(loaded, horizon=config.model.action_horizon, internal_action_dim=config.model.action_dim)
     norm_path = model.manager_directory / "assets" / model.norm_asset_id / "norm_stats.json"
     state = np.asarray(json.loads(norm_path.read_text())["norm_stats"]["state"]["mean"], dtype=np.float32)
@@ -79,6 +79,7 @@ def restore_policy(args: Any, model: Any, provenance: dict[str, Any]) -> tuple[A
     metadata = {**policy.metadata, "formal_evaluation_provenance": server_provenance(provenance)}
     _write_new(args.load_report, {
         "model_restored": True, "warmup_action_shape": list(actions.shape),
+        "strict_parameter_restore": True,
         "warmup_actions_finite": bool(np.isfinite(actions).all()),
         "restore_and_warmup_seconds": time.monotonic() - started,
         "jax_devices": [str(device) for device in devices],

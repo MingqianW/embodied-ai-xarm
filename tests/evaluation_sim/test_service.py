@@ -82,6 +82,7 @@ def test_identity_is_generated_only_after_selected_restore_and_warmup(tmp_path, 
     monkeypatch.setitem(sys.modules, "openpi.policies.policy_config", upstream)
     monkeypatch.setitem(sys.modules, "jax", SimpleNamespace(devices=lambda: [SimpleNamespace(platform="gpu")], __version__="fixture"))
     monkeypatch.setattr(inference, "resolve_inference_config", resolve)
+    monkeypatch.setattr(inference, "strict_parameter_config", lambda selected: selected)
     monkeypatch.setattr(service, "RequestRngPolicy", lambda policy, **kwargs: policy)
     args = SimpleNamespace(openpi_root=tmp_path / "openpi", load_report=tmp_path / "load.json")
     provenance = {"protocol": {"tasks": [{"prompt": "canonical fixture prompt"}]}, "evaluation_protocol_version": "fixture", "protocol_sha256": "protocol", "model_spec_sha256": "model", "provenance_sha256": "provenance", "model": model.to_json()}
