@@ -9,6 +9,7 @@ import yaml
 
 from data.common.task_identity import TASKS
 from data.sim.generation.core import registry
+from evaluation.sim.config import load_protocol
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -41,3 +42,5 @@ def test_repository_task_consumers_use_the_canonical_subtask_set() -> None:
         protocol = json.loads(path.read_text(encoding="utf-8"))
         if "tasks" in protocol:
             assert [task["task_id"] for task in protocol["tasks"]] == canonical_ids, path.name
+        elif "extends" in protocol:
+            assert [task.task_id for task in load_protocol(path).tasks] == canonical_ids, path.name

@@ -295,3 +295,17 @@ python -m cluster.cli submit formal-sim-evaluation --dry-run \
 
 This is a distinct output identity; do not mix it with the
 category-representative formal output.
+
+## Allocation-local deployment
+
+The usual evaluator remains `python -m evaluation.sim.cli` against a verified
+external server. `python -m evaluation.sim.service` accepts its model/protocol
+arguments and manages a localhost server and the unchanged evaluator inside a
+Slurm allocation. It restores the checkpoint, enforces per-request sampling,
+warms up before readiness, and cleans up its own process on failure or completion.
+`--verification-report PATH` performs GPU/EGL/request/restart checks without
+running episodes. See [FarmShare deployment](commands/farmshare_sim_evaluation.md)
+for site prerequisites and actual verification status.
+
+The target model's smoke/formal protocol files inherit the existing v3 protocols
+and change only their output root. The loader rejects scientific overrides.

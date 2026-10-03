@@ -94,6 +94,17 @@ add `--recompute-norm`.
 
 ## Normalization and actions
 
+For inference of the public `MingqianW/xarm-pi05-20260703` export, the explicit
+`training.openpi.inference` boundary resolves `pi05_xarm_hf_20260703`. It uses
+the operator-supplied original `pi05_xarm` snippet's model/transform fields,
+represented by the existing historical registry variant, and explicitly binds
+its template normalization identity to `local/xarm_pi05_20260703` inside the
+checkpoint. This does not identify it as the later Delta run of the same name,
+establish its actual training step/task coverage, or launch training. Other
+evaluation config names continue through the upstream registry. See the
+[FarmShare deployment guide](../commands/farmshare_sim_evaluation.md) for
+restoration and real inference verification status.
+
 The stored dataset remains the `data.common` contract: two RGB uint8 images,
 7D absolute state, 7D next-frame absolute action, and canonical task text.
 OpenPI converts joint action dimensions 0-5 to deltas relative to the current

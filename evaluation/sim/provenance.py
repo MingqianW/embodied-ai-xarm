@@ -52,6 +52,8 @@ def build_provenance(
                 "episode_runner.py",
                 "outputs.py",
                 "summary.py",
+                "cli.py",
+                "service.py",
             )
         },
         "evaluation_common_code": {
@@ -61,6 +63,17 @@ def build_provenance(
                 "human_review.py",
                 "models.py",
                 "provenance.py",
+            )
+        },
+        "inference_boundary_code": {
+            name: file_hash(evaluation_root.parents[1] / name)
+            for name in (
+                "policy_runtime/openpi_request_rng.py",
+                "policy_runtime/remote_policy_client.py",
+                "training/openpi/inference.py",
+                "training/openpi/adapter.py",
+                "training/openpi/data_config.py",
+                "training/configs/experiments.py",
             )
         },
     }

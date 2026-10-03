@@ -150,6 +150,17 @@ def _task_specs(rows: list[dict[str, Any]]) -> tuple[EvaluationTask, ...]:
 def load_protocol(path: Path | None = None) -> FormalProtocol:
     path = (path or default_protocol_path()).expanduser().resolve()
     raw = json.loads(path.read_text(encoding="utf-8"))
+    if "extends" in raw:
+        # Deployment may isolate outputs, but cannot override scientific fields.
+        if set(raw) != {"extends", "outputs"} or set(raw["outputs"]) != {"formal_output_root"}:
+            raise ValueError("An inherited protocol may only override formal_output_root")
+        parent = (path.parent / raw["extends"]).resolve()
+        if parent.parent != path.parent or parent == path:
+            raise ValueError("Protocol parent must be another file in the same directory")
+        base = json.loads(parent.read_text(encoding="utf-8"))
+        if "extends" in base:
+            raise ValueError("Nested protocol inheritance is not supported")
+        raw = {**base, "outputs": raw["outputs"]}
     if raw.get("protocol_version") not in {
         FORMAL_PROTOCOL_VERSION,
         SMOKE_PROTOCOL_VERSION,

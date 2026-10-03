@@ -15,7 +15,7 @@ not an operating architecture.
 | `data.sim` | Generation plans, oracle, recording, acceptance, audit, conversion, and simulation-dataset paths | Core simulation physics |
 | `training` | Dataset selection, normalization, mixing, OpenPI configuration adaptation, experiment identity, and preflight | OpenPI implementation or evaluation |
 | `evaluation.common` | Model identity, shared result views, provenance, and review contracts | Backend measurement |
-| `evaluation.sim` | Formal deterministic protocol, simulation measurement, failure diagnosis, evidence, videos, and reports | Policy-server launch or real outcomes |
+| `evaluation.sim` | Formal deterministic protocol, simulation measurement, failure diagnosis, evidence, videos, reports, and allocation-local formal policy-service lifecycle | General policy hosting or real outcomes |
 | `evaluation.real` | Explicitly authorized operator runtime and honest unreviewed/human-reviewed result boundary | Automatic real success perception |
 | `diagnostics` | Maintained measurements of camera, physics, environment, gripper, and real/simulation behavior | Production control or orchestration |
 | `cluster` | DeltaAI resources, environment, dependencies, submission, logs, and provenance | Scientific, dataset, evaluation, or training behavior |
@@ -27,6 +27,12 @@ not an operating architecture.
 preprocessing, and safety primitives are shared by simulation and real/evaluation
 runtimes without owning either backend. Evaluation result helpers are not
 re-exported from it.
+
+`policy_runtime.openpi_request_rng` is a thin inference adapter for an already
+loaded JAX Pi0/Pi0.5 policy. It removes the reserved request seed, generates the
+sampling noise through JAX, and calls the pinned upstream public `infer(noise=)`
+hook. It reuses canonical action validation; checkpoint/config restoration and
+formal evaluation identity remain outside this transport adapter.
 
 ## Dependency direction
 
@@ -53,6 +59,8 @@ More precisely:
   evaluation, diagnostics, or cluster.
 - Evaluation may depend on shared data contracts, `policy_runtime`, and the
   relevant backend.
+- Evaluation may consume the explicit `training.openpi.inference`
+  configuration adapter; it never invokes training or the training CLI.
 - Diagnostics and tools may depend on canonical packages they inspect.
 - `cluster` resolves canonical CLIs and executes them as subprocesses;
   canonical packages never import `cluster`.
@@ -120,8 +128,14 @@ caches belong outside source packages. `MUJOCO_OUTPUT_ROOT`,
 ## External boundaries
 
 The repository intentionally does not own the physical xArm collector/driver,
-RealSense acquisition, a complete OpenPI environment, policy-server launch,
+RealSense acquisition, a complete OpenPI environment, general policy hosting,
 remote datasets/checkpoints, Hugging Face credentials, or the DeltaAI
 scheduler. Real-hardware execution requires the explicit gates documented in
 `evaluation/real/README.md`; missing external capabilities must not be
 simulated or inferred.
+
+The explicit formal-service boundary is `evaluation.sim.service`: within a
+Slurm allocation it restores the selected model through unmodified OpenPI,
+warms it up, derives formal identity, and manages localhost readiness and cleanup.
+It invokes the existing evaluator CLI; it does not own another episode runner.
+The default evaluator and cluster workflow still use an external policy server.

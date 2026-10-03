@@ -39,6 +39,19 @@ Formal provenance hashes the model contract at its canonical owner,
 `evaluation/common/models.py`, alongside simulation evaluation code and the
 selected checkpoint manifest and normalization asset.
 
+`evaluation.sim.service` adds an explicitly selected, allocation-local service
+lifecycle for this evaluator. It restores and warms up the specified checkpoint
+before deriving metadata, uses the `policy_runtime` request-noise adapter,
+enforces localhost, and bounds readiness, inference, and owned-process cleanup.
+Its verification mode compares real seeded requests across intervening requests
+and two model restores, and checks canonical MuJoCo EGL observations. It never
+accepts a caller-supplied provenance document. Provenance includes this service,
+the request adapter, and the inference configuration boundary.
+
+Deployment protocols may inherit a canonical JSON in the same directory and
+override only `outputs.formal_output_root`. Scientific overrides and nested
+inheritance are rejected; the resolved scientific contract is identical.
+
 Simulation measurement may inspect MuJoCo object state and contacts. Those
 implementations stay in `evaluation.sim`; a task prompt is shared, but its
 measurement backend is not.

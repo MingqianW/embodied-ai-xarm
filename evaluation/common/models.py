@@ -91,9 +91,9 @@ def validate_training_config_asset(spec: ModelSpec, *, openpi_root: Path) -> str
     if str(source) not in sys.path:
         sys.path.insert(0, str(source))
     from openpi.training import checkpoints  # pylint: disable=import-outside-toplevel
-    from openpi.training import config as training_config  # pylint: disable=import-outside-toplevel
+    from training.openpi.inference import resolve_inference_config  # pylint: disable=import-outside-toplevel
 
-    config = training_config.get_config(spec.training_config)
+    config = resolve_inference_config(spec.training_config, openpi_root=openpi_root)
     data_config = config.data.create(config.assets_dirs, config.model)
     asset_id = data_config.asset_id
     if asset_id != spec.norm_asset_id:

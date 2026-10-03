@@ -1,0 +1,8 @@
+{
+  "model_id": "HF_REAL_20260703",
+  "training_config": "pi05_xarm_hf_20260703",
+  "checkpoint_root": "${XARM_WORK_ROOT}/checkpoints/huggingface/xarm-pi05-20260703/c308df02100a3f2b67512cc7ae61e28f16ee9263",
+  "manager_step": null,
+  "norm_asset_id": "local/xarm_pi05_20260703",
+  "description": "MingqianW/xarm-pi05-20260703 at c308df02100a3f2b67512cc7ae61e28f16ee9263; Real-robot-only; operator-supplied original pi05_xarm inference fields, explicit embedded asset identity; manager step and original task coverage unverified."
+}
