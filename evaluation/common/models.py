@@ -17,12 +17,16 @@ class ModelSpec:
     model_id: str
     training_config: str
     checkpoint_root: Path
-    manager_step: int
+    manager_step: int | None
     norm_asset_id: str
     description: str = ""
 
     @property
     def manager_directory(self) -> Path:
+        # Exported checkpoints may contain params/assets directly at their
+        # root. None records an unknown manager step rather than inventing one.
+        if self.manager_step is None:
+            return self.checkpoint_root
         return self.checkpoint_root / str(self.manager_step)
 
     def to_json(self) -> dict[str, Any]:
@@ -49,7 +53,7 @@ def load_model_spec(path: Path) -> ModelSpec:
         model_id=str(raw["model_id"]),
         training_config=str(raw["training_config"]),
         checkpoint_root=root.resolve(),
-        manager_step=int(raw["manager_step"]),
+        manager_step=(None if raw["manager_step"] is None else int(raw["manager_step"])),
         norm_asset_id=str(raw["norm_asset_id"]),
         description=str(raw.get("description", "")),
     )
@@ -60,7 +64,7 @@ def load_model_spec(path: Path) -> ModelSpec:
 def validate_model_spec(spec: ModelSpec) -> None:
     if not spec.model_id or not spec.training_config or not spec.norm_asset_id:
         raise ValueError("Model spec requires model_id, training_config, and norm_asset_id")
-    if spec.manager_step < 0:
+    if spec.manager_step is not None and spec.manager_step < 0:
         raise ValueError("manager_step must be non-negative")
     manager = spec.manager_directory
     required = (
@@ -111,6 +115,8 @@ def validate_abc_comparison_specs(specs: tuple[ModelSpec, ...]) -> dict[str, Any
     by_id = {spec.model_id: spec for spec in specs}
     if set(by_id) != {"A", "B", "C"} or len(by_id) != len(specs):
         raise ValueError("Expected exactly one explicit A, B, and C model specification")
+    if any(spec.manager_step is None for spec in specs):
+        raise ValueError("A/B/C comparison requires explicit numeric manager steps")
     if len({spec.manager_step for spec in specs}) != 1:
         raise ValueError("A/B/C manager steps must match")
     if len({spec.checkpoint_root for spec in specs}) != 3:

@@ -54,6 +54,13 @@ normalization asset, OpenPI and embodied-ai-xarm commits, protocol hash, and
 camera/task/XML paths plus hashes. `--resume` is allowed only when that
 provenance exactly matches the existing model output.
 
+An exported checkpoint with `params/` and `assets/` directly at its root uses
+an explicit `manager_step: null`. Its resolved checkpoint directory is
+`checkpoint_root`; the null value means the manager step is unknown, not zero
+or an inferred training step. Numeric manager steps and the A/B/C comparison
+requirements retain their existing meaning. File preflight is necessary but
+does not prove OCDBT completeness or successful model restoration.
+
 ## Deterministic policy sampling
 
 Each inference request derives its JAX seed using BLAKE2s from the protocol
