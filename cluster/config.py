@@ -33,6 +33,8 @@ class ClusterSettings:
     account: str
     partition: str
     log_root: PurePath
+    qos: str | None = None
+    resource_config: PurePath | None = None
 
     @classmethod
     def from_environment(cls) -> "ClusterSettings":
@@ -61,6 +63,12 @@ class ClusterSettings:
             python=python,
             account=os.environ.get("XARM_SLURM_ACCOUNT", DEFAULT_ACCOUNT),
             partition=os.environ.get("XARM_SLURM_PARTITION", DEFAULT_PARTITION),
+            qos=os.environ.get("XARM_SLURM_QOS") or None,
+            resource_config=(
+                _deployment_path(os.environ["XARM_SLURM_RESOURCE_CONFIG"])
+                if os.environ.get("XARM_SLURM_RESOURCE_CONFIG")
+                else None
+            ),
             log_root=(
                 _deployment_path(os.environ["XARM_CLUSTER_LOG_ROOT"])
                 if "XARM_CLUSTER_LOG_ROOT" in os.environ
@@ -70,7 +78,7 @@ class ClusterSettings:
 
     def runtime_environment(self) -> dict[str, str]:
         cache = self.work_root / "caches"
-        return {
+        environment = {
             "XARM_REPOSITORY": str(self.repository),
             "XARM_WORK_ROOT": str(self.work_root),
             "XARM_CLUSTER_LOG_ROOT": str(self.log_root),
@@ -87,3 +95,8 @@ class ClusterSettings:
             "HF_DATASETS_CACHE": str(cache / "huggingface" / "datasets"),
             "UV_CACHE_DIR": str(cache / "uv"),
         }
+        if self.qos:
+            environment["XARM_SLURM_QOS"] = self.qos
+        if self.resource_config:
+            environment["XARM_SLURM_RESOURCE_CONFIG"] = str(self.resource_config)
+        return environment

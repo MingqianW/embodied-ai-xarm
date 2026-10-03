@@ -1,0 +1,14 @@
+{
+  "environment-check": {
+    "time": "00:30:00",
+    "cpus": 8,
+    "memory": "32G",
+    "gpus": 1
+  },
+  "formal-sim-evaluation": {
+    "time": "12:00:00",
+    "cpus": 16,
+    "memory": "64G",
+    "gpus": 1
+  }
+}

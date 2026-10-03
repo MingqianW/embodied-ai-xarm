@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from dataclasses import replace
 from datetime import datetime, timezone
 import json
 import os
@@ -15,7 +16,7 @@ import sys
 from typing import Any, Iterable
 
 from cluster.config import ClusterSettings
-from cluster.workflows import Command, WORKFLOWS, Workflow, get_workflow
+from cluster.workflows import Command, Resources, WORKFLOWS, Workflow, get_workflow
 
 
 def _utc() -> str:
@@ -47,12 +48,36 @@ def _command_json(command: Command) -> dict[str, Any]:
     }
 
 
+def _resources(settings: ClusterSettings, workflow: Workflow) -> Resources:
+    if settings.resource_config is None:
+        return workflow.resources
+    raw = json.loads(Path(settings.resource_config).read_text(encoding="utf-8"))
+    if not isinstance(raw, dict) or set(raw) - set(WORKFLOWS):
+        raise ValueError("Resource config must map existing workflow names to resource overrides")
+    overrides = raw.get(workflow.name, {})
+    if not isinstance(overrides, dict) or set(overrides) - {"time", "cpus", "memory", "gpus"}:
+        raise ValueError("Resource overrides support only time, cpus, memory, and gpus")
+    resource = replace(workflow.resources, **overrides)
+    for name, minimum in (("cpus", 1), ("gpus", 0)):
+        value = getattr(resource, name)
+        if type(value) is not int or value < minimum:
+            raise ValueError(f"Resource {name} must be an integer >= {minimum}")
+    if not isinstance(resource.memory, str) or not re.fullmatch(r"[1-9][0-9]*[KMGT]?", resource.memory):
+        raise ValueError("Resource memory must be a positive Slurm size such as 64G")
+    if not isinstance(resource.time, str) or not re.fullmatch(
+        r"(?:[0-9]+-)?[0-9]+:[0-5][0-9]:[0-5][0-9]", resource.time
+    ):
+        raise ValueError("Resource time must use [days-]hours:minutes:seconds")
+    return resource
+
+
 def _resolved(
     name: str,
     supplied: dict[str, str],
 ) -> tuple[ClusterSettings, Workflow, dict[str, str], tuple[Command, ...]]:
     settings = ClusterSettings.from_environment()
     workflow = get_workflow(name)
+    workflow = replace(workflow, resources=_resources(settings, workflow))
     params = workflow.parameters(supplied)
     commands = workflow.build(settings, params)
     if not commands or any(not command.argv for command in commands):
@@ -69,7 +94,7 @@ def _workflow_json(
     return {
         "name": workflow.name,
         "description": workflow.description,
-        "resources": vars(workflow.resources),
+        "resources": vars(_resources(settings, workflow)),
         "required_parameters": list(workflow.required_parameters),
         "parameters": params,
         "commands": [_command_json(command) for command in commands],
@@ -80,6 +105,8 @@ def _workflow_json(
             "python": str(settings.python),
             "account": settings.account,
             "partition": settings.partition,
+            "qos": settings.qos,
+            "resource_config": str(settings.resource_config) if settings.resource_config else None,
             "log_root": str(settings.log_root),
         },
     }
@@ -91,7 +118,7 @@ def _sbatch_command(
     supplied: dict[str, str],
     dependency: str | None = None,
 ) -> list[str]:
-    resource = workflow.resources
+    resource = _resources(settings, workflow)
     slurm_logs = settings.log_root / "slurm"
     params = workflow.parameters(supplied)
     identity = params.get("plan") or params.get("config")
@@ -137,6 +164,8 @@ def _sbatch_command(
     ]
     if resource.gpus:
         command.append(f"--gpus-per-node={resource.gpus}")
+    if settings.qos:
+        command.append(f"--qos={settings.qos}")
     if dependency:
         command.append(f"--dependency={dependency}")
     command.extend(

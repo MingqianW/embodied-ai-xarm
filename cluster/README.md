@@ -55,6 +55,15 @@ Common cache variables are derived from `XARM_WORK_ROOT`:
 the account, partition, interpreter, and OpenPI checkout can be overridden.
 POSIX deployment paths remain POSIX when commands are audited from Windows.
 
+Optional `XARM_SLURM_QOS` selects a verified site QoS.
+`XARM_SLURM_RESOURCE_CONFIG` selects a JSON mapping from existing workflow
+names to overrides of `time`, `cpus`, `memory`, and `gpus`. Resolved inspection,
+submission, and run records use the same resource values. When these variables
+are absent the DeltaAI defaults and resource profiles are unchanged. Site
+templates and the FarmShare operating guide are in
+[`farmshare/`](farmshare/) and
+[`docs/commands/farmshare_sim_evaluation.md`](../docs/commands/farmshare_sim_evaluation.md).
+
 ## Workflows and resource ownership
 
 | Workflow | Canonical owner | Resources | Required parameters |
