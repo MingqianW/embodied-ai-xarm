@@ -49,7 +49,7 @@ def restore_policy(args: Any, model: Any, provenance: dict[str, Any]) -> tuple[A
     devices = jax.devices()
     if not devices or any(device.platform != "gpu" for device in devices):
         raise RuntimeError(f"GPU-backed JAX is required; found {devices}")
-    config = resolve_inference_config(model.training_config_name, openpi_root=args.openpi_root)
+    config = resolve_inference_config(model.training_config, openpi_root=args.openpi_root)
     if (config.model.action_horizon, config.model.action_dim) != (10, 32):
         raise ValueError("This service supports the audited JAX Pi0/Pi0.5 10x32 sampling contract")
     started = time.monotonic()
