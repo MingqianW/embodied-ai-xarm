@@ -61,6 +61,15 @@ Simulation measurement may inspect MuJoCo object state and contacts. Those
 implementations stay in `evaluation.sim`; a task prompt is shared, but its
 measurement backend is not.
 
+Physical Place initialization belongs to `simulation.scene.reset`, shared by
+generation and evaluation. Its one-time TCP-relative transform initializes the
+existing free target and ordinary contact physics settles it. The scene runtime
+preserves that object's pose/momentum on release and passes policy raw gripper
+commands through without a fixture lock or observation override. Evaluation's
+unchanged initial-grasp validator rejects loss of contact, drift, table contact
+and forbidden collisions. Provenance hashes both reset and runtime code, and a
+reset change requires a new run identity instead of resuming prior episodes.
+
 ## Real-robot boundary
 
 `evaluation/real/run_policy.py` is the cleaned-up location of the existing

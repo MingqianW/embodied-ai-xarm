@@ -34,6 +34,10 @@ def build_provenance(
         "task_scene": {"path": str(protocol.task_scene_config_path), "sha256": file_hash(protocol.task_scene_config_path)},
         "camera": {"path": str(protocol.camera_config_path), "sha256": file_hash(protocol.camera_config_path)},
         "robot_xml": {"path": str(protocol.robot_xml_path), "sha256": file_hash(protocol.robot_xml_path)},
+        "simulation_reset_code": {
+            name: file_hash(evaluation_root.parents[1] / name)
+            for name in ("simulation/scene/reset.py", "simulation/scene/runtime.py")
+        },
         "checkpoint_params_manifest": {
             "path": str(model.manager_directory / "params" / "manifest.ocdbt"),
             "sha256": file_hash(model.manager_directory / "params" / "manifest.ocdbt"),

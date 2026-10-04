@@ -30,6 +30,9 @@ def test_provenance_resolves_reorganized_model_owner(tmp_path: Path) -> None:
     )
     assert paths["checkpoint_params_manifest"]["sha256"] == file_hash(manifest)
     assert paths["checkpoint_norm_stats"]["sha256"] == file_hash(norm)
+    assert paths["simulation_reset_code"]["simulation/scene/runtime.py"] == file_hash(
+        repository / "simulation" / "scene" / "runtime.py"
+    )
     identity = dict(provenance)
     digest = identity.pop("provenance_sha256")
     assert digest == json_hash(identity)

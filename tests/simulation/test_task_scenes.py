@@ -154,16 +154,16 @@ class TaskSceneRuntimeTests(unittest.TestCase):
         finally:
             context.close()
 
-    def test_place_task_swaps_local_held_pepper_on_release(self) -> None:
+    def test_place_task_preserves_free_pepper_on_release(self) -> None:
         context, runtime, _ = self.make_scene("place_red_pepper_in_ring")
         try:
             self.assertFalse(runtime.released)
             self.assertEqual(runtime.target_body, "red_pepper")
             self.assertAlmostEqual(
                 runtime.physical_gripper_raw_target(440.0),
-                492.58,
+                440.0,
             )
-            self.assertEqual(runtime.active_target_body, "held_red_pepper")
+            self.assertEqual(runtime.active_target_body, "red_pepper")
             observation = {
                 "observation/state": np.asarray(
                     [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 845.0],
@@ -172,7 +172,7 @@ class TaskSceneRuntimeTests(unittest.TestCase):
             }
             runtime.adjust_observation(observation)
             self.assertAlmostEqual(
-                float(observation["observation/state"][6]), 492.58, places=3
+                float(observation["observation/state"][6]), 845.0, places=3
             )
             held_id = mujoco.mj_name2id(
                 context.model,
@@ -203,15 +203,15 @@ class TaskSceneRuntimeTests(unittest.TestCase):
                 "held_pepper_lobe_0",
             )
             self.assertEqual(int(context.model.geom_bodyid[held_lobe]), held_id)
-            self.assertEqual(int(context.model.geom_contype[held_lobe]), 1)
+            self.assertEqual(int(context.model.geom_contype[held_lobe]), 0)
             for hidden_name in ("red_pepper_lobe_0", "red_pepper_stem"):
                 hidden_geom = mujoco.mj_name2id(
                     context.model,
                     mujoco.mjtObj.mjOBJ_GEOM,
                     hidden_name,
                 )
-                self.assertEqual(int(context.model.geom_contype[hidden_geom]), 0)
-                self.assertEqual(int(context.model.geom_conaffinity[hidden_geom]), 0)
+                self.assertEqual(int(context.model.geom_contype[hidden_geom]), 1)
+                self.assertEqual(int(context.model.geom_conaffinity[hidden_geom]), 1)
             equality_names = {
                 mujoco.mj_id2name(context.model, mujoco.mjtObj.mjOBJ_EQUALITY, index)
                 for index in range(context.model.neq)
@@ -220,13 +220,17 @@ class TaskSceneRuntimeTests(unittest.TestCase):
                 "red_pepper",
                 " ".join(name or "" for name in equality_names),
             )
-            position_before_release = context.data.xpos[held_id].copy()
+            position_before_release = context.data.xpos[pepper_id].copy()
+            qpos_before_release = context.data.qpos.copy()
+            qvel_before_release = context.data.qvel.copy()
             self.assertFalse(runtime.release_if_requested(600.0))
             self.assertTrue(runtime.release_if_requested(700.0))
             self.assertTrue(runtime.released)
             np.testing.assert_allclose(
                 context.data.xpos[pepper_id], position_before_release, atol=1e-12
             )
+            np.testing.assert_array_equal(context.data.qpos, qpos_before_release)
+            np.testing.assert_array_equal(context.data.qvel, qvel_before_release)
             self.assertEqual(runtime.active_target_body, "red_pepper")
             self.assertIsNotNone(runtime.release_simulation_time_s)
             self.assertAlmostEqual(

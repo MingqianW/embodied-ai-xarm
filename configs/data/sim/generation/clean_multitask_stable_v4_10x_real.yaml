@@ -48,11 +48,11 @@ verification:
     maximum_relative_drift_m: 0.005
     maximum_grasp_region_delta_m: 0.015
     minimum_height_above_table_m: 0.04
-    gripper_raw: 492.58
+    gripper_raw: 450.0
     tcp_to_pepper_translation_m:
     - 0.0
     - 0.0
-    - -0.03
+    - -0.04
     tcp_to_pepper_quaternion_wxyz:
     - 1.0
     - 0.0
@@ -195,7 +195,7 @@ tasks:
     distractor_episodes: 0
     base_seed: 10600000
     required_active_objects:
-    - held_red_pepper
+    - red_pepper
     - ring
     generators:
       direct_place: {episodes: 84}

@@ -35,10 +35,20 @@ class TaskSceneRuntime:
         return str(self.spec["target_body"])
 
     @property
+    def free_place_grasp(self) -> bool:
+        """A one-time TCP transform initializes the same free body throughout."""
+
+        return self.spec.get("initial_tcp_to_object") is not None
+
+    @property
     def active_target_body(self) -> str:
         """Return the physical object representing the task target right now."""
 
-        if self.spec["success"]["type"] == "place_in_ring" and not self.released:
+        if (
+            self.spec["success"]["type"] == "place_in_ring"
+            and not self.free_place_grasp
+            and not self.released
+        ):
             return "held_red_pepper"
         return self.target_body
 
@@ -51,6 +61,7 @@ class TaskSceneRuntime:
     def adjust_observation(self, observation: dict[str, Any]) -> None:
         if (
             self.spec["success"]["type"] == "place_in_ring"
+            and not self.free_place_grasp
             and not self.released
             and "initial_gripper_raw" in self.spec
         ):
@@ -59,7 +70,7 @@ class TaskSceneRuntime:
             )
 
     def physical_gripper_raw_target(self, gripper_raw_target: float) -> float:
-        if self.spec["success"]["type"] != "place_in_ring":
+        if self.spec["success"]["type"] != "place_in_ring" or self.free_place_grasp:
             return float(gripper_raw_target)
         held_raw = float(self.spec["initial_gripper_raw"])
         if not self.released:
@@ -79,7 +90,7 @@ class TaskSceneRuntime:
     ) -> float:
         """Legacy slide target used only by frozen runtime diagnostics."""
 
-        if self.spec["success"]["type"] != "place_in_ring":
+        if self.spec["success"]["type"] != "place_in_ring" or self.free_place_grasp:
             return float(default_sim_target)
         mapping = gripper_config.get("gripper_mapping", {})
         canonical_four_bar = "sim_joint_min_rad" in mapping
@@ -112,6 +123,14 @@ class TaskSceneRuntime:
             or float(gripper_raw_target) < float(threshold)
         ):
             return False
+
+        if self.free_place_grasp:
+            # Release is a command event. Contact and gravity determine when
+            # the existing free object actually leaves the fingers; preserve
+            # its pose and momentum without a fixture swap or teleport.
+            self.released = True
+            self.release_simulation_time_s = float(self.data.time)
+            return True
 
         held_body_id = _body_id(self.model, "held_red_pepper")
         object_addr = _freejoint_qpos_address(self.model, "red_pepper")

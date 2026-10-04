@@ -69,6 +69,18 @@ when creating a new dataset plan.
 
 ## Object-layout randomization
 
+Place now uses the existing free `red_pepper` throughout reset, validation,
+transfer and release. The canonical four-bar reset initializes its TCP-relative
+pose once and then settles through ordinary contact physics; it does not swap
+a fixed held fixture into a free body. Both generation plans declare this same
+body identity, initial raw target and transform, and configuration validation
+rejects mismatches with `simulation/config/task_scenes.yaml`. The task text,
+randomization profile, camera/gripper mapping and acceptance thresholds are
+unchanged. Preserve existing outputs from the earlier held-fixture convention;
+use a new run root and provenance rather than resuming that data after the
+reset correction. The default Place generator version is unchanged; the
+source/configuration and initial-condition metadata identify this reset.
+
 The canonical simulation config owns named randomization profiles. The current
 v4 10x-real plan and formal evaluation v3 both select `clean_wide_v4`. It samples every active task object within
 ±10 cm of its nominal position, with independent offsets and the comparison

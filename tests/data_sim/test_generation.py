@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from data.sim.generation.collection import resolve_seed
-from data.sim.generation.config import OutputRoots, load_pipeline_config
+from data.sim.generation.config import OutputRoots, load_pipeline_config, validate_pipeline_config
 from data.sim.generation import conversion
 from data.sim.generation.manifest import atomic_write_json, initial_manifest
 from data.common.task_identity import (
@@ -63,6 +63,16 @@ def _pick_result(samples: list[StabilitySample]):
 
 
 class TestTaskRegistryAndConfig:
+    @pytest.mark.parametrize("field,value,message", [
+        ("tcp_to_pepper_translation_m", (0.0, 0.0, -0.03), "TCP translation"),
+        ("tcp_to_pepper_quaternion_wxyz", (0.0, 1.0, 0.0, 0.0), "TCP orientation"),
+    ])
+    def test_place_initialization_mismatch_is_rejected(self, field, value, message):
+        config = _config()
+        changed = replace(config, place_initial=replace(config.place_initial, **{field: value}))
+        with pytest.raises(ValueError, match=message):
+            validate_pipeline_config(changed)
+
     def test_exact_six_ids_prompts_and_counts(self) -> None:
         config = _config()
         assert [task.task_id for task in config.tasks] == [task.task_id for task in TASKS]
@@ -105,7 +115,7 @@ class TestTaskRegistryAndConfig:
         by_id = {task.task_id: task.required_active_objects for task in config.tasks}
         assert by_id["smallest_block"] == ("small_block", "large_block")
         assert by_id["largest_block"] == ("small_block", "large_block")
-        assert by_id["place_red_pepper_in_ring"] == ("held_red_pepper", "ring")
+        assert by_id["place_red_pepper_in_ring"] == ("red_pepper", "ring")
         scenes = load_task_scene_config()["tasks"]
         for task in config.tasks:
             assert tuple(scenes[task.task_id]["active_bodies"]) == task.required_active_objects
@@ -377,12 +387,12 @@ class TestPlaceValidation:
         assert result["place_verification_steps_executed"] == 20
         assert result["place_verification_duration_s"] == pytest.approx(2.0)
 
-    def test_place_uses_local_held_pepper_reset(self) -> None:
+    def test_place_uses_physical_free_pepper_reset(self) -> None:
         scene = load_task_scene_config()["tasks"]["place_red_pepper_in_ring"]
         assert scene["target_body"] == "red_pepper"
-        assert scene["active_bodies"] == ["held_red_pepper", "ring"]
-        assert scene["initial_gripper_raw"] == 492.58
-        assert scene["initial_gripper_sim_half_width"] == 0.0273
+        assert scene["active_bodies"] == ["red_pepper", "ring"]
+        assert scene["initial_gripper_raw"] == 450.0
+        assert scene["initial_tcp_to_object"]["translation_m"] == [0.0, 0.0, -0.04]
 
 
 class TestConversionContract:

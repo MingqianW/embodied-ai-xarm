@@ -90,7 +90,16 @@ may still succeed before the episode horizon. Diagnostics include initial,
 final, and maximum height, confirmation counts, hold checks, and maximum
 post-success downward slip.
 
-Placement starts from the existing physically simulated free-body grasp. Before
+Placement starts from the canonical physically simulated free-body grasp in
+[`task_scenes.yaml`](../simulation/config/task_scenes.yaml). The pepper is
+initialized once relative to the final randomized TCP pose and settles for
+500 physical steps. The current four-bar gripper and pepper collision geometry
+are unchanged; no weld, fixture or repeated positioning assists this reset.
+The same free body remains active throughout validation and policy control;
+opening records a release command without changing object pose or momentum.
+The canonical reset values were frozen using model-free contact diagnostics,
+before evaluating policy success. Generation resolves the same reset.
+Before
 policy control, the formal runner holds the reset target for ten 0.1 s checks
 and rejects the episode if the pepper loses gripper contact, touches the table,
 drifts more than 5 mm relative to the TCP, becomes non-finite, or has a

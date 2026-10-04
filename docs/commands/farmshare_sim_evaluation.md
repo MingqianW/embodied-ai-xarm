@@ -7,6 +7,35 @@ strict model restoration, service identity, request RNG, and EGL observation
 checks passed. Smoke produced all 12 episodes but failed infrastructure
 acceptance on both Place resets. No formal 120-episode job was submitted.
 
+The operator subsequently authorized a bounded physical Place reset repair
+with the current four-bar gripper and collision geometry. CPU geometry probe
+`1775099` and a finite model-free initialization diagnosis `1775157` identified
+a contact grasp at raw target `450` and TCP-relative translation `[0,0,-0.040]`
+m. Arm pose, ring position, geometry, solver/friction, randomization and all
+acceptance/scoring thresholds remain unchanged. The canonical scene now enables
+the existing free pepper, initializes its pose once after arm randomization,
+and runs the existing 500 physics settling steps. No initialization assistance
+is used. Release preserves pose and momentum, gripper commands pass through,
+and observation state is not overridden. Both generation configurations and
+the canonical task object's declaration resolve the same physical reset.
+
+Focused CPU checks in `1775186` passed the two smoke seeds and remaining 18
+formal seeds, including physical release without attachment. Its shared-config
+check exposed the old generation object declaration, which was corrected.
+`1775189` then passed all 20 seeds and both generation/evaluation profile
+checks; a later test command referenced a nonexistent filename and did not
+execute its remaining suite. Actual per-seed evidence is in
+`evidence/place-repair-canonical-20`: minimum two finger contacts, minimum
+height 0.105258m above table, maximum relative drift 0.000063197m, no table or
+forbidden collision. This validates initialization, not learned-policy success.
+New outputs use `hf_real_20260703_physical_place_smoke_v3` and
+`hf_real_20260703_physical_place_formal_v3`; old rejected episodes remain
+archived and cannot be resumed with the repaired source.
+The corrected shared/configuration suite in `1775191` passed 47 tests,
+covering generation, paired plans, task registry, provenance and inherited
+protocol behavior. Focused rendering/task-runtime regressions are gated before
+the new smoke in its GPU allocation.
+
 The operator confirmed unsponsored research and a full-service SUNet ID.
 CPU installation `1774160` passed all six steps in 4m42s on `wheat-01`, with
 202 compatible packages; the environment freeze is in the external runtime.
@@ -55,8 +84,9 @@ a free-body grasp. The unchanged fixture has zero contacts on every check.
 Using the existing transfer at exactly the same pose also fails all 20 seeds:
 the free pepper falls below the required height or contacts the table. No pose
 was tuned and no threshold, protocol, model, or scene asset was changed.
-Progress requires the previously validated free-body initialization (especially
-`initial_tcp_to_object`) or an explicit scientific correction to this conflict.
+The operator subsequently authorized the bounded scientific reset correction
+described above. Historical `62f5eaf` used an older slide/contact geometry and
+different ring position, so that configuration was not directly transplanted.
 Preserve these failed results; a source/reset correction needs a new isolated
 output identity and cannot resume them with changed provenance.
 
@@ -319,12 +349,12 @@ XARM_SLURM_RESOURCE_CONFIG=/absolute/path/to/cpu-preflight-resources.json \
   python -m cluster.cli submit formal-sim-evaluation \
   --param dry_run=true \
   --param model_spec=configs/evaluation/sim/models/HF_REAL_20260703.json \
-  --param protocol=configs/evaluation/sim/protocols/hf_real_20260703_smoke_v3.json \
+  --param protocol=configs/evaluation/sim/protocols/hf_real_20260703_physical_place_smoke_v3.json \
   --param host=127.0.0.1
 
 python -m cluster.cli submit formal-sim-evaluation --dry-run \
   --param model_spec=configs/evaluation/sim/models/HF_REAL_20260703.json \
-  --param protocol=configs/evaluation/sim/protocols/hf_real_20260703_smoke_v3.json \
+  --param protocol=configs/evaluation/sim/protocols/hf_real_20260703_physical_place_smoke_v3.json \
   --param host=127.0.0.1 --param port=18005 --param start_server=true \
   --param verification_report="$XARM_WORK_ROOT/evidence/gpu-model-verification.json"
 ```
@@ -340,7 +370,7 @@ Use a new verification report path on a repeat, because report/service evidence
 is created exclusively. After real verification passes, omit `verification_report` for twelve
 all-video smoke episodes. Accept raw result validity, observation/action
 contracts, scoring, provenance, and videos before choosing measured resources
-and changing the protocol to `hf_real_20260703_formal_v3.json` for 120 episodes.
+and changing the protocol to `hf_real_20260703_physical_place_formal_v3.json` for 120 episodes.
 Both target protocols inherit the canonical v3 scientific fields and override
 only output roots; scientific overrides/nested inheritance are rejected.
 `resume=true` maps to the existing evaluator's guarded `--resume`.

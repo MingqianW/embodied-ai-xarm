@@ -1,0 +1,6 @@
+{
+  "extends": "formal_xarm_pi05_eval_smoke_v3.json",
+  "outputs": {
+    "formal_output_root": "${XARM_WORK_ROOT}/mujoco_outputs/policy_evaluation/hf_real_20260703_physical_place_smoke_v3"
+  }
+}

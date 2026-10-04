@@ -269,13 +269,19 @@ def configure_task_scene(
             raise ValueError("initial_tcp_to_object is supported only for Place")
         if spec.get("object_identity") != runtime.target_body:
             raise ValueError("Place object identity must equal target_body")
+        if runtime.target_body not in active_bodies or "held_red_pepper" in active_bodies:
+            raise ValueError("Free Place initialization requires only the free target")
         translation = np.asarray(
             initial_tcp_to_object.get("translation_m"), dtype=np.float64
         )
         quaternion = np.asarray(
             initial_tcp_to_object.get("quaternion_wxyz"), dtype=np.float64
         )
-        if translation.shape != (3,) or quaternion.shape != (4,):
+        if (
+            translation.shape != (3,)
+            or quaternion.shape != (4,)
+            or not np.isfinite(translation).all()
+        ):
             raise ValueError("Invalid initial TCP-to-object transform")
         quaternion_norm = float(np.linalg.norm(quaternion))
         if not np.isfinite(quaternion_norm) or quaternion_norm <= 0.0:
@@ -360,4 +366,12 @@ def configure_task_scene(
             "initial_object_yaw": float(yaw_values.get(runtime.target_body, 0.0)),
         }
     )
+    if runtime.free_place_grasp:
+        initial_conditions["place_initialization"] = {
+            "mode": "physical_free_body",
+            "settle_steps": int(settle_steps),
+            "initial_gripper_raw": float(spec["initial_gripper_raw"]),
+            "pose_assignments": 1,
+            "attachment_used": False,
+        }
     return runtime, initial_conditions

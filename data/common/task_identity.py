@@ -54,7 +54,7 @@ TASKS: tuple[TaskDefinition, ...] = (
         "place_red_pepper_in_ring",
         "place the red pepper in the ring",
         ("place_the_red_pepper_in_the_ring",),
-        ("held_red_pepper", "ring"),
+        ("red_pepper", "ring"),
         "place",
     ),
 )

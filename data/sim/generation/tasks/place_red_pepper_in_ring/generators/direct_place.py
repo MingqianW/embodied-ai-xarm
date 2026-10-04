@@ -1,4 +1,4 @@
-"""Default direct-place generator, including the historic held-pepper check."""
+"""Default direct-place generator using the canonical physical free grasp."""
 
 from __future__ import annotations
 

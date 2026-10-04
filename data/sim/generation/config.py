@@ -459,7 +459,12 @@ def validate_pipeline_config(config: PipelineConfig) -> None:
     ):
         raise ValueError("Place gripper raw command differs across configs")
     if tuple(place_scene.get("active_bodies") or ()) != (
-        "held_red_pepper",
+        "red_pepper",
         "ring",
     ):
-        raise ValueError("Place must use the LOCAL held-pepper reset convention")
+        raise ValueError("Place must use the canonical free-pepper reset")
+    transform = _mapping(place_scene.get("initial_tcp_to_object"), "Place TCP transform")
+    if tuple(transform.get("translation_m") or ()) != config.place_initial.tcp_to_pepper_translation_m:
+        raise ValueError("Place TCP translation differs across configs")
+    if tuple(transform.get("quaternion_wxyz") or ()) != config.place_initial.tcp_to_pepper_quaternion_wxyz:
+        raise ValueError("Place TCP orientation differs across configs")

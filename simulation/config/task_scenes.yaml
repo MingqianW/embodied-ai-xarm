@@ -177,9 +177,9 @@ tasks:
       - place_the_red_pepper_in_the_ring
       - place the red pepper in the ring
     prompt: place the red pepper in the ring
-    active_bodies: [held_red_pepper, ring]
+    active_bodies: [red_pepper, ring]
     target_body: red_pepper
-    wrist_visible_bodies: [held_red_pepper, ring]
+    wrist_visible_bodies: [red_pepper, ring]
     randomizable_bodies: [ring]
     distractor_bodies: [object, blue_block]
     initial_arm_qpos:
@@ -189,8 +189,15 @@ tasks:
       - 0.1974191
       - 0.9403786
       - -0.3792221
-    initial_gripper_raw: 492.58
-    initial_gripper_sim_half_width: 0.0273
+    # Current four-bar pads retain the unchanged four-lobe pepper using
+    # physical contact. This raw target is frozen before policy evaluation.
+    initial_gripper_raw: 450.0
+    object_identity: red_pepper
+    # One-time freejoint initialization after randomized arm configuration;
+    # the existing 500 physics settling steps use no attachment or pose aid.
+    initial_tcp_to_object:
+      translation_m: [0.0, 0.0, -0.040]
+      quaternion_wxyz: [1.0, 0.0, 0.0, 0.0]
     release_gripper_raw: 650.0
     release_min_sim_half_width: 0.038
     success:
