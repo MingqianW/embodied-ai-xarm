@@ -130,7 +130,11 @@ def test_mixed_config_preserves_user_pi05_xarm_training_settings():
             config.optimization.save_interval) == (16, 20_001, 5_000)
     assert config.optimization.wandb_enabled
     assert config.optimization.fsdp_devices == 1
-    assert config.datasets == smoke.datasets
+    assert config.datasets.datasets[0] == smoke.datasets.datasets[0]
+    sim = config.datasets.datasets[1]
+    assert sim.expected_episodes == 1980
+    assert sim.repo_id == "local/xarm_mujoco_clean_multitask_stable_v4_10x_real"
+    assert sim.selection.episode_indices == tuple(range(0, 1980, 2))
     assert config.mixing == smoke.mixing
     assert config.normalization.mode is NormalizationMode.COMPUTE_FROM_DATASETS
     assert config.normalization.asset_id != smoke.normalization.asset_id

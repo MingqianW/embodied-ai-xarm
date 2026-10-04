@@ -172,13 +172,21 @@ is not active. FSDP remains the original default of one device.
 
 The registered historical unsuffixed `pi05_xarm` is a different audited run
 with 30,001 updates and save interval 10,000; its identity is preserved.
-The mixed experiment reuses the pinned real158/sim46 training selections and
-domain probabilities real0.1/sim0.9, with a new train-only normalization asset
-`xarm_pi05_real_sim_alpha09_trainonly_v1`. Dataset size does not set the ratio.
-No additional scene-group annotation is required for this experiment.
+The mixed experiment reuses the pinned 158 real training episodes and points to
+the canonical 1,980-episode `stable_v4_10x_real` simulation plan. Its six task
+counts are exactly ten times the pinned real dataset: 500 red-pepper Pick,
+240 blue-block Pick, 250 red-block Pick, 240 smallest-block Pick, 250
+largest-block Pick, and 500 Place. Even simulation episode indices (990 total)
+form the training subset; odd indices are held out. Each task is halved,
+preserving the full real-data task proportions. Domain sampling remains
+real0.1/sim0.9, independent of physical dataset size. Recompute the train-only
+normalization asset `xarm_pi05_real_sim_alpha09_trainonly_v4_10x_v1` from these
+new training selections; the 92-episode feasibility evidence stays frozen.
 
 Inspect it with `python -m training.cli show pi05_xarm_real_sim_alpha09`.
 This is a prepared full-training configuration, not an executed run. The
+1,980-episode dataset and matching normalization must pass collection,
+conversion, audit, and statistical validation before use. The
 completed ten-update smoke and its artifacts are unchanged. GPU allocation
 must be reviewed for batch16 and the chosen device topology; the earlier
 four-L40S smoke resource request is not a measurement of this configuration.

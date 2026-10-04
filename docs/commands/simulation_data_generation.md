@@ -213,6 +213,17 @@ sacct -j JOB_ID --format=JobID,JobName%32,State,Elapsed,ExitCode,MaxRSS
 
 ## Paired-v1 outputs
 
+The canonical `v4-10x-real` plan targets 1,980 accepted episodes, exactly ten
+times the pinned 198-episode real dataset's six task counts. Use
+`--param plan=v4-10x-real` with the same `sim-data-preflight`,
+`sim-data-initialize`, `sim-data-smoke`, `sim-data-generate`,
+`sim-data-convert`, and `sim-data-audit` workflows. Its config is
+`configs/data/sim/generation/clean_multitask_stable_v4_10x_real.yaml`, and
+its independent output roots end in
+`xarm_mujoco_clean_multitask_stable_v4_10x_real`. Review the smoke audit before
+the full generation job and verify raw and converted audits before training.
+The training real:sim sampling probability is configured separately.
+
 ```text
 $XARM_WORK_ROOT/mujoco_datasets/smoke/xarm_mujoco_clean_multitask_paired_trajectory_v1
 $XARM_WORK_ROOT/mujoco_datasets/raw/xarm_mujoco_clean_multitask_paired_trajectory_v1

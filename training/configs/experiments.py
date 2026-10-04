@@ -428,6 +428,7 @@ _sim_feasibility_train = tuple(
     index for start, count in ((0, 8), (16, 8), (32, 8), (48, 8), (64, 8), (80, 6))
     for index in range(start, start + count)
 )
+_sim_v4_10x_train = tuple(range(0, 1980, 2))
 _feasibility = ExperimentConfig(
     name="pi05_xarm_real_sim_feasibility_10steps",
     description="Independent full Pi0.5 base-weight feasibility smoke; alpha=0.9; episode/scene-held-out train pool",
@@ -455,11 +456,18 @@ _pi05_xarm_real_sim = replace(
     _legacy_snippet,
     name="pi05_xarm_real_sim_alpha09",
     description="Real-sim experiment derived from the user-supplied pi05_xarm 20,001-step config",
-    datasets=_feasibility.datasets,
+    datasets=DatasetSet((
+        _feasibility.datasets.datasets[0],
+        DatasetSpec(
+            "sim_v4_10x_train", "local/xarm_mujoco_clean_multitask_stable_v4_10x_real",
+            SourceBackend.SIM, ALL_TASKS, revision="stable_v4_10x_real", expected_episodes=1980,
+            selection=EpisodeSelection("explicit", 990, "Even episode indices train; odd episode indices held out, half of each task", _sim_v4_10x_train),
+        ),
+    )),
     mixing=_feasibility.mixing,
     normalization=NormalizationSpec(
         NormalizationMode.COMPUTE_FROM_DATASETS,
-        "xarm_pi05_real_sim_alpha09_trainonly_v1",
+        "xarm_pi05_real_sim_alpha09_trainonly_v4_10x_v1",
     ),
     evidence=(
         "User-supplied original pi05_xarm: batch16, 20001steps, save5000, AdamW clip1, EMA0.999; commented LR is inactive",

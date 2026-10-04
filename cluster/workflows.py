@@ -61,7 +61,7 @@ EVALUATION = Resources("12:00:00", 16, "128G")
 TRAINING = Resources("12:00:00", 16, "220G")
 CPU_PREFLIGHT = Resources("00:30:00", 4, "24G", 0)
 EXPORT = Resources("02:00:00", 8, "64G")
-DATA_PLANS = frozenset({"paired-v1"})
+DATA_PLANS = frozenset({"paired-v1", "v4-10x-real"})
 
 
 def _python(settings: ClusterSettings, *args: object) -> tuple[str, ...]:
@@ -72,6 +72,7 @@ def _dataset(settings: ClusterSettings, version: str) -> dict[str, PurePath]:
     try:
         suffix = {
             "paired-v1": "xarm_mujoco_clean_multitask_paired_trajectory_v1",
+            "v4-10x-real": "xarm_mujoco_clean_multitask_stable_v4_10x_real",
         }[version]
     except KeyError as exc:
         raise ValueError(
@@ -85,7 +86,11 @@ def _dataset(settings: ClusterSettings, version: str) -> dict[str, PurePath]:
             / "data"
             / "sim"
             / "generation"
-            / "clean_multitask_paired_trajectory_v1.yaml"
+            / (
+                "clean_multitask_stable_v4_10x_real.yaml"
+                if version == "v4-10x-real"
+                else "clean_multitask_paired_trajectory_v1.yaml"
+            )
         ),
         "raw": settings.work_root / "mujoco_datasets" / "raw" / suffix,
         "converted": settings.work_root / "mujoco_datasets" / "local" / suffix,

@@ -114,7 +114,7 @@ def test_simulation_data_workflows_preserve_phase_order() -> None:
             "handoff",
         ],
     }
-    for version in ("paired-v1",):
+    for version in ("paired-v1", "v4-10x-real"):
         for phase, labels in expected.items():
             workflow = get_workflow(f"sim-data-{phase}")
             commands = workflow.build(settings, {"plan": version})
