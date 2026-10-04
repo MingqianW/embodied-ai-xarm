@@ -1,158 +1,68 @@
 # FarmShare simulation evaluation deployment
 
-## Verification status
+## Verified deployment
 
-The repaired physical smoke1775235 passed independent acceptance1775251:
-12/12valid,0success,48videos. Formal1775252 completed29m10s with120/120valid,
-5success (Place5/20, allfivePick0/20), macro/all4.1667percent. Acceptance1775478
-verified raw/summary/provenance agreement and52videos covering13task-category
-combinations. These valid results remain in the physical_place output roots.
+This guide records the actual FarmShare deployment of
+`MingqianW/xarm-pi05-20260703`, model ID `HF_REAL_20260703`. Scientific execution
+uses source commit `4d48a779c2db11317526af69daac63d94cb76531` on the independent
+`deployment/farmshare-sim-evaluation` branch. This guide is published afterward;
+a newer documentation commit is not the source identity of existing results.
+The confirmed starting source was `refactor/reorganize-repository` at
+`924f4e5771d76f336e085aba3b90ca67cabc7b53`, not `main`.
 
-Deployment remains **incomplete** because actual resume1775480 failed before
-reading any episode: the full live provenance uses a tuple for protocol tasks,
-while JSON persistence produces a list. The two provenance digests and full
-canonical JSON are identical; only Python sequence types differ. Evidence
-`evidence/resume-json-roundtrip-diagnosis.json` records that exact difference.
-The new filesystem-roundtrip regression fails before the fix.
+Fixed-source smoke 1775501 and formal 1775518 passed independent acceptance;
+actual matching-source resume 1775551 completed successfully. The CPU proof
+verified identical SHA-256, size and mtime for all 120 raw result JSONs and
+52 retained videos. All 120 formal episodes are valid, with no infrastructure
+invalids. Raw/summary/per-task/macro/provenance/exact-prompt checks agree;
+52 videos cover all 13 observed task/category combinations and pass frame-count
+and endpoint decode. Smoke retained all 48 videos and has 12 valid/0 invalid,
+0 success; its normal failures were 9 NoLift,1 PartialLift and 2 PlaceOutsideRing.
 
-`FormalProtocol.to_json()` now emits a JSON list for tasks, retaining strict
-full-identity resume comparison. It changes no serialized scientific values,
-request RNG, physics, model, threshold, prompt, seed or scoring logic. Source
-provenance changes, so old results are preserved rather than rewritten or
-resumed across code versions. New output-only protocols
-`hf_real_20260703_resume_smoke_v3` and `hf_real_20260703_resume_formal_v3` will
-receive fresh sequential smoke/full runs, followed by actual matching-source
-resume validation. These future runs are not yet claimed as complete.
+| Stage | Slurm job | Actual completion | Allocation |
+| --- | --- | --- | --- |
+| Fixed-source 12 smoke | 1775501 | COMPLETED 0:0,3 m 54 s,oat-02 | 16 CPU,60 G,1 GPU,45 min limit |
+| Smoke acceptance | 1775515 | COMPLETED 0:0,4 s,wheat-03 | 4 CPU,8 G,one 2 CPU task,0 GPU |
+| Fixed-source 120 formal | 1775518 | COMPLETED 0:0,31 m 39 s,oat-02 | 16 CPU,60 G,1 GPU,1 h limit |
+| Formal acceptance/before snapshot | 1775549 | COMPLETED 0:0,6 s,wheat-03 | 4 CPU,8 G,one 2 CPU task,0 GPU |
+| Actual guarded resume | 1775551 | COMPLETED 0:0,43 s,oat-02 | 16 CPU,60 G,1 GPU,15 min limit |
+| Unchanged-file proof/archive/readback | 1775552 | COMPLETED 0:0,24 s,wheat-03 | 4 CPU,8 G,one 2 CPU task,0 GPU |
 
-The operator subsequently authorized a bounded physical Place reset repair
-with the current four-bar gripper and collision geometry. CPU geometry probe
-`1775099` and a finite model-free initialization diagnosis `1775157` identified
-a contact grasp at raw target `450` and TCP-relative translation `[0,0,-0.040]`
-m. Arm pose, ring position, geometry, solver/friction, randomization and all
-acceptance/scoring thresholds remain unchanged. The canonical scene now enables
-the existing free pepper, initializes its pose once after arm randomization,
-and runs the existing 500 physics settling steps. No initialization assistance
-is used. Release preserves pose and momentum, gripper commands pass through,
-and observation state is not overridden. Both generation configurations and
-the canonical task object's declaration resolve the same physical reset.
+All three GPU submissions had Requeue 0 successfully set immediately. Smoke,
+formal and resume batch peak RSS were 19,160,404 K,18,781,512 K and 19,430,488 K.
+Five-second GPU sampling observed 8824 MiB over 46 samples for smoke and 8764 MiB
+over 379 samples for formal; these are sampled maxima, not absolute peaks.
+The 1 h budget preserves the successful 16 CPU/60 G/one GPU resource shape and
+covers both the earlier 29 m 10 formal and current 31 m 39 actual run.
 
-Focused CPU checks in `1775186` passed the two smoke seeds and remaining 18
-formal seeds, including physical release without attachment. Its shared-config
-check exposed the old generation object declaration, which was corrected.
-`1775189` then passed all 20 seeds and both generation/evaluation profile
-checks; a later test command referenced a nonexistent filename and did not
-execute its remaining suite. Actual per-seed evidence is in
-`evidence/place-repair-canonical-20`: minimum two finger contacts, minimum
-height 0.105258m above table, maximum relative drift 0.000063197m, no table or
-forbidden collision. This validates initialization, not learned-policy success.
-New outputs use `hf_real_20260703_physical_place_smoke_v3` and
-`hf_real_20260703_physical_place_formal_v3`; old rejected episodes remain
-archived and cannot be resumed with the repaired source.
-The corrected shared/configuration suite in `1775191` passed 47 tests,
-covering generation, paired plans, task registry, provenance and inherited
-protocol behavior. Focused rendering/task-runtime regressions are gated before
-the new smoke in its GPU allocation.
+| Canonical task | Success / valid | Success rate |
+| --- | --- | --- |
+| red_pepper (Pick) | 0/20 | 0% |
+| blue_block (Pick) | 0/20 | 0% |
+| red_block (Pick) | 0/20 | 0% |
+| smallest_block (Pick) | 0/20 | 0% |
+| largest_block (Pick) | 0/20 | 0% |
+| place_red_pepper_in_ring | 5/20 | 25% |
+
+Six-task macro, valid overall and all-attempt success rates are each 4.1667%
+(5/120). Invalid count 0, invalid reasons{}; there are no unresolved
+infrastructure-invalid episodes. Normal failures: 72 PICK_NO_MEANINGFUL_LIFT,
+26 PICK_PARTIAL_LIFT,2 PICK_DROPPED_AFTER_LIFT,
+14 PLACE_RELEASED_OUTSIDE_RING,1 PLACE_STABLE_BUT_NOT_SUSTAINED.
+Original Place initialization validation passed on all 20 policy episodes;
+no initialization anomaly was converted into a model task failure.
+
+The six task prompts, canonical `clean_wide_v4` randomization, seeds, safety,
+reset acceptance, scoring and action semantics remain unchanged. Formal seeds
+are 50018–50037 for each task; smoke uses 50018–50019. Each prediction has a
+10-step horizon, executes five actions, and allows at most 50 predictions.
+Actions last 0.1 seconds; the physics timestep is 0.002 seconds. Target
+protocols inherit the canonical v3 protocol and override only output roots.
+A/B/C/D specifications and the original scientific protocols are preserved.
+
+## Official policy and actual site
 
 The operator confirmed unsponsored research and a full-service SUNet ID.
-CPU installation `1774160` passed all six steps in 4m42s on `wheat-01`, with
-202 compatible packages; the environment freeze is in the external runtime.
-Earlier wheel-timeout/NFS-install failures are retained in its state/logs.
-Snapshot `1774189` verified all 23 files and read all 106 OCDBT logical keys
-(12,441,508,165 bytes). CPU preflight `1774370` passed in 1m02s; action-transform
-probe `1774384` verified quantile normalization, six-joint delta/absolute
-round-trip, and unchanged raw gripper. Physics audit `1774385` found zero
-compiled differences across all six generation/evaluation tasks.
-
-Allocated environment `1774383` reported ready on `oat-02`: Python 3.11.15,
-MuJoCo 3.3.7, x86_64, NVIDIA L40S (46,068 MiB), driver 595.91.07, EGL render,
-and MP4 encoding. Seven native regressions passed, including all 120 fixed-seed
-scene resets. The overall job failed at an existing MJCF hash fixture: the
-unchanged source baseline and current XML both hash to `ac657567...`, while
-the test expects `e7d09d0d...`. The original assertion remains intact.
-
-Model verification `1774739` completed in 2m03s, 16 CPU/60G/one GPU, peak RSS
-31,681,640K. It restored the specified checkpoint twice with exact parameter
-key/shape checking and warmed up finite 10x7 final actions. Same-seed requests
-were bitwise equal after an intervening different seed and across restart;
-different seeds changed actions, missing seeds were rejected, actual-load
-identity matched the evaluator, and both real simulation camera images passed.
-Live GPU snapshots were 8,661/8,717 MiB; these are observations, not peak claims.
-An optional attaching monitor step lacked the batch GPU environment and failed;
-verification itself completed successfully. Subsequent monitoring runs in the
-batch wrapper, selecting only the allocated GPU by hardware UUID.
-
-Smoke `1774743` completed its 12-result matrix in 3m35s on `oat-02`,
-16 CPU/60G/one GPU, peak RSS 18,930,128K. All ten pick episodes were valid
-model failures (nine `PICK_NO_MEANINGFUL_LIFT`, one `PICK_PARTIAL_LIFT`);
-both Place episodes were infrastructure-invalid before model inference.
-Overall success is 0/12, valid success is 0/10, and the six-task valid macro
-is undefined because Place has no valid denominator. Read-only audit
-`1774750` verified raw/summary/per-task/macro/provenance agreement and all 48
-video files (frame counts and endpoint decode), then correctly rejected the
-two reset failures. Its earlier single-frame seeking failure was an auditor
-issue; for one frame, the decoded first frame is also the last frame.
-GPU monitoring sampled every five seconds and observed a maximum 8,824 MiB.
-These are smoke findings, not a completed formal benchmark or human review.
-
-CPU diagnosis `1774748` reproduced the Place reset conflict on all 20 formal
-seeds. The canonical configuration enables a kinematic `held_red_pepper`,
-while v3 validation requires real fingertip contacts and the runbook describes
-a free-body grasp. The unchanged fixture has zero contacts on every check.
-Using the existing transfer at exactly the same pose also fails all 20 seeds:
-the free pepper falls below the required height or contacts the table. No pose
-was tuned and no threshold, protocol, model, or scene asset was changed.
-The operator subsequently authorized the bounded scientific reset correction
-described above. Historical `62f5eaf` used an older slide/contact geometry and
-different ring position, so that configuration was not directly transplanted.
-Preserve these failed results; a source/reset correction needs a new isolated
-output identity and cannot resume them with changed provenance.
-
-Actual evaluation source was `9a2981c63f09a8d892b6b079d24802a5df4f6629`.
-Runtime evidence, raw results, summaries, video indexes, and job logs are under
-`$HOME/xarm-work/farmshare-20261003`; continue from `state.json`/`STAGES.md`.
-
-Evidence archive `1774762` completed in 16s on `wheat-01` (requested two
-CPU/8G, allocated four CPU). It read back and verified SHA-256/size for all
-187 archived runtime files. The archive is
-`$XARM_WORK_ROOT/archives/rejected-smoke-20261004T014607Z`, with source
-snapshots at evaluation commit `9a2981c`, guide commit `dc32a803`, unmodified
-OpenPI, the target normalization asset, raw results, summaries, all videos,
-logs, environment freeze, and private runtime configuration. Weights,
-environments, and caches are excluded. `file-manifest.json` records every
-runtime member; `SHA256SUMS` covers all six archive products. Follow-up CPU
-job `1774768` completed in 5s and passed `sha256sum --check SHA256SUMS` plus
-`gzip --test` for all four compressed archives. Reports are
-`evidence/smoke-archive.json` and `evidence/archive-readback.log`.
-This is a verified snapshot on the same FarmShare home filesystem, without
-an independent backup or established retention guarantee. The task-owned
-temporary installer cache was already absent when checked on `wheat-01`.
-
-Source baseline: `refactor/reorganize-repository` at
-`924f4e5771d76f336e085aba3b90ca67cabc7b53`; do not substitute `main`.
-OpenPI submodule pin and unmodified external checkout:
-`15a9616a00943ada6c20a0f158e3adb39df2ccac`.
-Public target `MingqianW/xarm-pi05-20260703`, fixed Hugging Face revision
-`c308df02100a3f2b67512cc7ae61e28f16ee9263`.
-
-The target model card says `Real-robot-only`. Its repository has checkpoint
-contents at the root, no numeric manager directory or original training
-config, and an embedded
-`assets/local/xarm_pi05_20260703/norm_stats.json`. Its normalization SHA-256 is
-`63a3d8456b509600fde0e9a3546fa2c01145cb0c3527d46ead649b4c35b37fc4`.
-The operator subsequently supplied the original xArm config snippet and named
-`pi05_xarn`, interpreted as its `pi05_xarm` entry. Its inference fields specify
-Pi0.5 full model, internal action dimension 32, horizon 10,
-`discrete_state_input=false`, Libero input/output transforms, a six-joint delta
-mask, and absolute raw gripper. This matches the inference fields of the
-tracked historical snippet, not proof that the model is the later Delta run
-that reused the same name. Resolve the snippet's template dataset asset ID to
-the target checkpoint's own embedded asset explicitly, and verify the actual
-parameters/transforms/normalization in an allocation. Do not infer original
-training task coverage or manager step. The separate full snapshot integrity report supplies file/OCDBT evidence;
-strict parameter/configuration restoration has now passed in job `1774739`.
-
-## Official policy and actual cluster checks
-
 These official pages were read and archived on 2026-10-03
 (America/Los_Angeles):
 
@@ -163,14 +73,12 @@ These official pages were read and archived on 2026-10-03
 - [Software](https://docs.farmshare.stanford.edu/software/)
 - [Transfer](https://docs.farmshare.stanford.edu/transfer/)
 
-Before any job, confirm full-service SUNet eligibility and that this project is
-coursework or unsponsored research. Complete authentication through Stanford's
-normal mechanism; never put passwords, tokens, or private keys in configuration.
-Keep model restoration, GPU initialization, warm-up, inference, rendering, and
-substantial simulation inside Slurm. Do not run a persistent model server on a
-rice login node or connect directly to an unallocated compute node.
+Authentication uses Stanford's normal mechanism. Model restoration, GPU
+initialization, warm-up, inference, physics, rendering and substantial audits
+run in Slurm allocations. The service and client share one allocated node and
+localhost; no persistent model service runs on a rice login node.
 
-Read-only commands verified in the initial audit:
+Read-only audit commands actually exercised:
 
 ```bash
 hostname -f
@@ -190,247 +98,326 @@ module spider cuda
 df -h "$HOME" /scratch/users/"$USER"
 ```
 
-Actual partitions were `normal`, `bigmem`, and `gpu`; the documentation's
-`interactive` example did not match the current partition list. The observed
-GPU partition had a two-day limit, four GPUs per node, and maximum memory of
-4000 MB per requested CPU. Slurm can increase allocated CPUs to satisfy a
-GiB memory request, so retain actual accounting as well as requested values.
-Node features reported L40S/48GB; this is scheduler
-inventory, not an allocated driver or inference measurement. Actual QoS limits
-also differed from the documentation's example. Available modules included
-Python 3.12.3 and CUDA 12.9.0, differing from the software page's older module
-examples. Recheck before each deployment; do not load a CUDA module solely
-because it appears in an example.
+The actual account was `operator`, Slurm 26.05.4, CPU partition/QoS
+`normal/normal` and GPU `gpu/gpu`. Observed partitions also included `bigmem`;
+the documentation's `interactive` example did not match this site. GPU limits
+included two days, four GPUs per node, one-GPU minimum and four GPUs per user,
+and maximum memory 4000 MB per CPU. Actual accounting matters: a two-CPU/8 G
+request allocated four CPUs, while its explicit one-task step used two.
+Standalone `srun` must specify `--nodes=1 --ntasks=1`; omitting task count
+previously ran two read-only auditors and made one exclusive report write fail.
 
-Filesystem available space is not user quota. The `quota` executable was not
-available, and these pages did not establish a storage retention/backup
-guarantee. Keep source and required scientific results in separately named
-durable user directories; put rebuildable environments, model snapshots, and
-caches outside source. Explicitly establish an archive destination and verify
-copies before relying on it. Prefer the documented DTN/Globus mechanism for
-large transfers. The model snapshot workflow runs transfers on a scheduled
-compute node and verifies downloaded data before any model restoration.
+Available modules included Python 3.12.3 and CUDA 12.9.0, differing from older
+software-page examples. No CUDA module was loaded merely to follow an example.
+Allocated NVIDIA L40S reported 46,068 MiB and driver 595.91.07. Site inventory,
+GPU snapshots and sampled maxima are distinct from absolute peak measurements.
+Recheck resource/association/module facts for a later deployment.
 
-## Paths and scheduler templates
+Home and scratch are NFS. Filesystem available space is not user quota; no
+quota executable or retention/backup guarantee was established. Archive copies
+on this same home filesystem are verified snapshots, not independent backups.
+Use the documented DTN/Globus mechanism for a separately authorized large
+transfer; no transfer to an external destination was performed here.
 
-Set absolute deployment locations outside the repository:
+## Versions and actual paths
+
+| Item | Fixed identity or actual path |
+| --- | --- |
+| Scientific source | `4d48a779c2db11317526af69daac63d94cb76531` |
+| Source checkout | `/home/users/mw27/projects/embodied-ai-xarm` |
+| External unmodified OpenPI | `/home/users/mw27/projects/openpi`, `15a9616a00943ada6c20a0f158e3adb39df2ccac` |
+| Runtime root | `/home/users/mw27/xarm-work/farmshare-20261003` |
+| Model interpreter | `$XARM_WORK_ROOT/envs/openpi/bin/python`, Python 3.11.15 |
+| Submission/offline audit interpreter | `$XARM_WORK_ROOT/envs/audit/bin/python`, Python 3.12.3 |
+| HF revision | `c308df02100a3f2b67512cc7ae61e28f16ee9263` |
+| Snapshot | `$XARM_WORK_ROOT/checkpoints/huggingface/xarm-pi05-20260703/c308df02100a3f2b67512cc7ae61e28f16ee9263` |
+| Rebuildable caches | `$XARM_WORK_ROOT/caches/{openpi,jax,uv}` |
+| Environment freeze | `$XARM_WORK_ROOT/openpi-environment-freeze.txt` |
+| Smoke identity | `hf_real_20260703_resume_smoke_v3` |
+| Formal identity | `hf_real_20260703_resume_formal_v3` |
+| Results | `$XARM_WORK_ROOT/mujoco_outputs/policy_evaluation/IDENTITY` |
+| Logs | `$XARM_WORK_ROOT/logs/{cluster,policy_service}` |
+| Recovery records | `$XARM_WORK_ROOT/state.json`, `STAGES.md` |
+
+Pinned runtime versions: JAX/JAXlib 0.5.3, Flax 0.10.2, Orbax-checkpoint
+0.11.13, NumPy 1.26.4, ml-dtypes 0.4.1, TensorStore 0.1.74, PyTorch 2.7.1,
+MuJoCo 3.3.7, OpenCV headless 4.11.0.86, huggingface-hub 0.32.3,
+pytest 8.4.2 and uv 0.11.28. Installation job 1774160 completed 4 m 42 s and its
+202-package dependency check passed. The frozen upstream lock includes MuJoCo
+2.3.7 through unused Aloha dependencies; this scene needs MuJoCo >=3.2. The
+existing CPU environment workflow exports upstream dependencies, omits the
+unused gym-aloha/dm-control/mujoco packages, installs the pinned client, and
+adds the project runtime versions. OpenPI source and lock remain unchanged;
+imports use `OPENPI_ROOT/src`. The source submodule remains uninitialized at
+the same pin; no `third_party/` contents were modified.
+
+Model card: `Real-robot-only`. The checkpoint contents are at HF repository
+root, with no proven numeric manager step. The model spec explicitly uses
+`manager_step: null`. Snapshot job 1774189 verified all 23 files and read all 106
+OCDBT keys/12,441,508,165 bytes. That integrity report does not claim model
+restoration. Actual allocated restoration passed separately.
+
+The operator supplied the original xArm config snippet and named `pi05_xarn`,
+interpreted as its `pi05_xarm` entry. The explicit inference config
+`pi05_xarm_hf_20260703` matches full Pi0.5, internal action dimension 32,
+horizon 10, `discrete_state_input=false`, Libero inputs/outputs, six joint
+DeltaActions/AbsoluteActions and absolute SDK raw gripper. Six joints are
+radians; the legacy snippet's gripper_mm comment does not authorize a scale
+conversion. Two RGB images pass 224×224 preprocessing; final actions are 10×7.
+The target's own quantile normalization asset is
+`local/xarm_pi05_20260703`, SHA-256
+`63a3d8456b509600fde0e9a3546fa2c01145cb0c3527d46ead649b4c35b37fc4`.
+No A/B/C normalization was substituted. Original manager/training step and
+training task coverage remain unknown; config-name reuse does not prove a
+connection to a later Delta training run.
+
+## Changes and evidence
+
+Scheduling stays in the existing `cluster.cli` and workflow/job owners.
+[FarmShare resources](../../cluster/farmshare/resources.json) and
+[environment template](../../cluster/farmshare/environment.example.sh) are
+site templates; measured private overrides selected 16 CPU/60 G/one GPU,
+45 min smoke,1 h formal and 15 min resume. Existing DeltaAI defaults and command
+resolution remain covered by focused cluster regression tests.
+
+The [model spec](../../configs/evaluation/sim/models/HF_REAL_20260703.json)
+and inference adapter live in their canonical owners. Root-exported
+checkpoint handling, nonexistent provenance code-path repair, discarded-video
+path cleanup and strict parameter restore have focused regression evidence.
+Service identity is derived only after actual strict loading and finite
+warm-up. The thin [request RNG adapter](../../policy_runtime/openpi_request_rng.py)
+strips transport metadata and passes seeded JAX Gaussian noise through pinned
+OpenPI's public inference hook. GPU verification 1774739 restored twice, obtained
+finite 10×7 actions, rejected missing seeds, changed actions for different seeds,
+and verified bitwise same-seed equality after an intervening seed and restart.
+No third-party service/source was patched. Allocation-local readiness is bounded;
+owned subprocesses are terminated in cleanup on success or error.
+
+Independent Place repair commit
+`25f1582bbd7aafc7ec2e8e164143c76c0192bd38` changes canonical initialization
+under the current four-bar/contact geometry. Diagnosis recorded zero contacts
+for the old kinematic held pepper on all 20 seeds, and failure of a same-pose
+free-body transfer. A finite model-free contact/height/TCP-drift/collision
+probe selected raw 450 and one TCP-relative pose `[0,0,-0.040]`m. The existing
+free pepper is positioned once after arm randomization, then undergoes the
+existing 500 normal physics steps. It remains free throughout original grasp
+validation and policy execution. There is no weld/fixed attachment, continuous
+repositioning, observation override, raw-command lock or release teleport.
+Opening preserves pose/momentum and the same body falls physically.
+
+Initial arm pose, ring position, geometry, solver/friction, action semantics,
+scoring, all acceptance thresholds, tasks/seeds and randomization ranges stay
+unchanged. Both generation configurations and the canonical object declaration
+resolve the same setting. Existing simulation and evaluation owners are reused.
+Evidence `place-repair-invariants.json` records unchanged scientific-file hashes;
+`place-physical-shared-summary.json` from 1775264 records zero compiled physics
+differences for both v4/paired generation plans versus formal Place.
+
+The no-assistance focused physical regression first checked 50018/50019,
+including raw/observation behavior, unchanged pose/momentum on release and
+physical fall/contact loss; all 20 formal seeds passed original grasp checks.
+`evidence/place-repair-canonical-20/summary.json`: minimum 2 gripper contacts,
+minimum 0.1052584 m height above table, maximum relative drift 0.0000631967 m,
+no table or forbidden collision. Allocated rendering 1775233 passed 13 affected
+regressions including 120 scene resets; one known inventory baseline failure
+was deselected. Its two 3 s review clips show 2 s free-body contact hold then 1 s
+opening/falling, with quantitative reports and all four cameras. These clips
+use Place `25f1582` plus the then-uncommitted EGL delta later published 1 eb; physics
+was unchanged. They are model-free previews, not learned-policy demonstrations.
+No human judgment has been received.
+
+EGL repair commit `1eb9a929ff6d0d6dd1e655a9d4b1f4b3eb488aa5` addresses a
+Slurm global GPU index differing from EGL enumeration under remapping. The
+canonical service matches the sole allocated visible CUDA GPU's hardware UUID
+to EGL using the public [EGL_NV_device_cuda query](https://registry.khronos.org/EGL/extensions/NV/EGL_NV_device_cuda.txt),
+without initializing displays on unallocated GPUs. Missing/ambiguous identity
+fails before rendering. Actual UUID/index selections are recorded in load
+reports; monitoring selects that hardware UUID. Fourteen service unit checks
+and allocated rendering passed, including global index 2/3 versus EGL 0.
+
+Strict JSON-resume repair commit
+`4d48a779c2db11317526af69daac63d94cb76531` serializes protocol tasks as a
+JSON list. Strict full provenance equality is retained. The filesystem
+roundtrip test reproduced the prior tuple/list mismatch, then 34 focused
+provenance/output-inheritance/cluster tests passed. Serialized scientific
+values, RNG, model and physical settings are unchanged. The valid first 120
+at source `1eb9a929` are preserved; changing source provenance requires new output
+identities rather than mixing or rewriting old results.
+
+## Reproduce the verified execution
+
+Freeze source at the scientific commit above, with a clean checkout at the
+same absolute source path. Use the same OpenPI revision, model snapshot,
+normalization, environment and absolute result paths. Even a documentation
+commit or moved path changes strict provenance; resume is allowed only when
+all recorded identities match. Do not switch or edit source during a job.
+For a later resume from the published guide branch, select the recorded source
+in a clean checkout before submitting, for example:
 
 ```bash
-export XARM_REPOSITORY="$HOME/projects/embodied-ai-xarm"
-export OPENPI_ROOT="$HOME/projects/openpi"
-export XARM_WORK_ROOT="$HOME/xarm-work/farmshare-RUN_ID"
-export XARM_PYTHON="$XARM_WORK_ROOT/envs/openpi/bin/python"
-# Set XARM_SLURM_ACCOUNT from the verified association, not an example account.
-source "$XARM_REPOSITORY/cluster/farmshare/environment.example.sh"
+git status --short
+git switch --detach 4d48a779c2db11317526af69daac63d94cb76531
+```
+
+This checkout instruction is a prerequisite; the actual run itself used the
+migration branch while its HEAD was that same scientific commit.
+The private wrappers/resources below are archived runtime operators; wrappers
+only enforce allocation/source identity and sample assigned-GPU memory.
+They call canonical implementations rather than duplicating simulation or
+scoring. The following are the actual submission command forms, with the
+recorded runtime environment:
+
+```bash
+source /home/users/mw27/xarm-work/farmshare-20261003/audit-environment.sh
 cd "$XARM_REPOSITORY"
-```
-
-Keep a machine-specific environment file and `state.json` under the runtime
-root, recording stage status, evidence paths, source/model/OpenPI revisions,
-actual environment freeze, pending gates, and all job IDs. Source, external
-OpenPI, environments, checkpoint snapshots, caches, logs, smoke, formal results,
-and archives must be distinct paths. Reuse completed downloads/environments;
-do not submit again merely because a previous turn ended.
-
-The [resource overrides](../../cluster/farmshare/resources.json) and
-[environment template](../../cluster/farmshare/environment.example.sh) change
-only site scheduling. Inspect them through the existing CLI, using an existing
-audit interpreter if the full model environment is not ready:
-
-```bash
-python -m cluster.cli show environment-check
-python -m cluster.cli submit environment-check --dry-run
-python -m cluster.cli show formal-sim-evaluation \
-  --param model_spec=/absolute/path/to/verified-model.json --param host=127.0.0.1
-```
-
-These command-resolution checks have been exercised; they do not prove that a
-job can run. The unmodified OpenPI lock pins JAX/JAXlib 0.5.3, Flax 0.10.2,
-Orbax 0.11.13, NumPy 1.26.4, TensorStore 0.1.74, and ml-dtypes 0.4.1. The
-separate initial audit environment used Python 3.12.3 and MuJoCo 3.3.7 for
-offline checks. The installed model environment uses Python 3.11.15 and those pinned
-OpenPI dependencies; GPU compatibility was verified on the allocated L40S described above. The pinned upstream lock includes MuJoCo
-2.3.7 through the unused Aloha simulator, while this project's scene requires
-MuJoCo >=3.2. The `openpi-inference-environment` workflow exports the frozen
-upstream dependencies, omits the unrelated `gym-aloha`/`dm-control`/`mujoco`
-packages, installs the pinned client, and adds MuJoCo 3.3.7, OpenCV headless
-4.11.0.86, and pytest 8.4.2. OpenPI source/lock remain unchanged; its source is
-loaded from `OPENPI_ROOT/src` rather than installed as a package with Aloha
-dependencies. The workflow checks dependencies and saves a freeze file.
-Use a CPU partition/QoS for this CPU-only setup job:
-
-```bash
-XARM_SLURM_PARTITION=normal XARM_SLURM_QOS=normal \
-  python -m cluster.cli submit openpi-inference-environment --dry-run \
-  --param uv=/absolute/path/to/verified/uv
-```
-
-Remove `--dry-run` only after the site eligibility/resource checks. Record
-compatibility and driver evidence inside an allocation before claiming
-readiness. No model is imported during installation.
-
-## Model and evaluation gates
-
-Use the canonical [model contract](../../evaluation/common/models.py) and keep
-the target's new model spec in `configs/evaluation/sim/models/`; preserve A/B/C/D.
-Root-exported checkpoints explicitly use `manager_step: null`, so an unknown
-manager/training step is not fabricated. The original normalization asset is
-mandatory. After downloading the fixed revision, verify every snapshot file
-and manifest-referenced OCDBT parameter data, then restore and infer on a
-compute node. File preflight alone is insufficient.
-
-The pinned upstream service lacks the evaluator's required
-`formal_evaluation_provenance` and `request_rng_required` boundary. The thin
-[`policy_runtime.openpi_request_rng`](../../policy_runtime/openpi_request_rng.py)
-adapter uses the pinned JAX Pi0/Pi0.5 public explicit-noise hook. Offline tests
-verify transport stripping, seed propagation, repeat/restart behavior with a
-fixture, and canonical final-action checks. Real GPU sampling and service
-identity passed in job `1774739`. The service integration must strip request RNG metadata before model
-transforms, use the request seed in real sampling, reject missing seeds, return
-finite final 10x7 actions, and derive identity from the actually loaded
-checkpoint/config/assets. Do not advertise required metadata without proving
-the behavior. Keep third-party source unchanged.
-
-Follow the [canonical scientific protocol](../formal_xarm_model_evaluation.md):
-six exact tasks/prompts; named `clean_wide_v4` scene; horizon 10, execute 5,
-at most 50 predictions; 0.1-second actions and 0.002-second physics; formal
-seeds 50018–50037. Success/safety/reset/randomization criteria remain unchanged.
-Smoke uses the canonical two-seed all-video protocol, twelve episodes, and a
-separate output identity. Formal evaluation uses 120 episodes and category
-representative retention. Use isolated target output identities without copying
-scene randomization ranges or overwriting the existing A/B/C configurations.
-
-Required sequence: narrow tests and config checks; checkpoint/norm/provenance
-preflight; allocated GPU inference/RNG/EGL verification; closed-loop smoke and
-infrastructure/video acceptance; measured-resource formal submission; raw-result
-and summary/video-coverage validation. Keep service and client on one allocated
-node initially. Verify readiness, warm-up, bounded timeouts, failures, and
-cleanup before launching episodes. Record every job ID and avoid duplicates.
-
-Current offline commands include:
-
-```bash
-python -m pytest tests/evaluation_sim/test_provenance.py -q
-python -m pytest tests/evaluation_common/test_models.py -q
-python -m pytest tests/cluster -q
-```
-
-Three pre-existing regressions were reproduced or checked against the untouched source baseline:
-`test_simulation_does_not_depend_on_higher_layers` flags a data import in
-`simulation/tools/teleoperate_pick.py`; the protocol-regression config inventory
-test expects only the stable-v4 YAML despite the paired-v1 YAML in the source;
-the model-contract test expects a different MJCF SHA-256 from the XML committed
-at the same baseline. The byte-identical XML and stale expected constant are
-recorded in `evidence/baseline-mjcf-hash-fixture.json`.
-Tests have not been weakened to hide these failures. A broad test invocation
-also attempted an unmarked rendering test on the login node and failed for lack
-of OpenGL context; it did not use a GPU. Review test bodies before grouping
-them. Allocated camera/joint/builder and all-120-scene-reset checks passed; the
-original failing MJCF hash assertion was retained and reported. The broader
-optional real-data fixture was not exercised.
-
-Only resume with exactly matching provenance and the canonical evaluator's
-`--resume`. Actual model restarts and request reproducibility passed. Full evaluation
-rerun/resume remains unverified because the required smoke acceptance failed.
-Use the source commit recorded by each result when checking resume; a later
-documentation commit also changes the Git identity used by provenance. Never fabricate human-review decisions; sim performance alone
-does not establish real-robot performance.
-
-## Target commands and acceptance gates
-
-After the CPU environment workflow passes its dependency check, inspect and
-submit the fixed snapshot workflow using `XARM_PYTHON` from that environment:
-
-```bash
-XARM_SLURM_PARTITION=normal XARM_SLURM_QOS=normal \
-  python -m cluster.cli submit checkpoint-snapshot --dry-run
-```
-
-The snapshot report verifies Hugging Face sizes/content hashes and reads every
-OCDBT key/value. It is not evidence of a restored model. The target spec is
-[`HF_REAL_20260703.json`](../../configs/evaluation/sim/models/HF_REAL_20260703.json),
-using the explicit inference-only config `pi05_xarm_hf_20260703` and its own
-normalization asset. Numeric manager step remains unknown.
-
-The following command forms are implemented and covered by offline resolution
-tests; model verification and smoke were actually executed as recorded above.
-Run preflight first through the
-same scheduler workflow, with a private
-resource override for `formal-sim-evaluation` specifying zero GPUs, sufficient
-CPU/memory, and a bounded time limit. OpenPI imports may be substantial, so
-this deployment schedules even the file/configuration preflight:
-
-```bash
-XARM_SLURM_PARTITION=normal XARM_SLURM_QOS=normal \
-XARM_SLURM_RESOURCE_CONFIG=/absolute/path/to/cpu-preflight-resources.json \
-  python -m cluster.cli submit formal-sim-evaluation \
-  --param dry_run=true \
+export XARM_PYTHON="$XARM_WORK_ROOT/place-monitored-python"
+export XARM_SLURM_RESOURCE_CONFIG="$XARM_WORK_ROOT/farmshare-resources.json"
+"$XARM_WORK_ROOT/envs/audit/bin/python" -m cluster.cli submit formal-sim-evaluation \
   --param model_spec=configs/evaluation/sim/models/HF_REAL_20260703.json \
-  --param protocol=configs/evaluation/sim/protocols/hf_real_20260703_physical_place_smoke_v3.json \
-  --param host=127.0.0.1
+  --param protocol=configs/evaluation/sim/protocols/hf_real_20260703_resume_smoke_v3.json \
+  --param host=127.0.0.1 --param port=18005 --param start_server=true
 
-python -m cluster.cli submit formal-sim-evaluation --dry-run \
+# Only after independent smoke acceptance:
+export XARM_SLURM_RESOURCE_CONFIG="$XARM_WORK_ROOT/farmshare-formal-resources.json"
+"$XARM_WORK_ROOT/envs/audit/bin/python" -m cluster.cli submit formal-sim-evaluation \
   --param model_spec=configs/evaluation/sim/models/HF_REAL_20260703.json \
-  --param protocol=configs/evaluation/sim/protocols/hf_real_20260703_physical_place_smoke_v3.json \
+  --param protocol=configs/evaluation/sim/protocols/hf_real_20260703_resume_formal_v3.json \
+  --param host=127.0.0.1 --param port=18005 --param start_server=true
+
+# Completed-result resume: same scientific source, inputs and output identity.
+export XARM_SLURM_RESOURCE_CONFIG="$XARM_WORK_ROOT/farmshare-resume-resources.json"
+"$XARM_WORK_ROOT/envs/audit/bin/python" -m cluster.cli submit formal-sim-evaluation \
+  --param model_spec=configs/evaluation/sim/models/HF_REAL_20260703.json \
+  --param protocol=configs/evaluation/sim/protocols/hf_real_20260703_resume_formal_v3.json \
   --param host=127.0.0.1 --param port=18005 --param start_server=true \
-  --param verification_report="$XARM_WORK_ROOT/evidence/gpu-model-verification.json"
+  --param resume=true
 ```
 
-Verification restores the real model twice, compares repeated seeds exactly
-with an intervening different seed, rejects missing seeds, and renders both
-canonical policy images through EGL. Metadata is derived after restoration
-and a finite 10x7 warm-up. It never consumes prepared identity JSON.
-Service logs and restoration reports live under
-`$XARM_WORK_ROOT/logs/policy_service/SLURM_JOB_ID/`.
+Capture each submission once and immediately run
+`scontrol update JobId=SUBMITTED_ID Requeue=0`; query that ID with
+`squeue`/`sacct` instead of submitting again. Preserve source throughout formal,
+resume and its evidence archive. First-run commands above were executed on
+fresh output roots. Those roots now contain results: repeating first-run
+commands must fail rather than overwrite. Use the actual guarded resume form
+for existing results. A separate fresh experiment needs a new output-only
+inherited protocol and a new accepted-smoke gate; an arbitrary CLI output-root
+change must not evade recorded protocol identity. A new source commit needs
+its own output identity and validation; do not resume across versions.
 
-Use a new verification report path on a repeat, because report/service evidence
-is created exclusively. After real verification passes, omit `verification_report` for twelve
-all-video smoke episodes. Accept raw result validity, observation/action
-contracts, scoring, provenance, and videos before choosing measured resources
-and changing the protocol to `hf_real_20260703_physical_place_formal_v3.json` for 120 episodes.
-Both target protocols inherit the canonical v3 scientific fields and override
-only output roots; scientific overrides/nested inheritance are rejected.
-`resume=true` maps to the existing evaluator's guarded `--resume`.
+The existing CPU setup/checkpoint/preflight commands were also exercised:
+`cluster.cli submit openpi-inference-environment`,
+`cluster.cli submit checkpoint-snapshot` and
+`cluster.cli submit formal-sim-evaluation --param dry_run=true`. For CPU-only
+work use `normal/normal` and a zero-GPU resource override; inspect resolved
+commands before submitting. Actual configuration, exact invocation and evidence
+are preserved in `logs/cluster/runs`, state and submission logs. Model
+verification uses the same formal workflow with `verification_report` and an
+exclusive new evidence filename. File presence/preflight never substitutes for
+real restoration/inference.
 
-### EGL device identity after the Place repair
+Focused commands verified during this deployment include:
 
-Job1775200 failed its rendering regression gate before model restoration or
-new episodes: a Slurm global GPU index is not an EGL enumeration index under
-process device remapping. Diagnostic1775212 on oat-01 completed in4s and
-rendered64x64RGB after matching the sole visible CUDA GPU UUID to EGL index0;
-its six enumerated EGL devices were queried without initializing other GPUs.
-Evidence: `$XARM_WORK_ROOT/evidence/egl-assigned-1775212.json`.
+```bash
+python -m pytest -q tests/evaluation_sim/test_provenance.py \
+  tests/evaluation_sim/test_protocol_inheritance.py tests/cluster
+# Physics/rendering tests below require the recorded Slurm allocations:
+python -m pytest -q tests/evaluation_sim/test_place_physical_reset.py
+```
 
-The existing allocation-local service now uses the public
-[EGL_NV_device_cuda identity query](https://registry.khronos.org/EGL/extensions/NV/EGL_NV_device_cuda.txt)
-to choose the uniquely matching GPU. It accepts single-device job or step
-Slurm metadata, requires one visible CUDA GPU, and rejects missing or ambiguous
-identity rather than trying other devices. Selection precedes rendering/model
-loading and is recorded with the GPU UUID in load reports. MuJoCo/OpenPI remain
-unmodified. Private monitoring must select the resulting hardware UUID, not
-a Slurm global integer. This changes deployment selection only; the independently
-committed Place reset, geometry, physics, actions and scoring are unchanged.
-The repaired12episode smoke and120formal run remain pending acceptance.
+Read-only acceptance uses canonical protocol/result/summary/video owners, checks
+the exact task/seed/prompt matrix, full provenance, all raw versus summary
+metrics, and retained video frame counts plus first/last decode. It rejects
+unresolved infrastructure-invalid episodes. Smoke retains all 48 videos; formal
+validates canonical category representatives rather than claiming all 120 episode
+videos are retained. CPU helpers use explicit one-task allocations:
 
-Actual follow-up1775233 completed33s on oat-01 with8CPU16G/oneGPU.
-Both50018/50019 original physical-grasp checks passed, two three-second
-combined review clips show two seconds of free-body contact hold followed by
-one second of physical opening/falling. No model or initialization assistance
-was used. Four canonical camera clips per seed plus snapshots and quantitative
-validation are under `$XARM_WORK_ROOT/evidence/place-human-review-1775233/`.
-Affected task-scene/protocol rendering regressions passed13tests (including
-120seed scene resets); the unrelated baseline config-inventory test was
-deselected and remains documented. Fourteen allocation-service unit checks
-passed, including independent Slurm/CUDA/EGL enumeration and missing/ambiguous
-hardware identity rejection. Human review has been requested but no human
-assessment is claimed. The preview report records the uncommitted EGL delta
-relative to the independent Place source25f1582; canonical physics was frozen.
+```bash
+srun --account=operator --partition=normal --qos=normal \
+  --nodes=1 --ntasks=1 --cpus-per-task=2 --mem=8G --time=00:10:00 \
+  --output=NEW_EXCLUSIVE_LOG \
+  "$XARM_WORK_ROOT/resume-smoke-acceptance.sh"
+# After 120 completes: formal acceptance plus before-resume SHA/size/mtime snapshot.
+srun --account=operator --partition=normal --qos=normal \
+  --nodes=1 --ntasks=1 --cpus-per-task=2 --mem=8G --time=00:10:00 \
+  --output=NEW_EXCLUSIVE_LOG \
+  "$XARM_WORK_ROOT/formal-acceptance-and-resume-before.sh"
+# Only after actual matching-source GPU resume COMPLETED0:0:
+srun --account=operator --partition=normal --qos=normal \
+  --nodes=1 --ntasks=1 --cpus-per-task=2 --mem=8G --time=00:15:00 \
+  --output=NEW_EXCLUSIVE_LOG \
+  "$XARM_WORK_ROOT/finalize-runtime-evidence.sh" COMPLETED_RESUME_JOB_ID
+```
 
-Serialization-fix checks: the persisted full-provenance roundtrip failed on
-original source, then provenance/output-inheritance and existing cluster tests
-passed after the fix. A first operator command named a nonexistent test file
-and ran no tests; corrected commands/logs are retained in runtime evidence.
-No provenance check was removed, existing results were not rewritten, and
-current four-bar free-body Place physics remains exactly the independent25f
-repair. The first valid120run at1eb9 is a preserved scientific result, not a
-failed model benchmark due to the later resume infrastructure defect.
+These helpers create exclusive reports. For a later independent audit copy the
+read-only operator and choose new report filenames; do not overwrite original
+evidence or blindly rerun finalization. The completed-result resume proof
+compares all 120 result JSONs and retained clips before/after for identical
+SHA-256, size and mtime, and checks actual Slurm completion. No forced mid-run
+interruption was injected; this proves reuse of existing completed episodes,
+not every possible failure-recovery scenario.
+
+## Evidence, preserved failures and limits
+
+All paths below are relative to the runtime root in the table above:
+
+- Raw formal results: `mujoco_outputs/policy_evaluation/hf_real_20260703_resume_formal_v3/models/HF_REAL_20260703/tasks/TASK/seed_SEED/result.json`.
+- Formal summary and video indexes: same model root's `summary.json`, `video_index.json/.csv`, `representative_video_index.json/.csv`; root `summaries/comparison.json` and video indexes.
+- Smoke products: corresponding `hf_real_20260703_resume_smoke_v3` root; all four video views retained per episode.
+- Acceptance: `evidence/resume-fixed-smoke-acceptance.json`, `resume-fixed-formal-acceptance.json`.
+- Actual resume proof: `evidence/resume-fixed-formal-resume-proof.json`; before snapshot `resume-fixed-formal-resume-before.json`,172 files, inventory SHA-256 `6ebe14477b9cef587911c7846d4b93a56a7cdd938c9ddcb874e84052919b0548`.
+- Formal full provenance SHA-256: `39c5092cb58692eadc27edee95d10c5464675a016b989e268bb00f15bea0e2b3`.
+- Allocation/service records: `logs/cluster/runs/formal-sim-evaluation/JOB.json`, `logs/cluster/slurm/xarm-formal-sim-evaluation-HF_REAL_20260703-JOB.out/.err`, `logs/policy_service/JOB/load-0.json` and `server-0.log`.
+- GPU samples: `evidence/gpu-monitor-JOB.csv`.
+- Model-free human review: `evidence/place-human-review-1775233/seed_50018/combined.mp4` and `seed_50019/combined.mp4`,3 s each.
+- Actual Place automatic-success representative: formal model root `representative_videos/place_red_pepper_in_ring/SUCCESS/seed_50022/combined.mp4`,61 frames; failure representatives are 50018 OutsideRing and 50020 StableButNotSustained,750 frames each. Automatic labels are not human judgments.
+- Verified scientific archive: `archives/accepted-formal-20261004T065509Z`,778 runtime files/189414330 uncompressed bytes. `file-manifest.json` records every runtime member; five products in `SHA256SUMS` passed check and all three gzip streams passed in 1775552. Report `evidence/final-evidence-archive.json`; readback log `evidence/final-runtime-evidence.log`.
+
+After guide publication, `completion-audit-and-sidecar.sh PUBLISHED_GUIDE_COMMIT`
+checks clean/published Git identity, unchanged third-party/scientific owners,
+actual Slurm completion, all accepted reports, model/RNG/physical evidence,
+archive checksums/streams and documentation links. It creates an exclusive
+`post-publication/` sidecar below the archive with the final guide, audit report
+and revisions plus separately checked hashes. This keeps the original five
+scientific archive products unchanged. Its reports are
+`evidence/completion-audit.json` and `post-publication-archive-readback.json`.
+
+The source archive pins scientific `4d48a77`; guide publication happens afterward.
+The runtime archive includes raw results, summaries, video indexes/retained
+videos, both preserved `1eb9a929` and current `4d48a77` runs, human preview clips, environment
+freeze, official-page snapshots, logs, evidence and private operators. It
+excludes model weights, environments, caches and credentials. Each runtime
+member has SHA-256/size and is read back from the compressed archive; product
+checksums and gzip stream checks are separate real CPU checks. No existing
+data was deleted. Preserve the fixed HF snapshot separately or redownload the
+same immutable revision using its verified file integrity evidence.
+
+Earlier failures remain visible. Smoke 1774743 had 10 valid pick failures and
+2 Place reset-invalid episodes, correctly rejected before 120 submission. Its
+187-file rejected-evidence archive was verified by 1774762 and 1774768 at
+`archives/rejected-smoke-20261004T014607Z`. The bounded Place repair then
+produced accepted smoke 1775235 and formal job `1775252` at source `1eb9a929`:
+120 valid/0 invalid/5 success (Place 5/20; all five Pick tasks 0/20),52 category videos.
+Actual resume 1775480 failed after 43 s on the JSON tuple/list defect, without
+new episode inference;1775495 proved all 172 existing result/video files and
+mtimes preserved. New-source `4d48a77` runs use separate output identities.
+
+Other retained attempts include official-wheel timeout/NFS install timeout,
+wrong operator test/protocol filenames, an optional attach monitor missing
+batch-GPU metadata, wrong global-index EGL gate failure before restoration,
+and the two-task read-only auditor invocation. Each was diagnosed before
+necessary bounded continuation; none is silently counted as a policy failure.
+
+Three unrelated baseline defects are documented with unchanged assertions:
+`simulation/tools/teleoperate_pick.py` imports a higher-level data module;
+config inventory expects only v4 although paired-v1 exists in the baseline;
+the MJCF hash fixture expects `e7d09d0d...` while baseline/current XML hash is
+`ac657567...` (full proof `evidence/baseline-mjcf-hash-fixture.json`). The broad
+optional real-data fixture was not exercised. An earlier unmarked login-node
+OpenGL test failed without a context; subsequent affected physics/rendering
+ran in allocations and passed. No baseline tests were weakened or removed.
+
+Scientific success rate is not a deployment acceptance threshold. The HF card's
+Real-robot-only label and unknown original task coverage limit interpretation
+of these six simulation tasks. Neither automated sim success nor these videos
+establishes real-robot performance. No real hardware, training/retraining,
+merge or force-push occurred. No human-review decision has been fabricated.
