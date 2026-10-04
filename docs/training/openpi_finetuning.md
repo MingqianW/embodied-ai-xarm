@@ -160,3 +160,8 @@ Keep DataLoader-delivered counts separate from optimizer-used samples: upstream
 fetches the next batch after the final update. No feasibility or real-robot
 performance claim follows from configuration alone; actual execution evidence
 is required.
+
+The [FarmShare feasibility report](FARMSHARE_COTRAINING_FEASIBILITY.md) records
+the completed 2026-10-04 run: accepted 92-episode generation, independent
+train-only statistics, verified alpha sampling, ten actual full-model updates,
+checkpoint save/restore, measured resources, estimates and remaining limits.

@@ -37,3 +37,8 @@ upstream FSDP. A site resource override must supply the matching four GPUs and
 RAM/CPU request within observed partition/QoS limits; the existing inference
 one-GPU resource template does not size training. Use the canonical `training`
 workflow's `dataset_paths` parameter for independent real/sim roots.
+
+The [completed feasibility report](../../docs/training/FARMSHARE_COTRAINING_FEASIBILITY.md)
+records the measured four-L40S, batch-four run and its checkpoint restoration.
+Use its resource estimates and limitations when reviewing any later training
+proposal; the ten-update execution authorization does not authorize a full run.
