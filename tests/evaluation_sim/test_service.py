@@ -26,21 +26,48 @@ def test_readiness_detects_early_server_exit() -> None:
         wait_ready(process, SimpleNamespace(readiness_timeout=1), {})
 
 
-def test_egl_uses_allocated_global_gpu_instead_of_cuda_remapped_zero(monkeypatch) -> None:
+@pytest.mark.parametrize("egl_index", [0, 3])
+@pytest.mark.parametrize("slurm_key", ["SLURM_JOB_GPUS", "SLURM_STEP_GPUS"])
+def test_egl_matches_allocated_uuid_across_independent_enumerations(monkeypatch, egl_index, slurm_key) -> None:
+    from evaluation.sim import service
     monkeypatch.setenv("SLURM_JOB_ID", "test")
-    monkeypatch.setenv("SLURM_JOB_GPUS", "2")
+    monkeypatch.delenv("SLURM_JOB_GPUS", raising=False)
+    monkeypatch.delenv("SLURM_STEP_GPUS", raising=False)
+    monkeypatch.setenv(slurm_key, "2")
     monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "0")
     monkeypatch.setenv("MUJOCO_EGL_DEVICE_ID", "1")
-    configure_allocated_egl()
-    assert __import__("os").environ["MUJOCO_EGL_DEVICE_ID"] == "2"
+    monkeypatch.setattr(service, "_egl_cuda_identities", lambda: ("allocated", [
+        {"egl_index": 1, "cuda_uuid_hex": "other"},
+        {"egl_index": egl_index, "cuda_uuid_hex": "allocated"},
+        {"egl_index": 4, "cuda_uuid_hex": None},
+    ]))
+    report = configure_allocated_egl()
+    assert __import__("os").environ["MUJOCO_EGL_DEVICE_ID"] == str(egl_index)
+    assert report["allocated_cuda_uuid_hex"] == "allocated"
 
 
 @pytest.mark.parametrize("devices", ["", "0,1", "GPU-unknown"])
 def test_egl_refuses_ambiguous_allocation(devices, monkeypatch) -> None:
     monkeypatch.setenv("SLURM_JOB_ID", "test")
     monkeypatch.setenv("SLURM_JOB_GPUS", devices)
+    monkeypatch.delenv("SLURM_STEP_GPUS", raising=False)
     with pytest.raises(RuntimeError, match="exactly one numeric"):
         configure_allocated_egl()
+
+
+@pytest.mark.parametrize("uuids", [[None, "other"], ["allocated", "allocated"]])
+def test_egl_refuses_missing_or_ambiguous_hardware_identity(monkeypatch, uuids) -> None:
+    from evaluation.sim import service
+    monkeypatch.setenv("SLURM_JOB_ID", "test")
+    monkeypatch.setenv("SLURM_JOB_GPUS", "2")
+    monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "0")
+    monkeypatch.setenv("MUJOCO_EGL_DEVICE_ID", "previous")
+    monkeypatch.setattr(service, "_egl_cuda_identities", lambda: ("allocated", [
+        {"egl_index": i, "cuda_uuid_hex": value} for i, value in enumerate(uuids)
+    ]))
+    with pytest.raises(RuntimeError, match="no unique EGL match"):
+        configure_allocated_egl()
+    assert __import__("os").environ["MUJOCO_EGL_DEVICE_ID"] == "previous"
 
 
 def test_cleanup_kills_owned_process_after_terminate_timeout() -> None:

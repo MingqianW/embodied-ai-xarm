@@ -62,7 +62,7 @@ identity matched the evaluator, and both real simulation camera images passed.
 Live GPU snapshots were 8,661/8,717 MiB; these are observations, not peak claims.
 An optional attaching monitor step lacked the batch GPU environment and failed;
 verification itself completed successfully. Subsequent monitoring runs in the
-batch wrapper, selecting only `SLURM_JOB_GPUS`.
+batch wrapper, selecting only the allocated GPU by hardware UUID.
 
 Smoke `1774743` completed its 12-result matrix in 3m35s on `oat-02`,
 16 CPU/60G/one GPU, peak RSS 18,930,128K. All ten pick episodes were valid
@@ -374,3 +374,37 @@ and changing the protocol to `hf_real_20260703_physical_place_formal_v3.json` fo
 Both target protocols inherit the canonical v3 scientific fields and override
 only output roots; scientific overrides/nested inheritance are rejected.
 `resume=true` maps to the existing evaluator's guarded `--resume`.
+
+### EGL device identity after the Place repair
+
+Job1775200 failed its rendering regression gate before model restoration or
+new episodes: a Slurm global GPU index is not an EGL enumeration index under
+process device remapping. Diagnostic1775212 on oat-01 completed in4s and
+rendered64x64RGB after matching the sole visible CUDA GPU UUID to EGL index0;
+its six enumerated EGL devices were queried without initializing other GPUs.
+Evidence: `$XARM_WORK_ROOT/evidence/egl-assigned-1775212.json`.
+
+The existing allocation-local service now uses the public
+[EGL_NV_device_cuda identity query](https://registry.khronos.org/EGL/extensions/NV/EGL_NV_device_cuda.txt)
+to choose the uniquely matching GPU. It accepts single-device job or step
+Slurm metadata, requires one visible CUDA GPU, and rejects missing or ambiguous
+identity rather than trying other devices. Selection precedes rendering/model
+loading and is recorded with the GPU UUID in load reports. MuJoCo/OpenPI remain
+unmodified. Private monitoring must select the resulting hardware UUID, not
+a Slurm global integer. This changes deployment selection only; the independently
+committed Place reset, geometry, physics, actions and scoring are unchanged.
+The repaired12episode smoke and120formal run remain pending acceptance.
+
+Actual follow-up1775233 completed33s on oat-01 with8CPU16G/oneGPU.
+Both50018/50019 original physical-grasp checks passed, two three-second
+combined review clips show two seconds of free-body contact hold followed by
+one second of physical opening/falling. No model or initialization assistance
+was used. Four canonical camera clips per seed plus snapshots and quantitative
+validation are under `$XARM_WORK_ROOT/evidence/place-human-review-1775233/`.
+Affected task-scene/protocol rendering regressions passed13tests (including
+120seed scene resets); the unrelated baseline config-inventory test was
+deselected and remains documented. Fourteen allocation-service unit checks
+passed, including independent Slurm/CUDA/EGL enumeration and missing/ambiguous
+hardware identity rejection. Human review has been requested but no human
+assessment is claimed. The preview report records the uncommitted EGL delta
+relative to the independent Place source25f1582; canonical physics was frozen.

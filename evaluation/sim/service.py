@@ -6,6 +6,7 @@ after restoration. The controller invokes evaluation.sim.cli unchanged.
 
 from __future__ import annotations
 
+import ctypes
 import hashlib
 import json
 import os
@@ -33,14 +34,67 @@ def require_allocation() -> None:
         raise RuntimeError("Model service and rendering require a Slurm allocation")
 
 
-def configure_allocated_egl() -> None:
+def _egl_cuda_identities() -> tuple[str, list[dict[str, Any]]]:
+    """Query identities without creating EGL displays or probing other GPUs.
+
+    EGL_NV_device_cuda exposes a CUDA device handle, not a Slurm global ID:
+    https://registry.khronos.org/EGL/extensions/NV/EGL_NV_device_cuda.txt
+    """
+    from mujoco.egl import egl_ext as egl
+
+    cuda = ctypes.CDLL("libcuda.so.1")
+    count = ctypes.c_int()
+    if cuda.cuInit(0) != 0 or cuda.cuDeviceGetCount(ctypes.byref(count)) != 0 or count.value != 1:
+        raise RuntimeError("EGL selection requires exactly one visible allocated CUDA device")
+
+    def uuid(device: int) -> str | None:
+        value = (ctypes.c_ubyte * 16)()
+        if cuda.cuDeviceGetUuid(ctypes.byref(value), ctypes.c_int(device)) != 0:
+            return None
+        return bytes(value).hex()
+
+    allocated = uuid(0)
+    if allocated is None:
+        raise RuntimeError("Cannot read the allocated CUDA GPU UUID")
+    string_address = egl.eglGetProcAddress("eglQueryDeviceStringEXT")
+    attribute_address = egl.eglGetProcAddress("eglQueryDeviceAttribEXT")
+    if not string_address or not attribute_address:
+        raise RuntimeError("EGL device identity query extensions are unavailable")
+    query_string = ctypes.CFUNCTYPE(ctypes.c_char_p, ctypes.c_void_p, ctypes.c_int)(string_address)
+    query_attribute = ctypes.CFUNCTYPE(
+        ctypes.c_uint, ctypes.c_void_p, ctypes.c_int, ctypes.POINTER(ctypes.c_ssize_t)
+    )(attribute_address)
+    rows = []
+    for index, device in enumerate(egl.eglQueryDevicesEXT()):
+        pointer = ctypes.cast(device, ctypes.c_void_p)
+        extensions = query_string(pointer, 0x3055) or b""  # EGL_EXTENSIONS
+        identity = None
+        if b"EGL_NV_device_cuda" in extensions.split():
+            ordinal = ctypes.c_ssize_t(-1)
+            if query_attribute(pointer, 0x323A, ctypes.byref(ordinal)):  # EGL_CUDA_DEVICE_NV
+                identity = uuid(ordinal.value)
+            egl.eglGetError()
+        rows.append({"egl_index": index, "cuda_uuid_hex": identity})
+    return allocated, rows
+
+
+def configure_allocated_egl() -> dict[str, Any]:
     require_allocation()
-    # Slurm reports global GPU IDs; MuJoCo's EGL selector uses device indices,
-    # independently of CUDA_VISIBLE_DEVICES. Never select the first free GPU.
-    selected = os.environ.get("SLURM_JOB_GPUS", "")
+    selected = os.environ.get("SLURM_JOB_GPUS") or os.environ.get("SLURM_STEP_GPUS", "")
     if not selected.isdecimal():
-        raise RuntimeError("Local service requires exactly one numeric SLURM_JOB_GPUS device ID")
-    os.environ["MUJOCO_EGL_DEVICE_ID"] = selected
+        raise RuntimeError("Local service requires exactly one numeric Slurm GPU device ID")
+    if not os.environ.get("CUDA_VISIBLE_DEVICES") or "," in os.environ["CUDA_VISIBLE_DEVICES"]:
+        raise RuntimeError("EGL selection requires exactly one visible allocated CUDA device")
+    allocated, rows = _egl_cuda_identities()
+    matching = [row["egl_index"] for row in rows if row["cuda_uuid_hex"] == allocated]
+    if len(matching) != 1:
+        raise RuntimeError(f"Allocated GPU UUID has no unique EGL match: {matching}")
+    # MuJoCo indexes EGL's enumeration, which may differ from both Slurm and
+    # CUDA indices. Only the hardware-identity-matched display may initialize.
+    os.environ["MUJOCO_EGL_DEVICE_ID"] = str(matching[0])
+    os.environ["XARM_ALLOCATED_GPU_UUID_HEX"] = allocated
+    return {"slurm_gpu_id": selected, "allocated_cuda_uuid_hex": allocated,
+            "egl_device_index": matching[0], "egl_devices": rows}
 
 
 def _write_new(path: Path, value: dict[str, Any]) -> None:
@@ -85,7 +139,10 @@ def restore_policy(args: Any, model: Any, provenance: dict[str, Any]) -> tuple[A
         "jax_devices": [str(device) for device in devices],
         "jax_version": jax.__version__, "metadata": metadata,
         "checkpoint": str(model.manager_directory),
-        "gpu_selection": {key: os.environ.get(key) for key in ("SLURM_JOB_GPUS", "CUDA_VISIBLE_DEVICES", "MUJOCO_EGL_DEVICE_ID")},
+        "gpu_selection": {key: os.environ.get(key) for key in (
+            "SLURM_JOB_GPUS", "SLURM_STEP_GPUS", "CUDA_VISIBLE_DEVICES",
+            "MUJOCO_EGL_DEVICE_ID", "XARM_ALLOCATED_GPU_UUID_HEX",
+        )},
     })
     return policy, metadata
 
