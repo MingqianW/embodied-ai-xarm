@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 from evaluation.common.models import ModelSpec
@@ -37,3 +38,29 @@ def test_provenance_resolves_reorganized_model_owner(tmp_path: Path) -> None:
     digest = identity.pop("provenance_sha256")
     assert digest == json_hash(identity)
     assert server_provenance(provenance)["provenance_sha256"] == digest
+
+
+def test_persisted_provenance_roundtrip_matches_live_resume_identity(tmp_path: Path) -> None:
+    manager = tmp_path / "checkpoint"
+    manifest = manager / "params/manifest.ocdbt"
+    manifest.parent.mkdir(parents=True)
+    manifest.write_bytes(b"fixture manifest")
+    norm = manager / "assets/own_asset/norm_stats.json"
+    norm.parent.mkdir(parents=True)
+    norm.write_text('{"norm_stats": {}}')
+    repository = Path(__file__).resolve().parents[2]
+    requested = build_provenance(
+        protocol=load_protocol(),
+        model=ModelSpec("fixture", "fixture_config", manager, None, "own_asset"),
+        openpi_root=tmp_path / "openpi",
+        embodied_ai_root=repository,
+    )
+    result_path = tmp_path / "result.json"
+    result_path.write_text(json.dumps({"provenance": requested}))
+    recorded = json.loads(result_path.read_text())["provenance"]
+    # This is the strict full-identity comparison used by the resume CLI,
+    # after the real filesystem JSON boundary, not merely digest equality.
+    assert recorded == requested
+    recorded["protocol"]["tasks"][0]["prompt"] = "different prompt"
+    assert recorded != requested
+    assert json_hash(recorded) != json_hash(requested)

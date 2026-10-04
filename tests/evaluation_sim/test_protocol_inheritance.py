@@ -10,7 +10,7 @@ from evaluation.sim.config import load_protocol
     ("smoke", "formal_xarm_pi05_eval_smoke_v3.json"),
     ("formal", "formal_xarm_pi05_eval_v3.json"),
 ])
-@pytest.mark.parametrize("prefix", ["hf_real_20260703", "hf_real_20260703_physical_place"])
+@pytest.mark.parametrize("prefix", ["hf_real_20260703", "hf_real_20260703_physical_place", "hf_real_20260703_resume"])
 def test_deployment_protocol_changes_only_output(phase: str, base: str, prefix: str) -> None:
     directory = Path(__file__).resolve().parents[2] / "configs/evaluation/sim/protocols"
     original = load_protocol(directory / base).to_json()

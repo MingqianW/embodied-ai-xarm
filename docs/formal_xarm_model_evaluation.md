@@ -323,3 +323,12 @@ When category retention discards a recording or replaces a representative,
 the corresponding episode's video paths are cleared. Its result and retention
 status remain available, while summary indexes do not advertise deleted files.
 Representative selection and scoring are unchanged.
+
+The formal protocol's JSON representation emits tasks as a list so persisted
+full provenance round-trips exactly. Resume retains strict full-identity
+equality; it must reject changed model/code/protocol identity. The original
+tuple/list mismatch could reject a completed run despite identical digests.
+Any source fix uses new isolated output identities and requires fresh evidence;
+never rewrite old result provenance to make resume pass. Target HF output-only
+protocols `hf_real_20260703_resume_smoke_v3` and
+`hf_real_20260703_resume_formal_v3` retain the canonical scientific fields.

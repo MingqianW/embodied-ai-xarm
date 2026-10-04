@@ -2,10 +2,27 @@
 
 ## Verification status
 
-Deployment is **not complete**. The actual Linux environment, fixed HF snapshot,
-strict model restoration, service identity, request RNG, and EGL observation
-checks passed. Smoke produced all 12 episodes but failed infrastructure
-acceptance on both Place resets. No formal 120-episode job was submitted.
+The repaired physical smoke1775235 passed independent acceptance1775251:
+12/12valid,0success,48videos. Formal1775252 completed29m10s with120/120valid,
+5success (Place5/20, allfivePick0/20), macro/all4.1667percent. Acceptance1775478
+verified raw/summary/provenance agreement and52videos covering13task-category
+combinations. These valid results remain in the physical_place output roots.
+
+Deployment remains **incomplete** because actual resume1775480 failed before
+reading any episode: the full live provenance uses a tuple for protocol tasks,
+while JSON persistence produces a list. The two provenance digests and full
+canonical JSON are identical; only Python sequence types differ. Evidence
+`evidence/resume-json-roundtrip-diagnosis.json` records that exact difference.
+The new filesystem-roundtrip regression fails before the fix.
+
+`FormalProtocol.to_json()` now emits a JSON list for tasks, retaining strict
+full-identity resume comparison. It changes no serialized scientific values,
+request RNG, physics, model, threshold, prompt, seed or scoring logic. Source
+provenance changes, so old results are preserved rather than rewritten or
+resumed across code versions. New output-only protocols
+`hf_real_20260703_resume_smoke_v3` and `hf_real_20260703_resume_formal_v3` will
+receive fresh sequential smoke/full runs, followed by actual matching-source
+resume validation. These future runs are not yet claimed as complete.
 
 The operator subsequently authorized a bounded physical Place reset repair
 with the current four-bar gripper and collision geometry. CPU geometry probe
@@ -408,3 +425,12 @@ passed, including independent Slurm/CUDA/EGL enumeration and missing/ambiguous
 hardware identity rejection. Human review has been requested but no human
 assessment is claimed. The preview report records the uncommitted EGL delta
 relative to the independent Place source25f1582; canonical physics was frozen.
+
+Serialization-fix checks: the persisted full-provenance roundtrip failed on
+original source, then provenance/output-inheritance and existing cluster tests
+passed after the fix. A first operator command named a nonexistent test file
+and ran no tests; corrected commands/logs are retained in runtime evidence.
+No provenance check was removed, existing results were not rewritten, and
+current four-bar free-body Place physics remains exactly the independent25f
+repair. The first valid120run at1eb9 is a preserved scientific result, not a
+failed model benchmark due to the later resume infrastructure defect.

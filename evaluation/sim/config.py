@@ -84,6 +84,9 @@ class FormalProtocol:
 
     def to_json(self) -> dict[str, Any]:
         value = asdict(self)
+        # JSON arrays deserialize as lists. Keep live and persisted full
+        # provenance equal so strict resume does not reject its own records.
+        value["tasks"] = list(value["tasks"])
         for key, item in value.items():
             if isinstance(item, Path):
                 value[key] = str(item)
