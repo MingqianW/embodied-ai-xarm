@@ -117,3 +117,20 @@ def test_feasibility_uses_base_fresh_norm_and_domain_probability():
     assert config.normalization.mode is NormalizationMode.COMPUTE_FROM_DATASETS
     assert dict(config.mixing.sampling_probabilities) == {SourceBackend.REAL: 0.1, SourceBackend.SIM: 0.9}
     assert tuple(len(spec.selection.episode_indices) for spec in config.datasets.datasets) == (158, 46)
+
+
+def test_mixed_config_preserves_user_pi05_xarm_training_settings():
+    config = get_experiment("pi05_xarm_real_sim_alpha09")
+    original = get_experiment("pi05_xarm_legacy_snippet_20001")
+    smoke = get_experiment("pi05_xarm_real_sim_feasibility_10steps")
+    assert config.model == original.model
+    assert config.optimization == original.optimization
+    assert config.checkpoint == original.checkpoint
+    assert (config.optimization.batch_size, config.optimization.num_train_steps,
+            config.optimization.save_interval) == (16, 20_001, 5_000)
+    assert config.optimization.wandb_enabled
+    assert config.optimization.fsdp_devices == 1
+    assert config.datasets == smoke.datasets
+    assert config.mixing == smoke.mixing
+    assert config.normalization.mode is NormalizationMode.COMPUTE_FROM_DATASETS
+    assert config.normalization.asset_id != smoke.normalization.asset_id

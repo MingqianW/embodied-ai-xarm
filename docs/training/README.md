@@ -62,6 +62,7 @@ misrepresented as an impossible exact 1:10 per-batch split.
 | `pi05_xarm_legacy_snippet_20001` | generic historical real template | real-only | compute for dataset |
 | `pi05_xarm_v2_warm_start_20260703` | 150-episode five-task v2 real | real-only parameter warm-start | named v2 dataset asset |
 | `pi05_xarm` | latest audited 198-episode six-task real | real-only base initialization | named 20260703 dataset asset |
+| `pi05_xarm_real_sim_alpha09` | pinned real158 + sim46 training selections | real0.1/sim0.9 domain probability | fresh train-only asset; original user pi05_xarm batch16/20,001 steps/save5,000 |
 | `pi05_xarm_colab_smoke` | historical real | real-only LoRA smoke | compute for dataset |
 | `pi05_xarm_real50_sim50_stratified` (A) | real + stable-v3 sim | exactly 8 real + 8 sim per batch | `xarm_pi05_real_v3sim_1x` |
 | `pi05_xarm_real1_sim10_stratified` (B) | real + 10x stable-v4 sim | repeated 1-real/10-sim sample schedule | `xarm_pi05_real_v4sim_10x` |

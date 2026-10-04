@@ -451,6 +451,22 @@ _feasibility = ExperimentConfig(
     evidence=("arXiv:2503.24361v2 section III-A and appendix VIII-G; alpha is a candidate, not an xArm optimum",),
 )
 
+_pi05_xarm_real_sim = replace(
+    _legacy_snippet,
+    name="pi05_xarm_real_sim_alpha09",
+    description="Real-sim experiment derived from the user-supplied pi05_xarm 20,001-step config",
+    datasets=_feasibility.datasets,
+    mixing=_feasibility.mixing,
+    normalization=NormalizationSpec(
+        NormalizationMode.COMPUTE_FROM_DATASETS,
+        "xarm_pi05_real_sim_alpha09_trainonly_v1",
+    ),
+    evidence=(
+        "User-supplied original pi05_xarm: batch16, 20001steps, save5000, AdamW clip1, EMA0.999; commented LR is inactive",
+        "Existing pinned feasibility training pool and alpha0.9 domain sampling; no full-training execution evidence",
+    ),
+)
+
 EXPERIMENTS = {
     config.name: config
     for config in (
@@ -465,6 +481,7 @@ EXPERIMENTS = {
         _d,
         _continuation,
         _feasibility,
+        _pi05_xarm_real_sim,
     )
 }
 

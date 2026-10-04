@@ -161,6 +161,30 @@ fetches the next batch after the final update. No feasibility or real-robot
 performance claim follows from configuration alone; actual execution evidence
 is required.
 
+## Mixed training from the user-supplied pi05_xarm config
+
+`pi05_xarm_real_sim_alpha09` derives its model, base-weight initialization and
+optimization settings from the original user-supplied `pi05_xarm` snippet:
+batch 16, 20,001 updates, save interval 5,000, AdamW clip 1.0, EMA 0.999,
+W&B enabled and upstream-default cosine LR (warmup 1,000, peak `2.5e-5`,
+decay steps 30,000, final `2.5e-6`). The snippet's commented `5e-5` schedule
+is not active. FSDP remains the original default of one device.
+
+The registered historical unsuffixed `pi05_xarm` is a different audited run
+with 30,001 updates and save interval 10,000; its identity is preserved.
+The mixed experiment reuses the pinned real158/sim46 training selections and
+domain probabilities real0.1/sim0.9, with a new train-only normalization asset
+`xarm_pi05_real_sim_alpha09_trainonly_v1`. Dataset size does not set the ratio.
+No additional scene-group annotation is required for this experiment.
+
+Inspect it with `python -m training.cli show pi05_xarm_real_sim_alpha09`.
+This is a prepared full-training configuration, not an executed run. The
+completed ten-update smoke and its artifacts are unchanged. GPU allocation
+must be reviewed for batch16 and the chosen device topology; the earlier
+four-L40S smoke resource request is not a measurement of this configuration.
+Final training publication to Hugging Face includes the matching checkpoint,
+normalization, resolved configuration and provenance.
+
 The [FarmShare feasibility report](FARMSHARE_COTRAINING_FEASIBILITY.md) records
 the completed 2026-10-04 run: accepted 92-episode generation, independent
 train-only statistics, verified alpha sampling, ten actual full-model updates,
