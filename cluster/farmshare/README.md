@@ -23,3 +23,17 @@ must be verified before using localhost.
 
 Absent `XARM_SLURM_QOS` and `XARM_SLURM_RESOURCE_CONFIG`, the existing DeltaAI
 submission behavior and resource requests remain unchanged.
+
+The site environment explicitly chooses `owner_only` output permissions and
+`umask 077`; private FarmShare storage does not require the DeltaAI group.
+Canonical generation retains its exact-root replacement guard. Put large
+datasets, base-weight caches and training checkpoints in personal scratch,
+and preserve small provenance/verification reports separately. A measured home
+quota failure during feasibility data download demonstrated that global free
+space is not a usable per-user capacity check.
+
+The bounded full-parameter feasibility configuration requests four devices via
+upstream FSDP. A site resource override must supply the matching four GPUs and
+RAM/CPU request within observed partition/QoS limits; the existing inference
+one-GPU resource template does not size training. Use the canonical `training`
+workflow's `dataset_paths` parameter for independent real/sim roots.

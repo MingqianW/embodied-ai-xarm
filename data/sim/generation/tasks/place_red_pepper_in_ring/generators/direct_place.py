@@ -116,7 +116,7 @@ def _validate_initial_grasp(context: GeneratorContext) -> GeneratorInitializatio
             "initialization_frames_recorded": 0,
             "object_identity": runtime.active_target_body,
             "released_object_identity": runtime.target_body,
-            "release_uses_held_body_swap": True,
+            "release_uses_held_body_swap": not runtime.free_place_grasp,
             "permanent_attachment": False,
         }
     )
@@ -159,6 +159,10 @@ def _create(
     values = asdict(
         PlaceOracleConfig(
             action_dt_s=config.action_dt_s,
+            # Release close to the resting object height with the four-bar
+            # fingers, reducing the impact that kept the free pepper rolling.
+            # This changes oracle motion only; physics and acceptance stay fixed.
+            release_pepper_height_m=0.095,
             verify_steps=config.steps,
             ring_radius_m=config.ring_radius_m,
             maximum_height_above_table_m=config.maximum_height_above_table_m,
@@ -176,6 +180,7 @@ def _create(
     return ControllerEpisodeGenerator(
         controller,
         generator_id=generator_id,
+        generator_version="v2",
         kind="place",
         initialization=initialization,
         trajectory_metadata={

@@ -201,20 +201,23 @@ def _episode_ranges(dataset: Any, frame_count: int) -> tuple[tuple[int, int], ..
         raise ValueError("LeRobot episode_data_index must provide 'from' and 'to' arrays") from exc
     if len(starts) != len(ends) or np.any(starts < 0) or np.any(ends < starts) or np.any(ends > frame_count):
         raise ValueError("LeRobot episode_data_index contains invalid ranges")
-    return tuple((int(start), int(end)) for start, end in zip(starts, ends, strict=True) if end > start)
+    return tuple((int(start), int(end)) for start, end in zip(starts, ends, strict=True))
 
 
-def _selected_ranges(spec: DatasetSpec, ranges: tuple[tuple[int, int], ...] | None, frame_count: int) -> tuple[tuple[int, int], ...]:
+def _selected_ranges(spec: DatasetSpec, ranges: tuple[tuple[int, int], ...] | None, frame_count: int) -> tuple[tuple[int, int, int], ...]:
+    """Keep original episode IDs alongside selected frame ranges."""
     selection = spec.selection
     if selection.mode == "all":
-        return ranges or ((0, frame_count),)
+        return tuple((index, start, end) for index, (start, end) in enumerate(ranges or ((0, frame_count),)))
+    if ranges is None:
+        raise ValueError(f"Dataset {spec.dataset_id} cannot select episodes without episode_data_index metadata")
     if selection.mode == "first_by_episode_index":
-        if ranges is None:
-            raise ValueError(f"Dataset {spec.dataset_id} cannot select episodes without episode_data_index metadata")
-        return ranges[: int(selection.limit)]
-    raise ValueError(
-        f"Dataset {spec.dataset_id} uses explicit episode selection, but this repository has no explicit episode id list"
-    )
+        indices = tuple(range(min(int(selection.limit), len(ranges))))
+    else:
+        indices = selection.episode_indices
+    if any(index >= len(ranges) or ranges[index][0] == ranges[index][1] for index in indices):
+        raise ValueError(f"Dataset {spec.dataset_id} selects missing or empty episodes")
+    return tuple((index, *ranges[index]) for index in indices)
 
 
 def _load_datasets(runtime: OpenPITrainingRuntime, data_config: Any, model_config: Any, transforms: Any) -> tuple[_LoadedDataset, ...]:
@@ -239,7 +242,7 @@ def _load_datasets(runtime: OpenPITrainingRuntime, data_config: Any, model_confi
         ranges = _selected_ranges(spec, episode_ranges, frame_count)
         frames: list[DatasetFrameRef] = []
         trajectories: list[tuple[DatasetFrameRef, ...]] = []
-        for episode_index, (start, end) in enumerate(ranges):
+        for episode_index, start, end in ranges:
             trajectory = tuple(
                 DatasetFrameRef(spec.dataset_id, spec.source, index, episode_index, index - start)
                 for index in range(start, end)
@@ -464,21 +467,36 @@ def _normalization_manifest(runtime: OpenPITrainingRuntime, asset_id: str) -> di
     for spec in runtime.experiment.datasets.datasets:
         path = runtime.dataset_paths[spec.dataset_id]
         info = path / "meta" / "info.json"
+        selected_files = []
+        if info.is_file():
+            metadata = json.loads(info.read_text(encoding="utf-8"))
+            template = metadata.get("data_path")
+            if template:
+                indices = spec.selection.episode_indices if spec.selection.mode == "explicit" else tuple(range(
+                    min(metadata["total_episodes"], spec.selection.limit or metadata["total_episodes"])
+                ))
+                for index in indices:
+                    relative = template.format(episode_index=index, episode_chunk=index // metadata.get("chunks_size", 1000))
+                    selected_files.append({"episode_index": index, "path": relative, "sha256": _hash_file(path / relative)})
         datasets.append(
             {
                 "dataset_id": spec.dataset_id,
                 "source": getattr(spec.source, "value", spec.source),
                 "repo_id": spec.repo_id,
+                "revision": spec.revision,
                 "path": str(path),
                 "selection": {
                     "mode": spec.selection.mode,
                     "limit": spec.selection.limit,
+                    "episode_indices": list(spec.selection.episode_indices),
                 },
                 "info_sha256": _hash_file(info) if info.is_file() else None,
+                "episodes_sha256": _hash_file(path / "meta/episodes.jsonl") if (path / "meta/episodes.jsonl").is_file() else None,
+                "selected_episode_files": selected_files,
             }
         )
     return {
-        "format": "xarm_mixed_normalization_v1",
+        "format": "xarm_mixed_normalization_v2",
         "experiment": runtime.experiment.name,
         "asset_id": asset_id,
         "pool": datasets,
@@ -530,6 +548,7 @@ def compute_mixed_normalization(
     stats_path = output_dir / "norm_stats.json"
     manifest_path = output_dir / MIXED_NORMALIZATION_MANIFEST
     expected_manifest = _normalization_manifest(runtime, asset_id)
+    expected_manifest["max_frames"] = max_frames
     if stats_path.is_file() and not overwrite:
         if manifest_path.is_file():
             try:

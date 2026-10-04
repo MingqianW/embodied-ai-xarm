@@ -20,14 +20,25 @@ class EpisodeSelection:
     mode: str = "all"
     limit: int | None = None
     description: str = "all accepted episodes"
+    episode_indices: tuple[int, ...] = ()
 
     def __post_init__(self) -> None:
+        object.__setattr__(self, "episode_indices", tuple(self.episode_indices))
         if self.mode not in {"all", "first_by_episode_index", "explicit"}:
             raise ValueError(f"Unsupported episode selection mode: {self.mode}")
         if self.mode == "all" and self.limit is not None:
             raise ValueError("An all-episode selection cannot have a limit")
         if self.mode != "all" and (self.limit is None or self.limit <= 0):
             raise ValueError(f"{self.mode} requires a positive limit")
+        if self.mode == "explicit":
+            if len(self.episode_indices) != self.limit:
+                raise ValueError("explicit selection requires exactly limit episode_indices")
+            if any(type(index) is not int or index < 0 for index in self.episode_indices):
+                raise ValueError("episode_indices must be non-negative integers")
+            if len(set(self.episode_indices)) != len(self.episode_indices):
+                raise ValueError("episode_indices must be unique")
+        elif self.episode_indices:
+            raise ValueError("episode_indices are only valid for explicit selection")
 
 
 @dataclass(frozen=True)

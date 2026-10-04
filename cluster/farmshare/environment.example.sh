@@ -12,3 +12,5 @@ export XARM_SLURM_QOS=gpu
 export XARM_SLURM_RESOURCE_CONFIG="$XARM_REPOSITORY/cluster/farmshare/resources.json"
 export MUJOCO_GL=egl
 export PYOPENGL_PLATFORM=egl
+export XARM_OUTPUT_PERMISSION_POLICY=owner_only
+umask 077

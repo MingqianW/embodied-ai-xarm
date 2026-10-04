@@ -18,6 +18,7 @@ from data.sim.generation.plans import AUTHORIZED_ROOTS, work_root
 DELTA_GROUP = "delta_bfmk"
 DELTA_GROUP_PERMISSION_POLICY = "delta_group"
 WINDOWS_LOCAL_PERMISSION_POLICY = "windows_inherited_acl"
+OWNER_ONLY_PERMISSION_POLICY = "owner_only"
 
 
 def permission_policy() -> str:
@@ -25,10 +26,15 @@ def permission_policy() -> str:
 
     Windows has no POSIX group database or ``chown`` implementation compatible
     with the DeltaAI deployment policy. Local outputs therefore retain their
-    inherited Windows ACLs. POSIX hosts remain strict about the shared DeltaAI
-    group used by canonical cluster runs.
+    inherited Windows ACLs. POSIX defaults retain the shared DeltaAI group;
+    deployments may explicitly select owner_only for private user storage.
     """
 
+    requested = os.environ.get("XARM_OUTPUT_PERMISSION_POLICY")
+    if requested is not None:
+        if requested != OWNER_ONLY_PERMISSION_POLICY or os.name == "nt":
+            raise ValueError("XARM_OUTPUT_PERMISSION_POLICY supports owner_only on POSIX hosts")
+        return requested
     return (
         WINDOWS_LOCAL_PERMISSION_POLICY
         if os.name == "nt"
@@ -134,6 +140,8 @@ def replace_authorized_roots(
         if path.exists():
             shutil.rmtree(path)
         path.mkdir(parents=True, exist_ok=False)
+        if policy == OWNER_ONLY_PERMISSION_POLICY:
+            os.chmod(path, 0o700)
         if policy == DELTA_GROUP_PERMISSION_POLICY:
             os.chmod(path, 0o2770)
             shutil.chown(path, group=DELTA_GROUP)
@@ -179,6 +187,14 @@ def apply_group_permissions(paths: list[Path]) -> None:
             raise FileNotFoundError(root)
         if policy == WINDOWS_LOCAL_PERMISSION_POLICY:
             print(f"WINDOWS_INHERITED_ACL path={root}")
+            continue
+        if policy == OWNER_ONLY_PERMISSION_POLICY:
+            for current, _, filenames in os.walk(root, followlinks=False):
+                os.chmod(current, 0o700)
+                for name in filenames:
+                    path = Path(current) / name
+                    if not path.is_symlink():
+                        os.chmod(path, os.stat(path).st_mode & 0o700)
             continue
         for current, dirnames, filenames in os.walk(root, followlinks=False):
             directory = Path(current)

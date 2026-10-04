@@ -12,6 +12,15 @@ from cluster.config import ClusterSettings
 from cluster.workflows import Command, Resources, WORKFLOWS, Workflow, get_workflow
 
 
+def test_training_workflow_forwards_independent_dataset_paths():
+    workflow = get_workflow("training")
+    parameters = workflow.parameters({"config": "pi05_xarm_real_sim_feasibility_10steps", "exp_name": "smoke",
+                                      "dataset_paths": "real_hf_20260703_train=/data/real;sim_paired_v1_train=/data/sim"})
+    argv = workflow.build(ClusterSettings.from_environment(), parameters)[0].argv
+    positions = [index for index, value in enumerate(argv) if value == "--dataset-path"]
+    assert [argv[index + 1] for index in positions] == ["real_hf_20260703_train=/data/real", "sim_paired_v1_train=/data/sim"]
+
+
 def _slash(value: object) -> str:
     return str(value).replace("\\", "/")
 

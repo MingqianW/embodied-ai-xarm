@@ -104,3 +104,16 @@ def test_completed_continuation_is_true_resume_not_warm_start() -> None:
 def test_resume_mode_cannot_omit_optimizer_ema_or_step() -> None:
     with pytest.raises(ValueError, match="optimizer, EMA, and step"):
         CheckpointSpec(CheckpointMode.RESUME_STATE, "/checkpoint", restore_optimizer=True)
+
+
+def test_feasibility_uses_base_fresh_norm_and_domain_probability():
+    config = get_experiment("pi05_xarm_real_sim_feasibility_10steps")
+    assert config.checkpoint.mode is CheckpointMode.BASE_WEIGHTS
+    assert config.checkpoint.path == "gs://openpi-assets/checkpoints/pi05_base/params"
+    assert not any((config.checkpoint.restore_optimizer, config.checkpoint.restore_ema, config.checkpoint.restore_step))
+    assert not config.model.freeze_lora_base
+    assert config.optimization.num_train_steps == 10
+    assert config.optimization.fsdp_devices == 4
+    assert config.normalization.mode is NormalizationMode.COMPUTE_FROM_DATASETS
+    assert dict(config.mixing.sampling_probabilities) == {SourceBackend.REAL: 0.1, SourceBackend.SIM: 0.9}
+    assert tuple(len(spec.selection.episode_indices) for spec in config.datasets.datasets) == (158, 46)

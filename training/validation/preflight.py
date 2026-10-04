@@ -84,8 +84,11 @@ def _validate_local_dataset(path: Path, dataset: DatasetSpec, report: PreflightR
         observed = _shape_from_feature(features[key])
         if observed is not None and observed != shape:
             report.errors.append(f"Dataset {path} feature {key!r} shape {observed} != {shape}")
-    if "task" not in features:
-        report.errors.append(f"Dataset {path} is missing feature 'task'")
+    if "task" not in features and "task_index" not in features:
+        report.errors.append(f"Dataset {path} is missing task or task_index feature")
+    if dataset.selection.mode == "explicit" and info.get("total_episodes") is not None:
+        if any(index >= info["total_episodes"] for index in dataset.selection.episode_indices):
+            report.errors.append(f"Dataset {path} selection includes absent episodes")
     fps = info.get("fps")
     if fps is not None and fps != 10:
         report.errors.append(f"Dataset {path} fps is {fps}, expected 10")

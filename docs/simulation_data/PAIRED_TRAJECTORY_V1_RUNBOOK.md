@@ -26,3 +26,13 @@ conversion, and resume commands in
 Review the audit's coverage, fingerprints, attempt/acceptance counts, parameter
 coverage, target-relative TCP paths, lengths, peak heights, phase timing,
 orientation, and near-duplicate warnings before claiming a diversity gain.
+
+Canonical Place generator implementation `v2` lowers the release target center
+to 0.095 m for the physical four-bar grasp. It retains the existing family IDs,
+randomized trajectory ranges, scene seeds, retry limit, and full stability
+verification. The original exhausted right-front member is covered by
+`tests/data_sim/test_place_release_regression.py`. Preserve and reject earlier
+incomplete collections; use a fresh collection after this producer correction.
+The bounded plan contains 92 episodes in 12 groups (two scenes per task).
+For training/validation, keep every family member from a scene group together;
+the one-scene `--smoke` output cannot establish a group-disjoint split per task.

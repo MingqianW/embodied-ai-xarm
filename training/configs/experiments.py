@@ -86,11 +86,14 @@ class OptimizationSpec:
     wandb_enabled: bool = True
     lr: LRScheduleSpec = LRScheduleSpec()
     optimizer: OptimizerSpec = OptimizerSpec()
+    fsdp_devices: int = 1
 
     def __post_init__(self) -> None:
-        for name in ("batch_size", "num_train_steps", "save_interval", "log_interval"):
+        for name in ("batch_size", "num_train_steps", "save_interval", "log_interval", "fsdp_devices"):
             if getattr(self, name) <= 0:
                 raise ValueError(f"{name} must be positive")
+        if self.batch_size % self.fsdp_devices:
+            raise ValueError("batch_size must be divisible by fsdp_devices")
 
 
 class LaunchSupport(str, Enum):
@@ -415,6 +418,39 @@ _continuation = ExperimentConfig(
     ),
 )
 
+_real_feasibility_validation = (
+    0, 2, 7, 13, 17, 26, 34, 40, 42, 46, 51, 52, 53, 63, 69,
+    81, 85, 95, 98, 107, 112, 113, 114, 120, 123, 126, 132, 133,
+    137, 145, 151, 166, 174, 180, 183, 185, 189, 190, 194, 196,
+)
+_real_feasibility_train = tuple(index for index in range(198) if index not in _real_feasibility_validation)
+_sim_feasibility_train = tuple(
+    index for start, count in ((0, 8), (16, 8), (32, 8), (48, 8), (64, 8), (80, 6))
+    for index in range(start, start + count)
+)
+_feasibility = ExperimentConfig(
+    name="pi05_xarm_real_sim_feasibility_10steps",
+    description="Independent full Pi0.5 base-weight feasibility smoke; alpha=0.9; episode/scene-held-out train pool",
+    datasets=DatasetSet((
+        DatasetSpec(
+            "real_hf_20260703_train", "MingqianW/xarm_pi05_20260703", SourceBackend.REAL, ALL_TASKS,
+            revision="1bbb721baef1e152515a33a50fa4552686877ce1", expected_episodes=198,
+            selection=EpisodeSelection("explicit", 158, "Task-stratified SHA256 episode split, seed 20261004; hold out 40 episodes", _real_feasibility_train),
+        ),
+        DatasetSpec(
+            "sim_paired_v1_train", "local/xarm_mujoco_clean_multitask_paired_trajectory_v1", SourceBackend.SIM, ALL_TASKS,
+            revision="paired_trajectory_v1", expected_episodes=92,
+            selection=EpisodeSelection("explicit", 46, "Canonical paired plan scene_index=0; hold out all scene_index=1 members", _sim_feasibility_train),
+        ),
+    )),
+    mixing=MixingStrategy.real_sim_weighted_sampling(real_sampling_weight=0.1, sim_sampling_weight=0.9, seed=20261004),
+    normalization=NormalizationSpec(NormalizationMode.COMPUTE_FROM_DATASETS, "xarm_real_sim_feasibility_20261004_trainonly_v1"),
+    checkpoint=BASE_WEIGHTS,
+    optimization=OptimizationSpec(batch_size=4, num_train_steps=10, save_interval=10, log_interval=1,
+                                  keep_period=None, num_workers=0, wandb_enabled=False, fsdp_devices=4),
+    evidence=("arXiv:2503.24361v2 section III-A and appendix VIII-G; alpha is a candidate, not an xArm optimum",),
+)
+
 EXPERIMENTS = {
     config.name: config
     for config in (
@@ -428,6 +464,7 @@ EXPERIMENTS = {
         _c,
         _d,
         _continuation,
+        _feasibility,
     )
 }
 

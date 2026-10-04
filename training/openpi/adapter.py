@@ -142,6 +142,7 @@ def build_openpi_train_config(
         "save_interval": experiment.optimization.save_interval,
         "keep_period": experiment.optimization.keep_period,
         "wandb_enabled": experiment.optimization.wandb_enabled,
+        "fsdp_devices": experiment.optimization.fsdp_devices,
     }
     if experiment.checkpoint.mode in {CheckpointMode.BASE_WEIGHTS, CheckpointMode.WARM_START}:
         kwargs["weight_loader"] = weights.CheckpointWeightLoader(experiment.checkpoint.path)

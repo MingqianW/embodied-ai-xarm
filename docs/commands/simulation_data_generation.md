@@ -49,7 +49,7 @@ Every Pick task (`red_block`, `blue_block`, `red_pepper`, `smallest_block`, and
 - `scripted_pick_opposite_waypoint_lift_v1`: the mirrored waypoint and lift
   path.
 
-`place_red_pepper_in_ring` provides two non-default variants:
+`place_red_pepper_in_ring` provides five non-default variants:
 
 - `direct_place_left_approach_v1`: a higher left-front preplace position,
   followed by a centered release into the ring;
@@ -64,8 +64,15 @@ Every Pick task (`red_block`, `blue_block`, `red_pepper`, `smallest_block`, and
 All variants preserve task text, final grasp/release semantics, the 7D action
 contract, gripper settings, and acceptance criteria. Their exact target poses
 and geometric parameters are stored in each episode's `oracle_plan` metadata.
-The defaults are unchanged; add these IDs explicitly to an allocation only
-when creating a new dataset plan.
+Add these IDs explicitly to an allocation when creating a new dataset plan.
+The canonical physical Place generators record implementation version `v2`:
+they release the free pepper at a target center height of 0.095 m. The previous
+0.125 m target kept an exhausted paired member rolling above the unchanged
+0.01 m/s limit. The original four retries pass the focused physical regression
+with the lower release pose and the same 20-step, 2-second verification. Physics,
+scene profiles, family membership, trajectory distributions and acceptance are
+unchanged. Preserve earlier outputs and regenerate in a fresh root after this
+producer change; do not mix implementation versions in an existing collection.
 
 ## Object-layout randomization
 
@@ -78,8 +85,15 @@ rejects mismatches with `simulation/config/task_scenes.yaml`. The task text,
 randomization profile, camera/gripper mapping and acceptance thresholds are
 unchanged. Preserve existing outputs from the earlier held-fixture convention;
 use a new run root and provenance rather than resuming that data after the
-reset correction. The default Place generator version is unchanged; the
-source/configuration and initial-condition metadata identify this reset.
+reset correction. The source/configuration and initial-condition metadata
+identify this reset; generator `v2` identifies the later release-pose correction.
+
+On FarmShare, source the site template in `cluster/farmshare/` with an external
+runtime root. It selects `XARM_OUTPUT_PERMISSION_POLICY=owner_only` and a private
+umask; POSIX defaults elsewhere still require `delta_bfmk`. Exact authorized
+dataset-root and symlink guards remain enforced. Use personal scratch for large
+runtime products and record paths/checksums separately; shared filesystem free
+space does not establish the user's home quota.
 
 The canonical simulation config owns named randomization profiles. The current
 v4 10x-real plan and formal evaluation v3 both select `clean_wide_v4`. It samples every active task object within

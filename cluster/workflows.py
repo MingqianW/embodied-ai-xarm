@@ -460,6 +460,10 @@ def _training(settings: ClusterSettings, params: Mapping[str, str]) -> tuple[Com
     checkpoint_dir = params["checkpoint_dir"] or str(
         settings.work_root / "openpi_checkpoints"
     )
+    dataset_args = tuple(
+        value for path in params["dataset_paths"].split(";") if path.strip()
+        for value in ("--dataset-path", path.strip())
+    )
     return (
         Command(
             "training",
@@ -478,6 +482,7 @@ def _training(settings: ClusterSettings, params: Mapping[str, str]) -> tuple[Com
                 "--checkpoint-base-dir",
                 checkpoint_dir,
                 "--execute",
+                *dataset_args,
             ),
         ),
     )
@@ -616,6 +621,7 @@ WORKFLOWS = {
             defaults={
                 "assets_dir": "",
                 "checkpoint_dir": "",
+                "dataset_paths": "",
             },
         ),
     )

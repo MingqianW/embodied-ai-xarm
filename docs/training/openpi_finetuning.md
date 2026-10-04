@@ -123,3 +123,40 @@ At training startup the loader prints selected episode/frame counts by source,
 the mixing strategy and requested weighted probabilities, normalization
 semantics, batch size, and total steps. It also reports observed real/sim
 fractions from DataLoader-delivered samples at the log interval and at exit.
+
+## Bounded real/sim feasibility configuration
+
+`pi05_xarm_real_sim_feasibility_10steps` is an independent full Pi0.5 experiment
+from the declared `gs://openpi-assets/checkpoints/pi05_base/params`, with fresh
+optimizer/EMA/step, batch 4, FSDP across 4 devices, and at most 10 updates. It
+disables W&B and saves the final upstream checkpoint (manager directory `9`,
+training state step `10`). It does not continue the evaluated HF fine-tune.
+
+The real source is fixed at dataset revision
+`1bbb721baef1e152515a33a50fa4552686877ce1`: 158 training episodes and 40
+task-stratified held-out episodes. The canonical paired-v1 pool has 46 training
+members from scene index 0 and 46 held-out members from scene index 1. Explicit
+`EpisodeSelection.episode_indices` retain original IDs; absent/empty selections
+fail. Real scene group IDs are unavailable, so physical-scene independence of
+the real split cannot be asserted. LeRobot `task_index` plus its task catalog is
+accepted by preflight and converted to prompt by the existing loader.
+
+The domain draw uses `P(sim)=0.9`, `P(real)=0.1`, then uniform valid training
+frames within that domain, with replacement and independent of dataset sizes.
+This follows the mixture definition in [the paper's section III-A and appendix
+VIII-G](https://arxiv.org/html/2503.24361v2); 0.9 is a candidate for this xArm
+smoke, not a demonstrated optimum. Uniform frames do not imply uniform tasks.
+
+The fresh train-only quantile asset records revision, explicit selections,
+metadata hashes and selected parquet hashes in normalization manifest v2.
+State anchors enter statistics once; their transformed 10-step action chunks
+use upstream RunningStats semantics. Domain exposure weights do not reweight
+this physical-pool statistic. A bounded `max_frames` computation is recorded
+and cannot be silently reused as a full-pool computation.
+
+The existing cluster `training` workflow now accepts optional `dataset_paths`
+as semicolon-separated `ID=PATH` values, passing each as `--dataset-path`.
+Keep DataLoader-delivered counts separate from optimizer-used samples: upstream
+fetches the next batch after the final update. No feasibility or real-robot
+performance claim follows from configuration alone; actual execution evidence
+is required.
