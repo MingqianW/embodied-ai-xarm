@@ -2,14 +2,28 @@
 
 ## Verification status
 
-The initial audit on 2026-10-03 verified access to a FarmShare rice login node,
-the reorganized source branch, the pinned external OpenPI source, Slurm
-resource/account queries, and offline regression checks. It has **not**
-validated a GPU environment, restored the target model, launched a verified
-policy service, or completed smoke/formal evaluation. CPU installation job
-`1773283` is running on `wheat-02` (normal partition/QoS, requested 8 CPU/32G,
-allocated 10 CPU). No success rates can be inferred from these checks.
-Continue from the external runtime state record after inspecting job evidence.
+The audit on 2026-10-03 verified the FarmShare account and the operator's
+unsponsored-research/full-service-SUNet eligibility, reorganized source,
+pinned unmodified external OpenPI, and offline regressions. CPU installation
+job `1774160` completed on `wheat-01` in 4m42s (normal partition/QoS,
+requested 8 CPU/32G, allocated 10 CPU, peak RSS 23,239,348K). Its six steps
+passed and `uv pip check` reported 202 compatible packages. Earlier jobs
+`1773283` and `1773675` failed on a public wheel timeout and NFS writes,
+respectively; the successful continuation reused completed downloads through
+a node-local installer cache.
+
+Snapshot job `1774189` completed on `wheat-02` in 13m09s. All 23 fixed-revision
+files passed size/content-hash checks, and TensorStore read all 106 OCDBT
+logical keys (12,441,508,165 bytes). This proves snapshot integrity, not model
+restoration. A separate ten-minute inference-config step timed out and did
+not produce a passing report. CPU canonical preflight job `1774370` passed on `barley-02` in 1m02s
+(10 allocated CPUs, peak RSS 1,381,208K), using the actual OpenPI
+configuration and target normalization. Import tracing recorded about 51s
+for the checkpoint module and its dependencies; transient NFS wait channels
+were observed. This successful run does not establish the precise cause of
+the earlier probe timeout. GPU restoration, real request RNG, smoke, and formal evaluation
+remain unverified; no success rates exist. Continue from the external runtime
+state and job evidence instead of submitting duplicate jobs.
 
 Source baseline: `refactor/reorganize-repository` at
 `924f4e5771d76f336e085aba3b90ca67cabc7b53`; do not substitute `main`.
@@ -32,8 +46,8 @@ tracked historical snippet, not proof that the model is the later Delta run
 that reused the same name. Resolve the snippet's template dataset asset ID to
 the target checkpoint's own embedded asset explicitly, and verify the actual
 parameters/transforms/normalization in an allocation. Do not infer original
-training task coverage or manager step. The metadata sample is not a complete
-weight snapshot or an OCDBT validation.
+training task coverage or manager step. The separate full snapshot integrity report supplies file/OCDBT evidence;
+parameter/configuration compatibility still requires an actual restoration.
 
 ## Official policy and actual cluster checks
 
@@ -132,8 +146,8 @@ These command-resolution checks have been exercised; they do not prove that a
 job can run. The unmodified OpenPI lock pins JAX/JAXlib 0.5.3, Flax 0.10.2,
 Orbax 0.11.13, NumPy 1.26.4, TensorStore 0.1.74, and ml-dtypes 0.4.1. The
 separate initial audit environment used Python 3.12.3 and MuJoCo 3.3.7 for
-offline checks. It is not the verified model environment. Python 3.11.15 is
-prepared for the model environment. The pinned upstream lock includes MuJoCo
+offline checks. The installed model environment uses Python 3.11.15 and those pinned
+OpenPI dependencies; GPU compatibility remains to be measured. The pinned upstream lock includes MuJoCo
 2.3.7 through the unused Aloha simulator, while this project's scene requires
 MuJoCo >=3.2. The `openpi-inference-environment` workflow exports the frozen
 upstream dependencies, omits the unrelated `gym-aloha`/`dm-control`/`mujoco`
@@ -210,9 +224,8 @@ them. Rendering/physics integration tests and remaining evaluation regression
 checks await a legal allocation.
 
 Only resume with exactly matching provenance and the canonical evaluator's
-`--resume`. No evaluated rerun/resume command is yet claimed: the original
-configuration, complete runtime, service validation, and actual results are
-still pending verification. Never fabricate human-review decisions; sim performance alone
+`--resume`. No evaluated rerun/resume command is yet claimed: service validation and
+actual results are still pending verification. Never fabricate human-review decisions; sim performance alone
 does not establish real-robot performance.
 
 ## Target commands and acceptance gates
@@ -232,13 +245,20 @@ using the explicit inference-only config `pi05_xarm_hf_20260703` and its own
 normalization asset. Numeric manager step remains unknown.
 
 The following command forms are implemented and covered by offline resolution
-tests; their GPU execution is still pending. Run preflight first:
+tests; their GPU execution is still pending. Run preflight first through the
+same scheduler workflow, with a private
+resource override for `formal-sim-evaluation` specifying zero GPUs, sufficient
+CPU/memory, and a bounded time limit. OpenPI imports may be substantial, so
+this deployment schedules even the file/configuration preflight:
 
 ```bash
-python -m evaluation.sim.cli --dry-run \
-  --model-spec configs/evaluation/sim/models/HF_REAL_20260703.json \
-  --protocol configs/evaluation/sim/protocols/hf_real_20260703_smoke_v3.json \
-  --openpi-root "$OPENPI_ROOT"
+XARM_SLURM_PARTITION=normal XARM_SLURM_QOS=normal \
+XARM_SLURM_RESOURCE_CONFIG=/absolute/path/to/cpu-preflight-resources.json \
+  python -m cluster.cli submit formal-sim-evaluation \
+  --param dry_run=true \
+  --param model_spec=configs/evaluation/sim/models/HF_REAL_20260703.json \
+  --param protocol=configs/evaluation/sim/protocols/hf_real_20260703_smoke_v3.json \
+  --param host=127.0.0.1
 
 python -m cluster.cli submit formal-sim-evaluation --dry-run \
   --param model_spec=configs/evaluation/sim/models/HF_REAL_20260703.json \
