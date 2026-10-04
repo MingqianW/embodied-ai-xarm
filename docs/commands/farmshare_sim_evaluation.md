@@ -64,6 +64,22 @@ Actual evaluation source was `9a2981c63f09a8d892b6b079d24802a5df4f6629`.
 Runtime evidence, raw results, summaries, video indexes, and job logs are under
 `$HOME/xarm-work/farmshare-20261003`; continue from `state.json`/`STAGES.md`.
 
+Evidence archive `1774762` completed in 16s on `wheat-01` (requested two
+CPU/8G, allocated four CPU). It read back and verified SHA-256/size for all
+187 archived runtime files. The archive is
+`$XARM_WORK_ROOT/archives/rejected-smoke-20261004T014607Z`, with source
+snapshots at evaluation commit `9a2981c`, guide commit `dc32a803`, unmodified
+OpenPI, the target normalization asset, raw results, summaries, all videos,
+logs, environment freeze, and private runtime configuration. Weights,
+environments, and caches are excluded. `file-manifest.json` records every
+runtime member; `SHA256SUMS` covers all six archive products. Follow-up CPU
+job `1774768` completed in 5s and passed `sha256sum --check SHA256SUMS` plus
+`gzip --test` for all four compressed archives. Reports are
+`evidence/smoke-archive.json` and `evidence/archive-readback.log`.
+This is a verified snapshot on the same FarmShare home filesystem, without
+an independent backup or established retention guarantee. The task-owned
+temporary installer cache was already absent when checked on `wheat-01`.
+
 Source baseline: `refactor/reorganize-repository` at
 `924f4e5771d76f336e085aba3b90ca67cabc7b53`; do not substitute `main`.
 OpenPI submodule pin and unmodified external checkout:
