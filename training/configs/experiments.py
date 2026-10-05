@@ -457,7 +457,11 @@ _pi05_xarm_real_sim = replace(
     name="pi05_xarm_real_sim_alpha09",
     description="Real-sim experiment derived from the user-supplied pi05_xarm 20,001-step config",
     datasets=DatasetSet((
-        _feasibility.datasets.datasets[0],
+        DatasetSpec(
+            "real_hf_20260703_train", "MingqianW/xarm_pi05_20260703", SourceBackend.REAL, ALL_TASKS,
+            revision="1bbb721baef1e152515a33a50fa4552686877ce1", expected_episodes=198,
+            selection=EpisodeSelection("all", description="All 198 real episodes train; no real holdout"),
+        ),
         DatasetSpec(
             "sim_v4_10x_train", "local/xarm_mujoco_clean_multitask_stable_v4_10x_real",
             SourceBackend.SIM, ALL_TASKS, revision="stable_v4_10x_real", expected_episodes=1980,
@@ -467,11 +471,26 @@ _pi05_xarm_real_sim = replace(
     mixing=_feasibility.mixing,
     normalization=NormalizationSpec(
         NormalizationMode.COMPUTE_FROM_DATASETS,
-        "xarm_pi05_real_sim_alpha09_trainonly_v4_10x_v1",
+        "xarm_pi05_real198_sim990_alpha09_v1",
     ),
+    optimization=replace(_legacy_snippet.optimization, fsdp_devices=4),
     evidence=(
         "User-supplied original pi05_xarm: batch16, 20001steps, save5000, AdamW clip1, EMA0.999; commented LR is inactive",
-        "Existing pinned feasibility training pool and alpha0.9 domain sampling; no full-training execution evidence",
+        "All 198 pinned real episodes train by user instruction; 990 selected simulation episodes; alpha0.9 domain sampling",
+        "FSDP uses four FarmShare L40S devices; only topology differs from the original single-device default",
+    ),
+)
+
+_pi05_xarm_real_sim_probe = replace(
+    _pi05_xarm_real_sim,
+    name="pi05_xarm_real_sim_alpha09_resource_probe_2steps",
+    description="Independent two-update batch-16/FSDP-4 resource probe before full training",
+    optimization=replace(
+        _pi05_xarm_real_sim.optimization,
+        num_train_steps=2,
+        save_interval=2,
+        log_interval=1,
+        wandb_enabled=False,
     ),
 )
 
@@ -490,6 +509,7 @@ EXPERIMENTS = {
         _continuation,
         _feasibility,
         _pi05_xarm_real_sim,
+        _pi05_xarm_real_sim_probe,
     )
 }
 

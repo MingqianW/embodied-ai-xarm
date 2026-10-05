@@ -172,27 +172,37 @@ is not active. FSDP remains the original default of one device.
 
 The registered historical unsuffixed `pi05_xarm` is a different audited run
 with 30,001 updates and save interval 10,000; its identity is preserved.
-The mixed experiment reuses the pinned 158 real training episodes and points to
+The approved full mixed experiment uses all 198 episodes of the pinned real
+dataset and points to
 the canonical 1,980-episode `stable_v4_10x_real` simulation plan. Its six task
 counts are exactly ten times the pinned real dataset: 500 red-pepper Pick,
 240 blue-block Pick, 250 red-block Pick, 240 smallest-block Pick, 250
 largest-block Pick, and 500 Place. Even simulation episode indices (990 total)
 form the training subset; odd indices are held out. Each task is halved,
 preserving the full real-data task proportions. Domain sampling remains
-real0.1/sim0.9, independent of physical dataset size. The independent train-only
-normalization asset `xarm_pi05_real_sim_alpha09_trainonly_v4_10x_v1` was
-computed from these selections; the 92-episode feasibility evidence stays
-frozen. Each selected physical frame contributes once to the statistics; the
-training sampler's 0.1/0.9 domain probabilities do not weight them.
+real0.1/sim0.9, independent of physical dataset size. All 198 real episodes
+now enter training; there is no real held-out subset for this run. Compute a
+new train-only normalization asset `xarm_pi05_real198_sim990_alpha09_v1` from
+this physical pool before any optimizer update. The earlier 158-real/990-sim
+asset and 92-episode feasibility evidence stay frozen. Each selected physical
+frame contributes once to the statistics; the training sampler's 0.1/0.9
+domain probabilities do not weight them.
 
 Inspect it with `python -m training.cli show pi05_xarm_real_sim_alpha09`.
+The source `pi05_xarm_real_sim_alpha09_resource_probe_2steps` is an independent
+two-update batch-16/FSDP-4 memory probe on the same dataset and normalization.
+The full run also uses FSDP across four FarmShare L40S GPUs; this changes only
+device topology from the user snippet's single-device default. Its optimizer,
+model, loss, batch size and schedule retain the supplied `pi05_xarm` semantics.
+The full run must start afresh from base weights after the probe.
+
 This is a prepared full-training configuration, not an executed run. On
 FarmShare, all 1,980 episodes were accepted and converted, the raw and
 converted audits passed, and all converted images decoded. The train-only
-normalization and selected-pool manifest passed preflight and validation in
-Slurm job `1782674`; see the [v4 run record](../simulation_data/V4_10X_REAL_RUN.md)
-for paths and evidence. The completed ten-update smoke and its artifacts are
-unchanged. GPU allocation
+normalization for the earlier 158-real pool passed validation in Slurm job
+`1782674`; it cannot be used with this 198-real selection. See the
+[v4 run record](../simulation_data/V4_10X_REAL_RUN.md) for data paths and
+evidence. The completed ten-update smoke and its artifacts are unchanged. GPU allocation
 must be reviewed for batch16 and the chosen device topology; the earlier
 four-L40S smoke resource request is not a measurement of this configuration.
 Final training publication to Hugging Face includes the matching checkpoint,

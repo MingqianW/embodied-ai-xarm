@@ -60,13 +60,17 @@ Runtime data and evidence are outside the source tree:
 
 The full simulation pool has 1,980 episodes. Even episode indices select 990
 training episodes and odd indices hold out 990; each task count is halved. The
-real training selection contains 158 episodes. The training domain sampler is
-configured separately with `P(real)=0.1` and `P(sim)=0.9`.
+earlier feasibility run used 158 real training episodes. The approved full
+training configuration instead selects all 198 pinned real episodes, without
+a real held-out subset. The training domain sampler is configured separately
+with `P(real)=0.1` and `P(sim)=0.9`.
 
-The independent train-only normalization was validated in Slurm job `1782674`
-against both selected datasets and its manifest. Each selected physical frame
-contributed once; the domain sampling probabilities did not reweight the
-statistics. Its evidence and assets are:
+The earlier 158-real/990-sim train-only normalization was validated in Slurm
+job `1782674` against its selected datasets and manifest. It does not match
+the approved 198-real/990-sim full-training pool; the latter requires a fresh
+normalization asset before use. Each selected physical frame contributes once;
+the domain sampling probabilities do not reweight the statistics. The earlier
+asset's evidence is retained at:
 
 ```text
 /home/users/mw27/xarm-work/cotraining-feasibility-20261004/large-normalization-evidence.json

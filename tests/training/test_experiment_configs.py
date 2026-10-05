@@ -124,13 +124,20 @@ def test_mixed_config_preserves_user_pi05_xarm_training_settings():
     original = get_experiment("pi05_xarm_legacy_snippet_20001")
     smoke = get_experiment("pi05_xarm_real_sim_feasibility_10steps")
     assert config.model == original.model
-    assert config.optimization == original.optimization
+    assert config.optimization == original.optimization.__class__(
+        **{**vars(original.optimization), "fsdp_devices": 4}
+    )
     assert config.checkpoint == original.checkpoint
     assert (config.optimization.batch_size, config.optimization.num_train_steps,
             config.optimization.save_interval) == (16, 20_001, 5_000)
     assert config.optimization.wandb_enabled
-    assert config.optimization.fsdp_devices == 1
-    assert config.datasets.datasets[0] == smoke.datasets.datasets[0]
+    assert config.optimization.fsdp_devices == 4
+    real = config.datasets.datasets[0]
+    assert real.repo_id == smoke.datasets.datasets[0].repo_id
+    assert real.revision == smoke.datasets.datasets[0].revision
+    assert real.expected_episodes == 198
+    assert real.selection.mode == "all"
+    assert real.selection.episode_indices == ()
     sim = config.datasets.datasets[1]
     assert sim.expected_episodes == 1980
     assert sim.repo_id == "local/xarm_mujoco_clean_multitask_stable_v4_10x_real"
@@ -138,3 +145,17 @@ def test_mixed_config_preserves_user_pi05_xarm_training_settings():
     assert config.mixing == smoke.mixing
     assert config.normalization.mode is NormalizationMode.COMPUTE_FROM_DATASETS
     assert config.normalization.asset_id != smoke.normalization.asset_id
+
+
+def test_resource_probe_uses_same_pool_and_topology_but_starts_independently():
+    full = get_experiment("pi05_xarm_real_sim_alpha09")
+    probe = get_experiment("pi05_xarm_real_sim_alpha09_resource_probe_2steps")
+    assert probe.datasets == full.datasets
+    assert probe.mixing == full.mixing
+    assert probe.normalization == full.normalization
+    assert probe.checkpoint == full.checkpoint
+    assert probe.model == full.model
+    assert (probe.optimization.batch_size, probe.optimization.fsdp_devices) == (16, 4)
+    assert probe.optimization.num_train_steps == 2
+    assert probe.optimization.save_interval == 2
+    assert not probe.optimization.wandb_enabled
