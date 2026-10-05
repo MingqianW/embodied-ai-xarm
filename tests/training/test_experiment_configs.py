@@ -152,7 +152,8 @@ def test_resource_probe_uses_same_pool_and_topology_but_starts_independently():
     probe = get_experiment("pi05_xarm_real_sim_alpha09_resource_probe_2steps")
     assert probe.datasets == full.datasets
     assert probe.mixing == full.mixing
-    assert probe.normalization == full.normalization
+    assert probe.normalization.mode is full.normalization.mode
+    assert probe.normalization.asset_id != full.normalization.asset_id
     assert probe.checkpoint == full.checkpoint
     assert probe.model == full.model
     assert (probe.optimization.batch_size, probe.optimization.fsdp_devices) == (16, 4)

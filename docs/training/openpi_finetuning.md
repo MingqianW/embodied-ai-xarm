@@ -190,7 +190,9 @@ domain probabilities do not weight them.
 
 Inspect it with `python -m training.cli show pi05_xarm_real_sim_alpha09`.
 The source `pi05_xarm_real_sim_alpha09_resource_probe_2steps` is an independent
-two-update batch-16/FSDP-4 memory probe on the same dataset and normalization.
+two-update batch-16/FSDP-4 memory probe on the same physical dataset pool. Its
+separate normalization asset retains an experiment-specific manifest; its
+statistics must be computed and checked before the probe.
 The full run also uses FSDP across four FarmShare L40S GPUs; this changes only
 device topology from the user snippet's single-device default. Its optimizer,
 model, loss, batch size and schedule retain the supplied `pi05_xarm` semantics.

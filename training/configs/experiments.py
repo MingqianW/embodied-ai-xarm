@@ -485,6 +485,10 @@ _pi05_xarm_real_sim_probe = replace(
     _pi05_xarm_real_sim,
     name="pi05_xarm_real_sim_alpha09_resource_probe_2steps",
     description="Independent two-update batch-16/FSDP-4 resource probe before full training",
+    normalization=NormalizationSpec(
+        NormalizationMode.COMPUTE_FROM_DATASETS,
+        "xarm_pi05_real198_sim990_alpha09_probe_v1",
+    ),
     optimization=replace(
         _pi05_xarm_real_sim.optimization,
         num_train_steps=2,
