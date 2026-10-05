@@ -223,6 +223,11 @@ its independent output roots end in
 `xarm_mujoco_clean_multitask_stable_v4_10x_real`. Review the smoke audit before
 the full generation job and verify raw and converted audits before training.
 The training real:sim sampling probability is configured separately.
+The completed FarmShare collection and validation are recorded in the
+[v4 run record](../simulation_data/V4_10X_REAL_RUN.md). The model image inputs
+come from `realsense_0` (base camera, LeRobot `image`) and `realsense_1`
+(wrist camera, LeRobot `wrist_image`); `realsense_2` is an overview review
+stream and is not a model input.
 
 ```text
 $XARM_WORK_ROOT/mujoco_datasets/smoke/xarm_mujoco_clean_multitask_paired_trajectory_v1

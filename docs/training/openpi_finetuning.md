@@ -179,15 +179,20 @@ counts are exactly ten times the pinned real dataset: 500 red-pepper Pick,
 largest-block Pick, and 500 Place. Even simulation episode indices (990 total)
 form the training subset; odd indices are held out. Each task is halved,
 preserving the full real-data task proportions. Domain sampling remains
-real0.1/sim0.9, independent of physical dataset size. Recompute the train-only
-normalization asset `xarm_pi05_real_sim_alpha09_trainonly_v4_10x_v1` from these
-new training selections; the 92-episode feasibility evidence stays frozen.
+real0.1/sim0.9, independent of physical dataset size. The independent train-only
+normalization asset `xarm_pi05_real_sim_alpha09_trainonly_v4_10x_v1` was
+computed from these selections; the 92-episode feasibility evidence stays
+frozen. Each selected physical frame contributes once to the statistics; the
+training sampler's 0.1/0.9 domain probabilities do not weight them.
 
 Inspect it with `python -m training.cli show pi05_xarm_real_sim_alpha09`.
-This is a prepared full-training configuration, not an executed run. The
-1,980-episode dataset and matching normalization must pass collection,
-conversion, audit, and statistical validation before use. The
-completed ten-update smoke and its artifacts are unchanged. GPU allocation
+This is a prepared full-training configuration, not an executed run. On
+FarmShare, all 1,980 episodes were accepted and converted, the raw and
+converted audits passed, and all converted images decoded. The train-only
+normalization and selected-pool manifest passed preflight and validation in
+Slurm job `1782674`; see the [v4 run record](../simulation_data/V4_10X_REAL_RUN.md)
+for paths and evidence. The completed ten-update smoke and its artifacts are
+unchanged. GPU allocation
 must be reviewed for batch16 and the chosen device topology; the earlier
 four-L40S smoke resource request is not a measurement of this configuration.
 Final training publication to Hugging Face includes the matching checkpoint,
